@@ -2,9 +2,9 @@ Flickr Uploader
 ===============
 
 The goal of this project is to help Flickr users automatically backup the photos from their Android phone.
-It works like the Google+ Instant Upload feature.
+It works like [Google+ Instant Upload](http://support.google.com/plus/answer/2910392?hl=en) or [Dropbox Camera Upload](https://blog.dropbox.com/2012/02/your-photos-simplified-part-1/).
 
-The main benefit over Google+ Instant Upload is that with a Flick Pro account you can upload an **unlimited** number of photos in **high resolution** for a small amount of money.
+The main benefit of this app over Google+ Instant Upload is the fact that you can upload an **unlimited** number of photos in **high resolution** with a relatively cheap Flick Pro account.
 
 You can download it at : https://play.google.com/store/apps/details?id=com.rafali.flickruploader
 
