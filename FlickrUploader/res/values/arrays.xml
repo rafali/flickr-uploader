@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+
+    <array name="network_values">
+        <item>wifior3G</item>
+        <item>wifionly</item>
+    </array>
+    <array name="network_entries">
+        <item>Wi-Fi and 3G</item>
+        <item>Wi-Fi only</item>
+    </array>
+
+    <array name="autoupload_photoset_values">
+        <item>default</item>
+        <item>custom</item>
+    </array>
+    <array name="autoupload_photoset_entries">
+        <item>Default</item>
+        <item>Custom</item>
+    </array>
+
+</resources>

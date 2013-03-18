@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.rafali.flickruploader"
+    android:installLocation="internalOnly"
+    android:versionCode="4"
+    android:versionName="1.1" >
+
+    <uses-sdk
+        android:minSdkVersion="14"
+        android:targetSdkVersion="17" />
+
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <!-- Required permission to use Google Play Store donations -->
+    <uses-permission android:name="com.android.vending.BILLING" />
+
+    <application
+        android:name=".FlickrUploader"
+        android:allowBackup="false"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:logo="@drawable/icon_action_bar"
+        android:theme="@style/CustomTheme" >
+        <service android:name=".UploadService" />
+
+        <receiver android:name=".MyBroadcastReceiver" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.rafali.intent.CANCEL_UPLOAD" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.rafali.intent.SHARE_PHOTO" />
+            </intent-filter>
+        </receiver>
+
+        <activity
+            android:name="org.donations.DonationsActivity"
+            android:excludeFromRecents="true"
+            android:label="Donations"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.DeviceDefault.Dialog" />
+
+        <!-- - Google Play Store donations -->
+        <service android:name="org.donations.google.BillingService" />
+
+        <receiver android:name="org.donations.google.BillingReceiver" >
+            <intent-filter>
+                <action android:name="com.android.vending.billing.IN_APP_NOTIFY" />
+                <action android:name="com.android.vending.billing.RESPONSE_CODE" />
+                <action android:name="com.android.vending.billing.PURCHASE_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <activity
+            android:name=".FlickrUploaderActivity_"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/app_name"
+            android:launchMode="singleInstance" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".Preferences"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:icon="@drawable/empty_shape"
+            android:label="Preferences" >
+        </activity>
+        <activity
+            android:name=".WebAuth_"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:icon="@drawable/empty_shape"
+            android:windowSoftInputMode="adjustResize" />
+    </application>
+
+</manifest>

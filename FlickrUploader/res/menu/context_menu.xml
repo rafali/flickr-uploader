@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item
+        android:id="@+id/menu_item_share"
+        android:actionProviderClass="android.widget.ShareActionProvider"
+        android:showAsAction="always"
+        android:title="Share"/>
+    <item
+        android:id="@+id/menu_item_upload"
+        android:icon="@drawable/upload"
+        android:showAsAction="always"
+        android:title="Upload"/>
+    <item
+        android:id="@+id/menu_item_select_all"
+        android:showAsAction="never"
+        android:title="Select all"/>
+    <item
+        android:id="@+id/menu_item_privacy"
+        android:showAsAction="never"
+        android:title="Set privacy"/>
+
+</menu>

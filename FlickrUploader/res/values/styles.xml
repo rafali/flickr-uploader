@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <style name="CustomTheme" parent="android:Theme.Holo">
+        <item name="android:actionModeCloseDrawable">@drawable/navigation_cancel</item>
+    </style>
+
+</resources>

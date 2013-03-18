@@ -1,0 +1,43 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <PreferenceScreen android:key="login" />
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="autoupload"
+        android:summaryOff="Photos are manually uploaded"
+        android:summaryOn="Photos are automatically uploaded"
+        android:title="Instant Upload" />
+
+    <ListPreference
+        android:dialogTitle="Instant Upload Photoset"
+        android:entries="@array/autoupload_photoset_entries"
+        android:entryValues="@array/autoupload_photoset_values"
+        android:key="autoupload_photoset"
+        android:title="Instant Upload Photoset" />
+    <ListPreference
+        android:defaultValue="wifior3G"
+        android:dialogTitle="When to upload photos"
+        android:entries="@array/network_entries"
+        android:entryValues="@array/network_values"
+        android:key="upload_network"
+        android:title="When to upload photos" />
+    <ListPreference
+        android:dialogTitle="Upload privacy"
+        android:key="upload_privacy"
+        android:title="Upload privacy" />
+
+    <PreferenceScreen
+        android:key="rate"
+        android:summary="If you like this app, please rate it ★★★★★ on Google Play"
+        android:title="Rate the app" />
+    <PreferenceScreen
+        android:key="donation"
+        android:summary="And if you really like this opensource app you can support it with a small donation"
+        android:title="Donation" />
+    <PreferenceScreen
+        android:key="feedback"
+        android:summary="But if you think something is missing, you can send a feedback to help improve the app"
+        android:title="Feedback" />
+
+</PreferenceScreen>

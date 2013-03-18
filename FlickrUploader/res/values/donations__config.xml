@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Flattr -->
+    <item name="donations__flattr_enabled" type="bool">false</item>
+    <item name="donations__flattr_project_url" format="string" type="string">http://code.google.com/p/ad-away/</item>
+    <!-- without http:// ! -->
+    <item name="donations__flattr_url" format="string" type="string">flattr.com/thing/369138/AdAway-Ad-blocker-for-Android</item>
+
+    <!-- Google Play Store In-App Billing -->
+    <item name="donations__google_enabled" type="bool">true</item>
+
+    <!-- your public key from the google play publisher account -->
+    <item name="donations__google_pubkey" format="string" type="string">MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmAOroeZ8Bhe7/bmKbrCCZVZn1PO/QKdgIk4Ow3PEIT7Juwilpv5pqO7cbJfcU+Ysy75iL6vovxRN/zAyqqxgaGpf64goxDM2UDmBn73co/4qOUXGKv8S1txT/StLuepnYQbHtymg2NWDOvtfbsifdss510yI5/uW6YSvQUssRSjtfPwPcXHUP4SQN97/6xsimckV0eL/ukie/55oMK9Q8uu2ijENOQ1T4BdLYeXNhsxr3D53MFhRCjsMJcFxt8xiJm4O6cLpJ+3g5znJJa8MPhij0dUc0l/l+VzJyL5KZUEwjk3q4G8y/5XABW9Xbvy0K0UPskXwq0jFn3P2KMPMLQIDAQAB</item>
+
+    <!--
+    mapping from the possible donations of 1,2,3,5,8 and 13 eur to your in-app items defined in
+    the publisher account of google play
+    -->
+    <string-array name="donations__google_catalog" translatable="false">
+        <item>flickruploader.donation.1</item>
+        <item>flickruploader.donation.2</item>
+        <item>flickruploader.donation.3</item>
+        <item>flickruploader.donation.5</item>
+        <item>flickruploader.donation.8</item>
+        <item>flickruploader.donation.13</item>
+    </string-array>
+
+    <!-- PayPal -->
+    <item name="donations__paypal_enabled" type="bool">true</item>
+    <item name="donations__paypal_user" format="string" type="string">maxime.us@rafali.com</item>
+    <item name="donations__paypal_currency_code" format="string" type="string">USD</item>
+
+    <!-- This value can also be translated! -->
+    <!-- Add translatable="false" if you don't want or need to translate -->
+    <string name="donations__paypal_item_name">Flick Uploader Donation</string>
+
+</resources>

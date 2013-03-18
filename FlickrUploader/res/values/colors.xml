@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <color name="transparentblack00">#00000000</color>
+    <color name="transparentblack10">#1A000000</color>
+    <color name="transparentblack20">#33000000</color>
+    <color name="transparentblack30">#4D000000</color>
+    <color name="transparentblack40">#66000000</color>
+    <color name="transparentblack50">#80000000</color>
+    <color name="transparentblack60">#99000000</color>
+    <color name="transparentblack70">#B3000000</color>
+    <color name="transparentblack80">#CD000000</color>
+    <color name="transparentblack90">#E5000000</color>
+    <color name="transparentwhite00">#00FFFFFF</color>
+    <color name="transparentwhite20">#33FFFFFF</color>
+    <color name="transparentwhite80">#CDFFFFFF</color>
+    <color name="transparentgray50">#80666666</color>
+    <color name="red">#F00</color>
+    <color name="darkred">#a10000</color>
+    <color name="blue">#00F</color>
+    <color name="green">#0F0</color>
+    <color name="white">#FFF</color>
+    <color name="black">#000</color>
+    <color name="midgray">#666</color>
+    <color name="midlitegray">#AAA</color>
+    <color name="litegray">#DDD</color>
+
+</resources>

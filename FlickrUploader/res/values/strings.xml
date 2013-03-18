@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="crash_toast_text">Oops, a crash occurred, but an email will be sent to the developer to help resolve the issue</string>
+    <string name="photos">Photos</string>
+    <string name="folders">Folders</string>
+    <string name="feed">Feed</string>
+    <string name="app_name">Flickr Uploader</string>
+    <string name="photos_uploaded_by_android_app">Photos uploaded by Android app \'%s\'</string>
+    
+</resources>
