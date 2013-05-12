@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.uploader;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -6,10 +6,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-
-import android.util.Log;
 
 import com.google.common.collect.Sets;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
@@ -25,35 +22,20 @@ import com.googlecode.flickrjandroid.photos.SearchParameters;
 import com.googlecode.flickrjandroid.photosets.Photoset;
 import com.googlecode.flickrjandroid.photosets.Photosets;
 import com.googlecode.flickrjandroid.uploader.UploadMetaData;
+import com.rafali.flickruploader.FlickrApi.PRIVACY;
+import com.rafali.flickruploader.Folder;
+import com.rafali.flickruploader.Image;
+import com.rafali.flickruploader.ProgressListener;
+import com.rafali.flickruploader.STR;
 
 public class FlickrApi {
 
 	private static final HashSet<String> EXTRAS_MACHINE_TAGS = Sets.newHashSet("machine_tags");
 
-	public static enum PRIVACY {
-		PRIVATE, FRIENDS, FAMILY, FRIENDS_FAMILY("Friends and family"), PUBLIC;
-
-		private String simpleName;
-
-		private PRIVACY() {
-		}
-
-		private PRIVACY(String simpleName) {
-			this.simpleName = simpleName;
-		}
-
-		String getSimpleName() {
-			if (simpleName != null) {
-				return simpleName;
-			}
-			return toString().substring(0, 1).toUpperCase(Locale.US) + toString().substring(1).toLowerCase(Locale.US);
-		}
-	}
-
 	static final String TAG = FlickrApi.class.getSimpleName();
 
-	private static final String API_SECRET = Utils.getString(R.string.flickr_api_secret);
-	private static final String API_KEY = Utils.getString(R.string.flickr_api_key);
+	private static final String API_SECRET = Utils.getString("flickr_api_secret");
+	private static final String API_KEY = Utils.getString("flickr_api_key");
 	private static Flickr flickr = new Flickr(API_KEY, API_SECRET);
 
 	private static OAuth auth;
@@ -182,7 +164,6 @@ public class FlickrApi {
 								}
 								Utils.setMapProperty(STR.uploadedPhotos, FlickrApi.uploadedPhotos);
 								Utils.setEnumMapProperty(STR.photosPrivacy, photosPrivacy);
-								FlickrUploaderActivity.staticRefresh(false);
 							}
 						}
 					} catch (Throwable e) {
@@ -300,26 +281,21 @@ public class FlickrApi {
 		}
 		return false;
 	}
-
-	public static boolean upload(Image image, String photosetId, String photoSetTitle, Folder folder, ProgressListener progressListener) {
+	
+	public static boolean upload(Image image, Folder folder, ProgressListener progressListener) {
 		boolean success = false;
 		int retry = 0;
 		String photoId = null;
 		String sha1tag = Utils.getSHA1tag(image);
 		while (retry < 3 && !success) {
-			if (photosetId == null) {
-				if (photoSetTitle != null && photosetId == null) {
-					photosetId = uploadedFolders.get("/newset/" + photoSetTitle);
-				} else if (folder != null) {
-					photosetId = uploadedFolders.get(folder.path);
-				} else {
-					photosetId = Utils.getInstantAlbumId();
-				}
+			String photosetId;
+			if (folder != null) {
+				photosetId = uploadedFolders.get(folder.path);
+			} else {
+				photosetId = Utils.getInstantAlbumId();
 			}
 			try {
-				if (photoSetTitle != null && !photoSetTitle.equals(STR.instantUpload)) {
-					// create a new set
-				} else if (photosetId == null) {
+				if (photosetId == null) {
 					Photosets list = FlickrApi.get().getPhotosetsInterface().getList(Utils.getStringProperty(STR.userId));
 					for (Photoset photoset : list.getPhotosets()) {
 						if (folder != null) {
@@ -367,20 +343,16 @@ public class FlickrApi {
 				if (photoId != null) {
 					if (ToolString.isBlank(photosetId)) {
 						String title;
-						if (photoSetTitle != null) {
-							title = photoSetTitle;
-						} else if (folder != null) {
+						if (folder != null) {
 							title = folder.name;
 						} else {
 							title = STR.instantUpload;
 						}
-						String description = Utils.getString(R.string.photos_uploaded_by_android_app, Utils.getString(R.string.app_name));
+						String description = "Auto uploaded";
 						Photoset photoset = FlickrApi.get().getPhotosetsInterface().create(title, description, photoId);
 						photosetId = photoset.getId();
 
-						if (photoSetTitle != null) {
-							uploadedFolders.put("/newset/" + photoSetTitle, photosetId);
-						} else if (folder != null) {
+						if (folder != null) {
 							uploadedFolders.put(folder.path, photosetId);
 							Utils.setMapProperty(STR.uploadedFolders, uploadedFolders);
 						} else {
@@ -481,7 +453,6 @@ public class FlickrApi {
 						FlickrApi.get().getPhotosInterface().setPerms(photoId, permissions);
 						photosPrivacy.put(photoId, privacy);
 						Utils.setEnumMapProperty(STR.photosPrivacy, photosPrivacy);
-						FlickrUploaderActivity.staticRefresh(false);
 						Log.d(TAG, "set privacy " + privacy + " on " + photoId);
 					}
 				} catch (Throwable e) {

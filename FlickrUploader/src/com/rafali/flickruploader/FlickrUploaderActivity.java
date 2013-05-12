@@ -3,7 +3,6 @@ package com.rafali.flickruploader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +11,10 @@ import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 import uk.co.senab.bitmapcache.CacheableImageView;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.AlertDialog.Builder;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -30,7 +32,9 @@ import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.BaseAdapter;
+import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -216,6 +220,7 @@ public class FlickrUploaderActivity extends Activity {
 
 		folderGrid.setAdapter(new PhotoAdapter(R.layout.folder_grid_thumb));
 		folderGrid.setOnItemClickListener(onItemClickListener);
+		folderGrid.setOnItemLongClickListener(onItemLongClickListener);
 
 		photoFeed.setAdapter(new PhotoAdapter(R.layout.photo_feed_thumb));
 		photoFeed.setOnItemClickListener(onItemClickListener);
@@ -233,6 +238,37 @@ public class FlickrUploaderActivity extends Activity {
 				getImageSelected(SelectionType.all).add((Image) convertView.getTag());
 			}
 			updateCount();
+		}
+	};
+
+	OnItemLongClickListener onItemLongClickListener = new OnItemLongClickListener() {
+		@Override
+		public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long id) {
+			Image image = (Image) v.getTag();
+			final Folder selectedFolder = foldersMap.get(image);
+			Builder builder = new AlertDialog.Builder(FlickrUploaderActivity.this).setTitle("Auto upload");
+			if (Utils.isIgnored(selectedFolder)) {
+				builder.setMessage("Enable auto upload for " + selectedFolder.name + "?");
+				builder.setPositiveButton("Enable", new OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						Utils.setIgnored(selectedFolder, false);
+						refresh(false);
+					}
+				});
+			} else {
+				builder.setMessage("Disable auto upload for " + selectedFolder.name + "?");
+				builder.setPositiveButton("Disable", new OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						Utils.setIgnored(selectedFolder, true);
+						refresh(false);
+					}
+				});
+			}
+			builder.setNegativeButton("Cancel", null);
+			builder.show();
+			return false;
 		}
 	};
 
@@ -405,34 +441,14 @@ public class FlickrUploaderActivity extends Activity {
 				EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_upload", 0L);
 				final List<Image> selection = new ArrayList<Image>(getImageSelected(SelectionType.all));
 				if (FlickrApi.isAuthentified()) {
-					toast("Queuing photos");
 					// foldersMap.clear();
 					BackgroundExecutor.execute(new Runnable() {
 						@Override
 						public void run() {
-							Iterator<Image> it = selection.iterator();
-							while (it.hasNext()) {
-								Image image = it.next();
-								if (FlickrApi.isUploaded(isFolderTab() ? foldersMap.get(image) : image))
-									it.remove();
-							}
 							if (selection.isEmpty()) {
 								toast("Photos already on Flickr");
 							} else {
-								int count = 0;
-								if (isFolderTab()) {
-									for (Image image : selection) {
-										Folder folder = foldersMap.get(image);
-										UploadService.enqueue(folder.images, folder);
-										count += folder.images.size();
-									}
-								} else {
-									count = selection.size();
-									UploadService.enqueue(selection);
-								}
-								// Notifications.notify(40, selection.get(0), 1, 1);
-								refresh(false);
-								toast(count + " photos queued");
+								confirmUpload(selection);
 							}
 						}
 					});
@@ -448,6 +464,161 @@ public class FlickrUploaderActivity extends Activity {
 		}
 
 	};
+
+	@UiThread
+	void confirmUpload(final List<Image> selection) {
+		if (isFolderTab()) {
+			new AlertDialog.Builder(this).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
+					.setItems(new String[] { "Default set (" + Utils.getInstantAlbumTitle() + ")", "One set per folder", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							int count = 0;
+							switch (which) {
+							case 0:
+								for (Image image : selection) {
+									Folder folder = foldersMap.get(image);
+									count += folder.images.size();
+									UploadService.enqueue(folder.images, Utils.getInstantAlbumId(), STR.instantUpload);
+								}
+								toast(count + " photos enqueued");
+								break;
+							case 1:
+								for (Image image : selection) {
+									Folder folder = foldersMap.get(image);
+									count += folder.images.size();
+									UploadService.enqueue(folder.images, folder, null, null);
+								}
+								toast(count + " photos enqueued");
+								break;
+							case 2:
+								showNewSetDialog(selection);
+								break;
+							case 3:
+								showExistingSetDialog(selection);
+								break;
+							default:
+								break;
+							}
+							Log.d(TAG, "which : " + which);
+						}
+					}).show();
+		} else {
+			new AlertDialog.Builder(this).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
+					.setItems(new String[] { "Default set (" + Utils.getInstantAlbumTitle() + ")", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							switch (which) {
+							case 0:
+								UploadService.enqueue(selection, Utils.getInstantAlbumId(), STR.instantUpload);
+								break;
+							case 1:
+								showNewSetDialog(selection);
+								break;
+							case 2:
+								showExistingSetDialog(selection);
+								break;
+
+							default:
+								break;
+							}
+							Log.d(TAG, "which : " + which);
+						}
+					}).show();
+		}
+		// Notifications.notify(40, selection.get(0), 1, 1);
+		// refresh(false);
+	}
+
+	@UiThread
+	void showExistingSetDialog(final List<Image> selection) {
+		final ProgressDialog dialog = ProgressDialog.show(this, "", "Loading photosets", true);
+		BackgroundExecutor.execute(new Runnable() {
+			@Override
+			public void run() {
+				final Map<String, String> photosets = FlickrApi.getPhotoSets();
+				runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						dialog.cancel();
+						if (photosets.isEmpty()) {
+							Toast.makeText(FlickrUploaderActivity.this, "No photoset found", Toast.LENGTH_LONG).show();
+						} else {
+							AlertDialog.Builder builder = new AlertDialog.Builder(FlickrUploaderActivity.this);
+							final List<String> photosetTitles = new ArrayList<String>();
+							final List<String> photosetIds = new ArrayList<String>();
+							for (String photosetId : photosets.keySet()) {
+								photosetIds.add(photosetId);
+								photosetTitles.add(photosets.get(photosetId));
+							}
+							String[] photosetTitlesArray = photosetTitles.toArray(new String[photosetTitles.size()]);
+							builder.setItems(photosetTitlesArray, new OnClickListener() {
+								@Override
+								public void onClick(DialogInterface dialog, int which) {
+									Log.d(TAG, "selected : " + photosetIds.get(which) + " - " + photosetTitles.get(which));
+									String photoSetId = photosetIds.get(which);
+									int count = 0;
+									if (isFolderTab()) {
+										for (Image image : selection) {
+											Folder folder = foldersMap.get(image);
+											count += folder.images.size();
+											UploadService.enqueue(folder.images, photoSetId, null);
+										}
+									} else {
+										count += selection.size();
+										UploadService.enqueue(selection, photoSetId, null);
+									}
+									toast(count + " photos enqueued");
+								}
+							});
+							builder.show();
+						}
+					}
+				});
+			}
+		});
+	}
+
+	@UiThread
+	void showNewSetDialog(final List<Image> selection) {
+		AlertDialog.Builder alert = new AlertDialog.Builder(this);
+
+		alert.setTitle("Photo Set Title");
+
+		// Set an EditText view to get user input
+		final EditText input = new EditText(this);
+		alert.setView(input);
+
+		alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int whichButton) {
+				String value = input.getText().toString();
+				Log.d(TAG, "value : " + value);
+				if (ToolString.isBlank(value)) {
+					showNewSetDialog(selection);
+				} else {
+					int count = 0;
+					if (isFolderTab()) {
+						for (Image image : selection) {
+							Folder folder = foldersMap.get(image);
+							count += folder.images.size();
+							UploadService.enqueue(folder.images, null, value);
+						}
+					} else {
+						count += selection.size();
+						UploadService.enqueue(selection, null, value);
+					}
+					toast(count + " photos enqueued");
+				}
+			}
+		});
+
+		alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int whichButton) {
+				// Canceled.
+			}
+		});
+
+		alert.show();
+	}
 
 	private boolean isFolderTab() {
 		return mainTabView.getCurrentView() == folderGrid;
@@ -556,6 +727,7 @@ public class FlickrUploaderActivity extends Activity {
 				((TextView) convertView.findViewById(R.id.size)).setText("" + folder.size);
 				((TextView) convertView.findViewById(R.id.title)).setText(folder.name);
 				convertView.findViewById(R.id.uploading).setVisibility(UploadService.isUploading(folder) ? View.VISIBLE : View.GONE);
+				convertView.findViewById(R.id.ignore).setVisibility(Utils.isIgnored(folder) ? View.VISIBLE : View.GONE);
 			} else {
 				convertView.findViewById(R.id.uploading).setVisibility(UploadService.isUploading(image) ? View.VISIBLE : View.GONE);
 			}
@@ -670,7 +842,7 @@ public class FlickrUploaderActivity extends Activity {
 				ListView lw = ((AlertDialog) dialog).getListView();
 				switch (lw.getCheckedItemPosition()) {
 				case 0:
-					UploadService.enqueue(images);
+					UploadService.enqueue(images, Utils.getInstantAlbumId(), STR.instantUpload);
 					Utils.setBooleanProperty(Preferences.AUTOUPLOAD, true);
 					break;
 				case 1:
@@ -683,7 +855,12 @@ public class FlickrUploaderActivity extends Activity {
 				}
 			}
 		});
-		alt_bld.setNegativeButton("Cancel", null);
+		alt_bld.setNegativeButton("Cancel", new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				Utils.setBooleanProperty(Preferences.AUTOUPLOAD, false);
+			}
+		});
 		alt_bld.setCancelable(false);
 		AlertDialog alert = alt_bld.create();
 		alert.show();

@@ -36,12 +36,12 @@ public class ImageTableObserver extends ContentObserver {
 				return;
 			}
 
-			String filter = MediaStore.Images.Media.DATE_TAKEN + " > " + lastChange;
+			String filter = MediaStore.Images.Media.DATE_ADDED + " > " + (lastChange / 1000);
 			List<Image> images = Utils.loadImages(filter);
 			lastChange = System.currentTimeMillis();
 			Utils.setLongProperty(LAST_CHANGE, lastChange);
 			if (images == null || images.isEmpty()) {
-				Log.d(TAG, "no new image");
+				Log.d(TAG, "no new image since " + filter);
 				return;
 			}
 
@@ -51,22 +51,26 @@ public class ImageTableObserver extends ContentObserver {
 				Log.d(TAG, "uploaded : " + uploaded + ", " + image);
 				if (!uploaded) {
 					File file = new File(image.path);
-					int sleep = 0;
-					while (file.length() < 100 && sleep < 5) {
-						Log.d(TAG, "sleeping a bit");
-						sleep++;
-						Thread.sleep(1000);
-					}
-					not_uploaded.add(image);
-					final Bitmap bitmap = Utils.getBitmap(image, R.layout.photo_grid_thumb);
-					if (bitmap != null) {
-						Utils.getCache().put(image.path + "_" + R.layout.photo_grid_thumb, bitmap);
+					if (Utils.isIgnored(new Folder(file.getParent()))) {
+						Log.d(TAG, "Ignored : " + file);
+					} else {
+						int sleep = 0;
+						while (file.length() < 100 && sleep < 5) {
+							Log.d(TAG, "sleeping a bit");
+							sleep++;
+							Thread.sleep(1000);
+						}
+						not_uploaded.add(image);
+						final Bitmap bitmap = Utils.getBitmap(image, R.layout.photo_grid_thumb);
+						if (bitmap != null) {
+							Utils.getCache().put(image.path + "_" + R.layout.photo_grid_thumb, bitmap);
+						}
 					}
 				}
 			}
 			if (!not_uploaded.isEmpty()) {
 				FlickrUploaderActivity.staticRefresh(true);
-				UploadService.enqueue(not_uploaded);
+				UploadService.enqueue(not_uploaded, Utils.getInstantAlbumId(), STR.instantUpload);
 			}
 
 		} catch (Throwable e) {

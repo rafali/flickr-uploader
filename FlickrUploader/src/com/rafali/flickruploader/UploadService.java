@@ -11,7 +11,6 @@ import java.util.Map;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
-import android.os.RecoverySystem.ProgressListener;
 import android.provider.MediaStore.Images.Media;
 import android.util.Log;
 
@@ -56,7 +55,7 @@ public class UploadService extends Service {
 	private static List<Image> queue = Collections.synchronizedList(new ArrayList<Image>());
 	private static List<Image> uploaded = Collections.synchronizedList(new ArrayList<Image>());
 
-	public static void enqueue(Collection<Image> images, Folder folder) {
+	public static void enqueue(Collection<Image> images, Folder folder, String photoSetId, String photoSetTitle) {
 		for (Image image : images) {
 			if (!queue.contains(image)) {
 				Log.d(TAG, "enqueueing " + image);
@@ -64,6 +63,8 @@ public class UploadService extends Service {
 				if (folder != null) {
 					uploadFolders.put(image, folder);
 				}
+				uploadPhotosetIds.put(image, photoSetId);
+				uploadPhotosetTitles.put(image, photoSetTitle);
 			}
 		}
 		persistQueue();
@@ -71,9 +72,11 @@ public class UploadService extends Service {
 	}
 
 	private static Map<Image, Folder> uploadFolders = new HashMap<Image, Folder>();
+	private static Map<Image, String> uploadPhotosetIds = new HashMap<Image, String>();
+	private static Map<Image, String> uploadPhotosetTitles = new HashMap<Image, String>();
 
-	public static void enqueue(Collection<Image> images) {
-		enqueue(images, null);
+	public static void enqueue(Collection<Image> images, String photoSetId, String photoSetTitle) {
+		enqueue(images, null, photoSetId, photoSetTitle);
 	}
 
 	public static void persistQueue() {
@@ -115,7 +118,7 @@ public class UploadService extends Service {
 							boolean success = folder == null && FlickrApi.isUploaded(image);
 							if (!success) {
 								Log.d(TAG, "Starting upload : " + image);
-								success = FlickrApi.upload(image, folder, new ProgressListener() {
+								success = FlickrApi.upload(image, uploadPhotosetIds.get(image), uploadPhotosetTitles.get(image), folder, new ProgressListener() {
 									@Override
 									public void onProgress(int progress) {
 										Log.d(TAG, "progress : " + progress);

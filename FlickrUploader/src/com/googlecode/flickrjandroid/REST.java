@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
-import android.os.RecoverySystem.ProgressListener;
 import android.util.Log;
 
 import com.googlecode.flickrjandroid.oauth.OAuthUtils;
@@ -39,6 +38,7 @@ import com.googlecode.flickrjandroid.util.Base64;
 import com.googlecode.flickrjandroid.util.IOUtilities;
 import com.googlecode.flickrjandroid.util.StringUtilities;
 import com.googlecode.flickrjandroid.util.UrlUtilities;
+import com.rafali.flickruploader.ProgressListener;
 
 /**
  * Transport implementation using the REST interface.

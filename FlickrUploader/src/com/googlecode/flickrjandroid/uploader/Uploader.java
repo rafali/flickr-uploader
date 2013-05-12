@@ -16,8 +16,6 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.xml.sax.SAXException;
 
-import android.os.RecoverySystem.ProgressListener;
-
 import com.googlecode.flickrjandroid.Flickr;
 import com.googlecode.flickrjandroid.FlickrException;
 import com.googlecode.flickrjandroid.Parameter;
@@ -26,6 +24,7 @@ import com.googlecode.flickrjandroid.Transport;
 import com.googlecode.flickrjandroid.oauth.OAuthInterface;
 import com.googlecode.flickrjandroid.oauth.OAuthUtils;
 import com.googlecode.flickrjandroid.util.StringUtilities;
+import com.rafali.flickruploader.ProgressListener;
 
 /**
  * Upload a photo.

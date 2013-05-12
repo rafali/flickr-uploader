@@ -33,11 +33,15 @@
         android:title="Rate the app" />
     <PreferenceScreen
         android:key="donation"
-        android:summary="And if you really like this opensource app you can support it with a small donation"
-        android:title="Donation" />
+        android:summary="Buy him a coffee or a donut!"
+        android:title="Help the developer" />
     <PreferenceScreen
         android:key="feedback"
-        android:summary="But if you think something is missing, you can send a feedback to help improve the app"
+        android:summary="Something is missing? Send a feedback to help improve the app"
         android:title="Feedback" />
+    <PreferenceScreen
+        android:key="pictarine"
+        android:summary="Browse your photos and friends photos from Flickr, Facebook, Instagram, Twitter, Tumblr and more"
+        android:title="Pictarine" />
 
 </PreferenceScreen>

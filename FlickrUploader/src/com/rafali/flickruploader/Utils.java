@@ -8,12 +8,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,7 +34,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.net.ConnectivityManager;
-import android.net.wifi.WifiManager;
+import android.net.NetworkInfo;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Images.Media;
@@ -61,7 +63,7 @@ public final class Utils {
 						.setPositiveButton("Sign in now", new DialogInterface.OnClickListener() {
 							@Override
 							public void onClick(DialogInterface dialog, int which) {
-								WebAuth_.intent(context).start();
+								context.startActivityForResult(WebAuth_.intent(context).get(), 14);
 							}
 						}).setNegativeButton("Later", null).setCancelable(false).show();
 				setButtonSize(alertDialog);
@@ -338,32 +340,6 @@ public final class Utils {
 		return buf.toString();
 	}
 
-	public static void addImage(Image image) {
-		if (image != null && image.size > 0) {
-			String photosLiked = sp.getString("images", null);
-			String sha1 = SHA1(image.path + "-" + image.size);
-			List<String> list = new ArrayList<String>();
-			if (photosLiked != null) {
-				list.addAll(Arrays.asList(photosLiked.split("\\|")));
-			}
-			if (!list.contains(sha1)) {
-				list.add(sha1);
-				setStringProperty("images", Joiner.on('|').join(list));
-			}
-		}
-	}
-
-	public static boolean contains(Image image) {
-		if (image != null && image.size > 0) {
-			String photosLiked = sp.getString("images", null);
-			if (photosLiked != null) {
-				String sha1 = SHA1(image.path + "-" + image.size);
-				return Arrays.asList(photosLiked.split("\\|")).contains(sha1);
-			}
-		}
-		return false;
-	}
-
 	private static byte[] createChecksum(String filename) {
 		try {
 			InputStream fis = new FileInputStream(filename);
@@ -489,7 +465,10 @@ public final class Utils {
 	public static List<Folder> getFolders(List<Image> images) {
 		final Multimap<String, Image> photoFiles = LinkedHashMultimap.create();
 		for (Image image : images) {
-			photoFiles.put(image.path.substring(0, image.path.lastIndexOf("/")), image);
+			int lastIndexOf = image.path.lastIndexOf("/");
+			if (lastIndexOf > 0) {
+				photoFiles.put(image.path.substring(0, lastIndexOf), image);
+			}
 		}
 		List<Folder> folders = new ArrayList<Folder>();
 		for (String path : photoFiles.keySet()) {
@@ -499,23 +478,18 @@ public final class Utils {
 	}
 
 	public static boolean canConnect() {
-		// get wifi manager
-		WifiManager wifi = (WifiManager) FlickrUploader.getAppContext().getSystemService(Context.WIFI_SERVICE);
+		ConnectivityManager manager = (ConnectivityManager) FlickrUploader.getAppContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo activeNetwork = manager.getActiveNetworkInfo();
+
+		if (activeNetwork == null || !activeNetwork.isConnected()) {
+			return false;
+		}
 
 		// if wifi is disabled and the user preference only allows wifi abort
-		if (wifi.getWifiState() != WifiManager.WIFI_STATE_ENABLED && sp.getString(Preferences.UPLOAD_NETWORK, "").equals("wifionly")) {
+		if (sp.getString(Preferences.UPLOAD_NETWORK, "").equals("wifionly") && activeNetwork.getType() != ConnectivityManager.TYPE_WIFI) {
 			return false;
 		}
 
-		// get connectivity manager
-		ConnectivityManager manager = (ConnectivityManager) FlickrUploader.getAppContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-
-		// check if we have active network and that network is connected, if not abort
-		if (manager.getActiveNetworkInfo() == null || !manager.getActiveNetworkInfo().isConnected()) {
-			return false;
-		}
-
-		// we can use the internet connection
 		return true;
 	}
 
@@ -537,27 +511,74 @@ public final class Utils {
 	}
 
 	public static Bitmap getBitmap(Image image, int thumbLayoutId) {
-		BitmapFactory.Options options = new BitmapFactory.Options();
-		options.inPurgeable = true;
-		options.inInputShareable = true;
-		if (thumbLayoutId == R.layout.photo_grid_thumb) {
-			return MediaStore.Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, MediaStore.Images.Thumbnails.MICRO_KIND, options);
-		} else if (thumbLayoutId == R.layout.folder_grid_thumb) {
-			return MediaStore.Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, MediaStore.Images.Thumbnails.MINI_KIND, options);
-		} else {
-			// First decode with inJustDecodeBounds=true to check dimensions
-			final BitmapFactory.Options opts = new BitmapFactory.Options();
-			opts.inJustDecodeBounds = true;
-			opts.inPurgeable = true;
-			opts.inInputShareable = true;
-			BitmapFactory.decodeFile(image.path, opts);
-			// BitmapFactory.decodeFileDescriptor(file., null, opts);
+		Bitmap bitmap = null;
+		int retry = 0;
+		while (bitmap == null && retry < 3) {
+			try {
+				BitmapFactory.Options options = new BitmapFactory.Options();
+				options.inPurgeable = true;
+				options.inInputShareable = true;
+				if (thumbLayoutId == R.layout.photo_grid_thumb) {
+					bitmap = MediaStore.Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, MediaStore.Images.Thumbnails.MICRO_KIND, options);
+				} else if (thumbLayoutId == R.layout.folder_grid_thumb) {
+					bitmap = MediaStore.Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, MediaStore.Images.Thumbnails.MINI_KIND, options);
+				} else {
+					// First decode with inJustDecodeBounds=true to check dimensions
+					final BitmapFactory.Options opts = new BitmapFactory.Options();
+					opts.inJustDecodeBounds = true;
+					opts.inPurgeable = true;
+					opts.inInputShareable = true;
+					BitmapFactory.decodeFile(image.path, opts);
+					// BitmapFactory.decodeFileDescriptor(file., null, opts);
 
-			// Calculate inSampleSize
-			opts.inJustDecodeBounds = false;
-			opts.inSampleSize = calculateInSampleSize(opts, getScreenWidthPx(), getScreenWidthPx());
-			return BitmapFactory.decodeFile(image.path, opts);
+					// Calculate inSampleSize
+					opts.inJustDecodeBounds = false;
+					opts.inSampleSize = calculateInSampleSize(opts, getScreenWidthPx(), getScreenWidthPx()) + retry;
+					bitmap = BitmapFactory.decodeFile(image.path, opts);
+				}
+			} catch (OutOfMemoryError e) {
+				Log.w(TAG, "retry : " + retry + ", " + e.getMessage(), e);
+			} catch (Throwable e) {
+				Log.e(TAG, e.getMessage(), e);
+			} finally {
+				retry++;
+			}
 		}
+		return bitmap;
+	}
+
+	static Set<String> ignoredFolder;
+
+	static boolean isIgnored(Folder folder) {
+		if (ignoredFolder == null) {
+			ignoredFolder = new HashSet<String>(getStringList("ignoredFolder"));
+		}
+		return ignoredFolder.contains(folder.path);
+	}
+
+	static void setIgnored(Folder folder, boolean ignored) {
+		if (ignoredFolder == null) {
+			ignoredFolder = new HashSet<String>(getStringList("ignoredFolder"));
+		}
+		if (ignored) {
+			ignoredFolder.add(folder.path);
+		} else {
+			ignoredFolder.remove(folder.path);
+		}
+		Mixpanel.track("Ignore Folder", "name", folder.name);
+		setStringList("ignoredFolder", ignoredFolder);
+	}
+
+	public static List<String> getStringList(String key) {
+		String photosSeen = sp.getString(key, null);
+		if (photosSeen != null) {
+			return Arrays.asList(photosSeen.split("\\|"));
+		}
+		return new ArrayList<String>();
+	}
+
+	public static void setStringList(String key, Collection<String> ids) {
+		setStringProperty(key, Joiner.on('|').join(ids));
 	}
 
 	/**
@@ -629,6 +650,15 @@ public final class Utils {
 			return instantCustomAlbumId;
 		} else {
 			return getStringProperty(STR.instantAlbumId);
+		}
+	}
+
+	public static String getInstantAlbumTitle() {
+		String instantCustomAlbumId = getStringProperty(STR.instantCustomAlbumId);
+		if (instantCustomAlbumId != null) {
+			return getStringProperty(STR.instantCustomAlbumTitle);
+		} else {
+			return STR.instantUpload;
 		}
 	}
 }

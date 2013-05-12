@@ -105,7 +105,17 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		findPreference("donation").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
+				Mixpanel.track("Donation");
 				startActivity(new Intent(Preferences.this, DonationsActivity.class));
+				return false;
+			}
+		});
+		
+		findPreference("pictarine").setOnPreferenceClickListener(new OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				Mixpanel.track("Pictarine");
+				Preferences.this.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.pictarine.android")));
 				return false;
 			}
 		});

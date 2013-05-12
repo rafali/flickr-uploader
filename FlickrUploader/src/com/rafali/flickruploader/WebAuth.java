@@ -4,6 +4,8 @@ import java.net.URL;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
@@ -58,6 +60,7 @@ public class WebAuth extends Activity {
 		webView.getSettings().setAppCacheEnabled(false);
 		webView.getSettings().setSupportMultipleWindows(false);
 		webView.getSettings().setLayoutAlgorithm(LayoutAlgorithm.SINGLE_COLUMN);
+		webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
 		String userAgentString = webView.getSettings().getUserAgentString();
 		Log.d(TAG, "userAgentString: " + userAgentString);
 		webView.clearCache(true);
@@ -94,8 +97,21 @@ public class WebAuth extends Activity {
 			// redirect(oauthUrl);
 			loadUrl(oauthUrl.toString());
 		} catch (Throwable e) {
-			e.printStackTrace();
+			Log.e(TAG, e.getMessage(), e);
+			onNetworkError();
 		}
+	}
+
+	@UiThread
+	void onNetworkError() {
+		new AlertDialog.Builder(WebAuth.this).setTitle("Error connecting to Flickr")
+				.setMessage("An error occured while connecting to Flickr. Please make sure your internet access works and/or retry later.")
+				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						finish();
+					}
+				}).setNegativeButton(null, null).setCancelable(false).show();
 	}
 
 	@Override

@@ -6,14 +6,17 @@ import java.util.Collection;
 import java.util.List;
 
 public class Folder {
-	public Folder(String path, Collection<Image> images) {
-		this.images = new ArrayList<Image>(images);
+	public Folder(String path) {
 		this.path = path;
 		this.name = new File(path).getName();
+	}
+	public Folder(String path, Collection<Image> images) {
+		this(path);
+		this.images = new ArrayList<Image>(images);
 		this.size = images.size();
 	}
-	public final int size;
-	public final List<Image> images;
+	public int size;
+	public List<Image> images;
 	public final String path;
 	public final String name;
 }

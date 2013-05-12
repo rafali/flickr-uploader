@@ -3,7 +3,7 @@
     android:layout_width="69dp"
     android:layout_height="69dp" >
 
-    <uk.co.senab.bitmapcache.CacheableImageView
+    <com.rafali.flickruploader.CustomImageView
         android:id="@+id/image_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
