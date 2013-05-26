@@ -43,18 +43,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.analytics.tracking.android.EasyTracker;
-import com.google.api.client.extensions.android.http.AndroidHttp;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpRequestInitializer;
-import com.google.api.client.json.jackson.JacksonFactory;
 import com.google.common.base.Joiner;
 import com.googlecode.androidannotations.annotations.EActivity;
 import com.googlecode.androidannotations.annotations.UiThread;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.Utils.MediaType;
-import com.rafali.flickruploader.appinstallendpoint.Appinstallendpoint;
-import com.rafali.flickruploader.appinstallendpoint.model.AppInstall;
 
 @EActivity
 public class FlickrUploaderActivity extends Activity {
@@ -143,25 +137,8 @@ public class FlickrUploaderActivity extends Activity {
 					foldersMap.put(folder.images.get(0), folder);
 				}
 				init();
-
-				testCloudPoint();
 			}
 
-			private void testCloudPoint() {
-				try {
-					Appinstallendpoint.Builder endpointBuilder = new Appinstallendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
-						public void initialize(HttpRequest httpRequest) {
-						}
-					});
-
-					Appinstallendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
-					AppInstall appInstall = new AppInstall();
-					appInstall.setDeviceId("toto");
-					AppInstall result = endpoint.insertAppInstall(appInstall).execute();
-				} catch (Throwable e) {
-					Logger.e(TAG, e);
-				}
-			}
 		});
 	}
 

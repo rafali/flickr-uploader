@@ -19,14 +19,14 @@ import static org.acra.ReportField.TOTAL_MEM_SIZE;
 import static org.acra.ReportField.USER_APP_START_DATE;
 import static org.acra.ReportField.USER_CRASH_DATE;
 
+import java.util.Locale;
+
 import org.acra.ACRA;
 import org.acra.ReportingInteractionMode;
 import org.acra.annotation.ReportsCrashes;
 
 import android.app.Application;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
-import android.util.Log;
 
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 
@@ -41,41 +41,32 @@ public class FlickrUploader extends Application {
 	public void onCreate() {
 		super.onCreate();
 		FlickrUploader.context = getApplicationContext();
-		if (!isDebug()) {
+		if (!Config.isDebug()) {
 			ACRA.init(this);
 		}
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
-				long versionCode = Utils.getLongProperty(STR.versionCode);
-				if (versionCode == 0) {
-					Mixpanel.track("First install");
-					Utils.setLongProperty(STR.versionCode, (long) getVersion());
+				try {
+					long versionCode = Utils.getLongProperty(STR.versionCode);
+					if (Config.VERSION != versionCode) {
+						if (versionCode == 0) {
+							Mixpanel.track("First install");
+							Utils.sendMail("[FlickrUploader] New install - " + Locale.getDefault().getLanguage() + " - " + Utils.getDeviceId(), Utils.getAccountEmails() + " - "
+									+ android.os.Build.MODEL + " - " + android.os.Build.VERSION.RELEASE + " - " + Config.FULL_VERSION_NAME);
+						}
+						Utils.saveAndroidDevice();
+						Utils.setLongProperty(STR.versionCode, (long) Config.VERSION);
+					}
+				} catch (Throwable e) {
+					Logger.e("FlickrUploader", e);
 				}
 			}
 		});
 	}
 
-	private static int getVersion() {
-		try {
-			return context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionCode;
-		} catch (Exception e) {
-			Log.e("FlickrUploader", e.getMessage(), e);
-		}
-		return 0;
-	}
-
 	public static Context getAppContext() {
 		return context;
-	}
-
-	private static Boolean DEBUG = null;
-
-	public static boolean isDebug() {
-		if (DEBUG == null) {
-			DEBUG = (getAppContext().getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
-		}
-		return DEBUG;
 	}
 
 }

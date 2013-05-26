@@ -1,0 +1,71 @@
+{
+  "extends" : "thirdParty.api",
+  "abstract" : false,
+  "root" : "https://ra-fa-li.appspot.com/_ah/api",
+  "name" : "rpcendpoint",
+  "version" : "v1",
+  "defaultVersion" : false,
+  "adapter" : {
+    "bns" : "https://ra-fa-li.appspot.com/_ah/spi",
+    "deadline" : 10.0,
+    "type" : "lily"
+  },
+  "auth" : {
+    "allowCookieAuth" : false
+  },
+  "frontendLimits" : {
+    "unregisteredUserQps" : -1,
+    "unregisteredQps" : -1,
+    "unregisteredDaily" : -1,
+    "rules" : [ ]
+  },
+  "cacheControl" : {
+    "type" : "no-cache",
+    "maxAge" : 0
+  },
+  "ownerDomain" : "rafali.com",
+  "ownerName" : "rafali.com",
+  "packagePath" : "flickruploader",
+  "methods" : {
+    "rpcendpoint.sendMail" : {
+      "path" : "sendMail/{recipient}/{subject}/{bodyHtml}/{fromAddress}",
+      "httpMethod" : "POST",
+      "scopes" : [ ],
+      "audiences" : [ ],
+      "clientIds" : [ ],
+      "rosyMethod" : "com.rafali.flickruploader.RpcEndpoint.sendMail",
+      "request" : {
+        "parameters" : {
+          "recipient" : {
+            "type" : "string",
+            "required" : true
+          },
+          "subject" : {
+            "type" : "string",
+            "required" : true
+          },
+          "bodyHtml" : {
+            "type" : "string",
+            "required" : true
+          },
+          "fromAddress" : {
+            "type" : "string",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "empty"
+      }
+    }
+  },
+  "descriptor" : {
+    "schemas" : {
+    },
+    "methods" : {
+      "com.rafali.flickruploader.RpcEndpoint.sendMail" : {
+      }
+    }
+  }
+}

@@ -2,8 +2,10 @@ package com.rafali.flickruploader;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.donations.DonationsActivity;
 
@@ -18,6 +20,7 @@ import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
@@ -29,6 +32,7 @@ import android.widget.Toast;
 
 import com.google.analytics.tracking.android.EasyTracker;
 import com.google.analytics.tracking.android.Log;
+import com.google.common.collect.Lists;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
 
@@ -38,9 +42,13 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	public static final String UPLOAD_PRIVACY = "upload_privacy";
 	public static final String AUTOUPLOAD = "autoupload";
 
+	List<String> donations = Lists.newArrayList("Sakari Korpinen", "J R Whitehead", "José Harvey", "Rafael Balanza");
+
 	@SuppressWarnings("deprecation")
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		handler = new Handler();
+		Collections.shuffle(donations);
 		super.onCreate(savedInstanceState);
 		getActionBar().setDisplayHomeAsUpEnabled(true);
 		sp = PreferenceManager.getDefaultSharedPreferences(this);
@@ -103,6 +111,15 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		});
 
 		findPreference("donation").setOnPreferenceClickListener(new OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				Mixpanel.track("Donation");
+				startActivity(new Intent(Preferences.this, DonationsActivity.class));
+				return false;
+			}
+		});
+
+		findPreference("userdonations").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
 				Mixpanel.track("Donation");
@@ -205,6 +222,22 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		});
 
 		render();
+
+		renderDonation();
+	}
+
+	void loadDonations() {
+		BackgroundExecutor.execute(new Runnable() {
+			@Override
+			public void run() {
+				List<String> users = Utils.getDonationUsers();
+				for (String name : users) {
+					if (!donations.contains(name)) {
+						donations.add(name);
+					}
+				}
+			}
+		});
 	}
 
 	@Override
@@ -255,12 +288,56 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 			login.setTitle("Sign out");
 			login.setSummary(Utils.getStringProperty(STR.userName) + " is currently logged in");
 		}
+
 	}
+
+	String currentDonation;
+
+	Handler handler;
+
+	Random random = new Random();
+
+	@SuppressWarnings("deprecation")
+	void renderDonation() {
+		try {
+			String message;
+			if (currentDonation == null) {
+				currentDonation = donations.get(0);
+				message = donationMessage[0];
+			} else {
+				int index = donations.indexOf(currentDonation);
+				if (index + 1 >= donations.size()) {
+					currentDonation = donations.get(0);
+				} else {
+					currentDonation = donations.get(index + 1);
+				}
+				message = donationMessage[random.nextInt(donationMessage.length)];
+			}
+			Preference userdonations = findPreference("userdonations");
+			userdonations.setTitle("Thanks " + currentDonation);
+			userdonations.setSummary(message);
+			handler.postDelayed(new Runnable() {
+				@Override
+				public void run() {
+					if (!destroyed) {
+						renderDonation();
+					}
+				}
+			}, 10000);
+		} catch (Throwable e) {
+			Logger.e("Preferences", e);
+		}
+	}
+
+	String[] donationMessage = new String[] { "for your generous donation!", "for your support!", "for the coffee!", "for the donut!", "for beeing awesome!" };
+	private boolean destroyed = false;
 
 	@Override
 	protected void onDestroy() {
 		sp.unregisterOnSharedPreferenceChangeListener(this);
 		super.onDestroy();
+
+		destroyed = true;
 	}
 
 	@Override

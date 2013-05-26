@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -38,6 +39,7 @@ import android.graphics.Point;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.Build;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Video;
@@ -46,11 +48,24 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.WindowManager;
 
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestInitializer;
+import com.google.api.client.json.jackson.JacksonFactory;
+import com.google.api.client.util.DateTime;
 import com.google.common.base.Joiner;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
+import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
+import com.rafali.flickruploader.appinstallendpoint.Appinstallendpoint;
+import com.rafali.flickruploader.appinstallendpoint.model.AndroidDevice;
+import com.rafali.flickruploader.appinstallendpoint.model.AppInstall;
+import com.rafali.flickruploader.donationendpoint.Donationendpoint;
+import com.rafali.flickruploader.donationendpoint.model.CollectionResponseDonation;
+import com.rafali.flickruploader.donationendpoint.model.Donation;
+import com.rafali.flickruploader.rpcendpoint.Rpcendpoint;
 
 public final class Utils {
 
@@ -704,4 +719,108 @@ public final class Utils {
 			}
 		}
 	};
+
+	public static final void sendMail(final String subject, final String bodyHtml) {
+		BackgroundExecutor.execute(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					Rpcendpoint.Builder endpointBuilder = new Rpcendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
+						public void initialize(HttpRequest httpRequest) {
+						}
+					});
+					Rpcendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
+					String admin = Config.getProperty("admin.email");
+					endpoint.sendMail(admin, subject, bodyHtml, admin).execute();
+				} catch (Throwable e) {
+					Logger.e(TAG, e);
+				}
+			}
+		});
+	}
+	public static AndroidDevice createAndroidDevice() {
+		AndroidDevice androidDevice = new AndroidDevice();
+		androidDevice.setId(getDeviceId());
+		androidDevice.setEmails(getAccountEmails());
+		androidDevice.setLanguage(Locale.getDefault().getLanguage());
+		androidDevice.setAndroidVersion(Build.VERSION.SDK_INT);
+		androidDevice.setAppVersion(Config.FULL_VERSION_NAME);
+		androidDevice.setModelInfo(android.os.Build.MODEL + " - " + android.os.Build.VERSION.RELEASE);
+		return androidDevice;
+	}
+
+	public static List<String> getAccountEmails() {
+		List<String> emails = new ArrayList<String>();
+		for (Account account : getAccountsWithEmail()) {
+			emails.add(account.name);
+		}
+		return emails;
+	}
+
+	public static List<Account> getAccountsWithEmail() {
+		List<Account> accountsEmails = new ArrayList<Account>();
+		AccountManager accountManager = AccountManager.get(FlickrUploader.getAppContext());
+		final Account[] accounts = accountManager.getAccountsByType("com.google");
+		for (Account account : accounts) {
+			if (account.name != null) {
+				String name = account.name.toLowerCase(Locale.ENGLISH).trim();
+				if (name.matches(ToolString.REGEX_EMAIL)) {
+					accountsEmails.add(new Account(name, account.type));
+				}
+			}
+		}
+		return accountsEmails;
+	}
+
+	public static void saveAndroidDevice() {
+		try {
+			Appinstallendpoint.Builder endpointBuilder = new Appinstallendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
+				public void initialize(HttpRequest httpRequest) {
+				}
+			});
+
+			Appinstallendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
+			AppInstall appInstall = null;
+			try {
+				appInstall = endpoint.getAppInstall(getDeviceId()).execute();
+			} catch (Throwable e) {
+				Logger.w(TAG, e.getMessage());
+			}
+			boolean newInstall = appInstall == null;
+			if (appInstall == null) {
+				appInstall = new AppInstall();
+				appInstall.setDateCreation(new DateTime(new Date()));
+			}
+			appInstall.setEmails(getAccountEmails());
+			appInstall.setAndroidDevice(createAndroidDevice());
+			appInstall.setDeviceId(getDeviceId());
+			if (newInstall) {
+				endpoint.insertAppInstall(appInstall).execute();
+			} else {
+				endpoint.updateAppInstall(appInstall).execute();
+			}
+		} catch (Throwable e) {
+			Logger.e(TAG, e);
+		}
+	}
+
+	public static List<String> getDonationUsers() {
+		List<String> users = new ArrayList<String>();
+		try {
+			Donationendpoint.Builder endpointBuilder = new Donationendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
+				public void initialize(HttpRequest httpRequest) {
+				}
+			});
+
+			Donationendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
+			CollectionResponseDonation donations = endpoint.listDonation().execute();
+			for (Donation donation : donations.getItems()) {
+				users.add(donation.getName());
+			}
+			Logger.d(TAG, "users : " + users);
+		} catch (Throwable e) {
+			Logger.e(TAG, e);
+		}
+		return users;
+	}
 }

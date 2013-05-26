@@ -1,5 +1,6 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
-
+    <PreferenceScreen android:key="userdonations"/>
+    
     <PreferenceScreen android:key="login" />
 
     <CheckBoxPreference

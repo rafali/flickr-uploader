@@ -8,7 +8,7 @@ public class Logger {
 	/**
 	 * Use this boolean to enable full LOG (VERBOSE)
 	 */
-	private static final boolean DEBUG = FlickrUploader.isDebug();
+	private static final boolean DEBUG = Config.isDebug();
 
 	private static final String MAIN_TAG = "FlickrUploader";
 

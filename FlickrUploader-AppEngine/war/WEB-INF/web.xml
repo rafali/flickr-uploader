@@ -13,7 +13,7 @@
 		<servlet-class>com.google.api.server.spi.SystemServiceServlet</servlet-class>
 		<init-param>
 			<param-name>services</param-name>
-			<param-value>com.rafali.flickruploader.AppInstallEndpoint,com.rafali.flickruploader.DeviceInfoEndpoint,com.rafali.flickruploader.MessageEndpoint</param-value>
+			<param-value>com.rafali.flickruploader.AppInstallEndpoint,com.rafali.flickruploader.DeviceInfoEndpoint,com.rafali.flickruploader.DonationEndpoint,com.rafali.flickruploader.MessageEndpoint,com.rafali.flickruploader.RpcEndpoint</param-value>
 		</init-param>
 	</servlet>
 	<servlet-mapping>

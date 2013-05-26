@@ -2,14 +2,6 @@ package com.rafali.flickruploader;
 
 import java.io.IOException;
 
-import com.rafali.flickruploader.messageEndpoint.MessageEndpoint;
-import com.rafali.flickruploader.messageEndpoint.model.CollectionResponseMessageData;
-import com.rafali.flickruploader.messageEndpoint.model.MessageData;
-import com.google.api.client.extensions.android.http.AndroidHttp;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpRequestInitializer;
-import com.google.api.client.json.jackson.JacksonFactory;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -17,12 +9,19 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
 import android.widget.Button;
 import android.widget.TextView;
+
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestInitializer;
+import com.google.api.client.json.jackson.JacksonFactory;
+import com.rafali.flickruploader.messageEndpoint.MessageEndpoint;
+import com.rafali.flickruploader.messageEndpoint.model.CollectionResponseMessageData;
+import com.rafali.flickruploader.messageEndpoint.model.MessageData;
 
 /**
  * An activity that communicates with your App Engine backend via Cloud
