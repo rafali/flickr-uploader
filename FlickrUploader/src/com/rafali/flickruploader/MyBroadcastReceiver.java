@@ -2,14 +2,14 @@ package com.rafali.flickruploader;
 
 import java.util.Arrays;
 
-import com.rafali.flickruploader.FlickrApi.PRIVACY;
-
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 import android.widget.Toast;
+
+import com.rafali.flickruploader.FlickrApi.PRIVACY;
 
 public class MyBroadcastReceiver extends BroadcastReceiver {
 	private static final String TAG = MyBroadcastReceiver.class.getSimpleName();
@@ -26,7 +26,7 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
 			Log.d(TAG, "share intent : " + intent);
 			int imageId = intent.getIntExtra("imageId", -1);
 			if (imageId > 0) {
-				Image image = Utils.getImage(imageId);
+				Media image = Utils.getImage(imageId);
 				final String photoId = FlickrApi.getPhotoId(image);
 				if (photoId != null) {
 					Toast.makeText(context, "Sharing photo", Toast.LENGTH_LONG).show();

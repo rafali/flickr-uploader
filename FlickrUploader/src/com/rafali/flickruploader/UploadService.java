@@ -3,7 +3,6 @@ package com.rafali.flickruploader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,7 +10,8 @@ import java.util.Map;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
-import android.provider.MediaStore.Images.Media;
+import android.provider.MediaStore.Images;
+import android.provider.MediaStore.Video;
 import android.util.Log;
 
 public class UploadService extends Service {
@@ -30,11 +30,13 @@ public class UploadService extends Service {
 		super.onCreate();
 		Log.d(TAG, "Service created ...");
 		running = true;
-		List<Image> images = Utils.getImages(QUEUE_IDS);
+		List<Media> images = Utils.getImages(QUEUE_IDS);
 		if (images != null) {
 			queue.addAll(images);
 		}
-		getContentResolver().registerContentObserver(Media.EXTERNAL_CONTENT_URI, true, new ImageTableObserver());
+		ImageTableObserver observer = new ImageTableObserver();
+		getContentResolver().registerContentObserver(Images.Media.EXTERNAL_CONTENT_URI, true, observer);
+		getContentResolver().registerContentObserver(Video.Media.EXTERNAL_CONTENT_URI, true, observer);
 
 		if (thread == null || !thread.isAlive()) {
 			thread = new Thread(new UploadRunnable());
@@ -52,11 +54,11 @@ public class UploadService extends Service {
 
 	static boolean running = false;
 
-	private static List<Image> queue = Collections.synchronizedList(new ArrayList<Image>());
-	private static List<Image> uploaded = Collections.synchronizedList(new ArrayList<Image>());
+	private static List<Media> queue = Collections.synchronizedList(new ArrayList<Media>());
+	private static List<Media> uploaded = Collections.synchronizedList(new ArrayList<Media>());
 
-	public static void enqueue(Collection<Image> images, Folder folder, String photoSetId, String photoSetTitle) {
-		for (Image image : images) {
+	public static void enqueue(Collection<Media> images, Folder folder, String photoSetId, String photoSetTitle) {
+		for (Media image : images) {
 			if (!queue.contains(image)) {
 				Log.d(TAG, "enqueueing " + image);
 				queue.add(image);
@@ -71,30 +73,17 @@ public class UploadService extends Service {
 		wake();
 	}
 
-	private static Map<Image, Folder> uploadFolders = new HashMap<Image, Folder>();
-	private static Map<Image, String> uploadPhotosetIds = new HashMap<Image, String>();
-	private static Map<Image, String> uploadPhotosetTitles = new HashMap<Image, String>();
+	private static Map<Media, Folder> uploadFolders = new HashMap<Media, Folder>();
+	private static Map<Media, String> uploadPhotosetIds = new HashMap<Media, String>();
+	private static Map<Media, String> uploadPhotosetTitles = new HashMap<Media, String>();
 
-	public static void enqueue(Collection<Image> images, String photoSetId, String photoSetTitle) {
+	public static void enqueue(Collection<Media> images, String photoSetId, String photoSetTitle) {
 		enqueue(images, null, photoSetId, photoSetTitle);
 	}
 
 	public static void persistQueue() {
 		Utils.setImages(QUEUE_IDS, queue);
 	}
-
-	static Comparator<Image> comparator = new Comparator<Image>() {
-		@Override
-		public int compare(Image arg0, Image arg1) {
-			if (arg0.date > arg1.date) {
-				return -1;
-			} else if (arg0.date < arg1.date) {
-				return 1;
-			} else {
-				return 0;
-			}
-		}
-	};
 
 	class UploadRunnable implements Runnable {
 		@Override
@@ -111,9 +100,9 @@ public class UploadService extends Service {
 						}
 					} else {
 						if (FlickrApi.isAuthentified()) {
-							Collections.sort(queue, comparator);
+							Collections.sort(queue, Utils.MEDIA_COMPARATOR);
 							long start = System.currentTimeMillis();
-							final Image image = queue.get(0);
+							final Media image = queue.get(0);
 							Folder folder = uploadFolders.get(image);
 							boolean success = folder == null && FlickrApi.isUploaded(image);
 							if (!success) {
@@ -166,7 +155,7 @@ public class UploadService extends Service {
 		}
 	}
 
-	public static boolean isUploading(Image image) {
+	public static boolean isUploading(Media image) {
 		return queue.contains(image);
 	}
 

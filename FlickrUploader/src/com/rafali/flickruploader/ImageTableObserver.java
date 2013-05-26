@@ -10,6 +10,8 @@ import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
 
+import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
+
 public class ImageTableObserver extends ContentObserver {
 
 	private static final String LAST_CHANGE = "lastChange";
@@ -37,16 +39,16 @@ public class ImageTableObserver extends ContentObserver {
 			}
 
 			String filter = MediaStore.Images.Media.DATE_ADDED + " > " + (lastChange / 1000);
-			List<Image> images = Utils.loadImages(filter);
+			List<Media> media = Utils.loadImages(filter);
 			lastChange = System.currentTimeMillis();
 			Utils.setLongProperty(LAST_CHANGE, lastChange);
-			if (images == null || images.isEmpty()) {
+			if (media == null || media.isEmpty()) {
 				Log.d(TAG, "no new image since " + filter);
 				return;
 			}
 
-			List<Image> not_uploaded = new ArrayList<Image>();
-			for (Image image : images) {
+			List<Media> not_uploaded = new ArrayList<Media>();
+			for (Media image : media) {
 				boolean uploaded = FlickrApi.isUploaded(image);
 				Log.d(TAG, "uploaded : " + uploaded + ", " + image);
 				if (!uploaded) {
@@ -61,7 +63,7 @@ public class ImageTableObserver extends ContentObserver {
 							Thread.sleep(1000);
 						}
 						not_uploaded.add(image);
-						final Bitmap bitmap = Utils.getBitmap(image, R.layout.photo_grid_thumb);
+						final Bitmap bitmap = Utils.getBitmap(image, TAB.photo);
 						if (bitmap != null) {
 							Utils.getCache().put(image.path + "_" + R.layout.photo_grid_thumb, bitmap);
 						}

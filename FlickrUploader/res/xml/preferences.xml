@@ -33,8 +33,8 @@
         android:title="Rate the app" />
     <PreferenceScreen
         android:key="donation"
-        android:summary="Buy him a coffee or a donut!"
-        android:title="Help the developer" />
+        android:summary="Offer him a coffee or a donut!"
+        android:title="Thank the developer" />
     <PreferenceScreen
         android:key="feedback"
         android:summary="Something is missing? Send a feedback to help improve the app"
@@ -42,6 +42,6 @@
     <PreferenceScreen
         android:key="pictarine"
         android:summary="Browse your photos and friends photos from Flickr, Facebook, Instagram, Twitter, Tumblr and more"
-        android:title="Pictarine" />
+        android:title="Pictarine, the best photo app" />
 
 </PreferenceScreen>

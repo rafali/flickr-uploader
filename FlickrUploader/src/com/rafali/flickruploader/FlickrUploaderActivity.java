@@ -1,6 +1,7 @@
 package com.rafali.flickruploader;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -35,7 +36,6 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
-import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ShareActionProvider;
@@ -43,11 +43,18 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.analytics.tracking.android.EasyTracker;
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestInitializer;
+import com.google.api.client.json.jackson.JacksonFactory;
 import com.google.common.base.Joiner;
 import com.googlecode.androidannotations.annotations.EActivity;
 import com.googlecode.androidannotations.annotations.UiThread;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
+import com.rafali.flickruploader.Utils.MediaType;
+import com.rafali.flickruploader.appinstallendpoint.Appinstallendpoint;
+import com.rafali.flickruploader.appinstallendpoint.model.AppInstall;
 
 @EActivity
 public class FlickrUploaderActivity extends Activity {
@@ -56,9 +63,20 @@ public class FlickrUploaderActivity extends Activity {
 
 	static final String TAG = FlickrUploaderActivity.class.getSimpleName();
 
-	GridView photoGrid;
-	GridView folderGrid;
-	ListView photoFeed;
+	static enum TAB {
+		feed(R.layout.photo_feed, R.layout.photo_feed_thumb, R.string.feed), photo(R.layout.photo_grid, R.layout.photo_grid_thumb, R.string.photos), video(R.layout.video_grid,
+				R.layout.video_grid_thumb, R.string.videos), folder(R.layout.folder_grid, R.layout.folder_grid_thumb, R.string.folders);
+
+		private int thumbLayoutId;
+		private int layoutId;
+		private int title;
+
+		TAB(int layoutId, int thumbLayoutId, int title) {
+			this.layoutId = layoutId;
+			this.thumbLayoutId = thumbLayoutId;
+			this.title = title;
+		}
+	}
 
 	ActionMode mMode;
 
@@ -69,8 +87,6 @@ public class FlickrUploaderActivity extends Activity {
 		super.onCreate(bundle);
 		Log.d(TAG, "onCreate " + bundle);
 		startService(new Intent(this, UploadService.class));
-		mainTabView = new MainTabView();
-		setContentView(mainTabView);
 		if (Utils.getStringProperty(STR.accessToken) == null) {
 			Utils.confirmSignIn(FlickrUploaderActivity.this);
 		}
@@ -81,60 +97,31 @@ public class FlickrUploaderActivity extends Activity {
 
 	}
 
-	private static final int FEED_TAB_INDEX = 0;
-	private static final int PHOTO_TAB_INDEX = 1;
-	private static final int FOLDER_TAB_INDEX = 2;
+	AbsListView[] views = new AbsListView[TAB.values().length];
 
 	class MainTabView extends TabView {
 
 		public MainTabView() {
-			super(FlickrUploaderActivity.this, null, 3, PHOTO_TAB_INDEX);
+			super(FlickrUploaderActivity.this, null, TAB.values().length, Arrays.asList(TAB.values()).indexOf(TAB.photo));
 		}
 
 		@Override
 		protected View createTabViewItem(int position) {
-			View view = null;
-			if (position == PHOTO_TAB_INDEX) {
-				view = photoGrid = (GridView) View.inflate(FlickrUploaderActivity.this, R.layout.photo_grid, null);
-				view.setTag(R.layout.photo_grid_thumb);
-			} else if (position == FOLDER_TAB_INDEX) {
-				view = folderGrid = (GridView) View.inflate(FlickrUploaderActivity.this, R.layout.folder_grid, null);
-				view.setTag(R.layout.folder_grid_thumb);
-			} else if (position == FEED_TAB_INDEX) {
-				view = photoFeed = (ListView) View.inflate(FlickrUploaderActivity.this, R.layout.photo_feed, null);
-				view.setTag(R.layout.photo_feed_thumb);
-			}
-			return view;
+			return views[position];
 		}
 
 		@Override
 		protected int getTabViewItemTitle(int position) {
-			if (position == PHOTO_TAB_INDEX) {
-				return R.string.photos;
-			} else if (position == FOLDER_TAB_INDEX) {
-				return R.string.folders;
-			} else if (position == FEED_TAB_INDEX) {
-				return R.string.feed;
-			}
-			return R.string.folders;
+			return TAB.values()[position].title;
 		}
 
 		@Override
 		public void onPageSelected(int position) {
 			super.onPageSelected(position);
-			ViewGroup view = (ViewGroup) getCurrentView();
+			AbsListView view = (AbsListView) getCurrentView();
 			if (view != null && mainTabView != null) {
-				if (position == PHOTO_TAB_INDEX) {
-					view = photoGrid;
-				} else if (position == FOLDER_TAB_INDEX) {
-					view = folderGrid;
-				} else if (position == FEED_TAB_INDEX) {
-					view = photoFeed;
-				}
-				if (view != null) {
-					for (int i = 0; i < view.getChildCount(); i++) {
-						renderImageView(view.getChildAt(i), (Integer) view.getTag());
-					}
+				for (int i = 0; i < view.getChildCount(); i++) {
+					renderImageView(view.getChildAt(i), (TAB) view.getTag());
 				}
 				updateCount();
 			}
@@ -146,12 +133,34 @@ public class FlickrUploaderActivity extends Activity {
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
-				images = Utils.loadImages(null);
-				folders = Utils.getFolders(images);
+				images = Utils.loadImages(null, MediaType.photo);
+				videos = Utils.loadImages(null, MediaType.video);
+
+				List<Media> all = new ArrayList<Media>(images);
+				all.addAll(videos);
+				folders = Utils.getFolders(all);
 				for (Folder folder : folders) {
 					foldersMap.put(folder.images.get(0), folder);
 				}
 				init();
+
+				testCloudPoint();
+			}
+
+			private void testCloudPoint() {
+				try {
+					Appinstallendpoint.Builder endpointBuilder = new Appinstallendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
+						public void initialize(HttpRequest httpRequest) {
+						}
+					});
+
+					Appinstallendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
+					AppInstall appInstall = new AppInstall();
+					appInstall.setDeviceId("toto");
+					AppInstall result = endpoint.insertAppInstall(appInstall).execute();
+				} catch (Throwable e) {
+					Logger.e(TAG, e);
+				}
 			}
 		});
 	}
@@ -189,7 +198,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	void testNotification() {
 		BackgroundExecutor.execute(new Runnable() {
-			Image image = images.get(0);
+			Media image = images.get(0);
 			@Override
 			public void run() {
 				for (int i = 0; i <= 100; i++) {
@@ -215,15 +224,18 @@ public class FlickrUploaderActivity extends Activity {
 
 	@UiThread
 	void init() {
-		photoGrid.setAdapter(new PhotoAdapter(R.layout.photo_grid_thumb));
-		photoGrid.setOnItemClickListener(onItemClickListener);
-
-		folderGrid.setAdapter(new PhotoAdapter(R.layout.folder_grid_thumb));
-		folderGrid.setOnItemClickListener(onItemClickListener);
-		folderGrid.setOnItemLongClickListener(onItemLongClickListener);
-
-		photoFeed.setAdapter(new PhotoAdapter(R.layout.photo_feed_thumb));
-		photoFeed.setOnItemClickListener(onItemClickListener);
+		for (int i = 0; i < TAB.values().length; i++) {
+			TAB tab = TAB.values()[i];
+			AbsListView absListView = views[i] = (AbsListView) View.inflate(FlickrUploaderActivity.this, tab.layoutId, null);
+			absListView.setAdapter(new PhotoAdapter(tab));
+			absListView.setTag(tab);
+			absListView.setOnItemClickListener(onItemClickListener);
+			if (tab == TAB.folder) {
+				absListView.setOnItemLongClickListener(onItemLongClickListener);
+			}
+		}
+		mainTabView = new MainTabView();
+		setContentView(mainTabView);
 	}
 
 	OnItemClickListener onItemClickListener = new OnItemClickListener() {
@@ -235,7 +247,7 @@ public class FlickrUploaderActivity extends Activity {
 				getImageSelected(SelectionType.all).remove(convertView.getTag());
 			} else {
 				convertView.findViewById(R.id.check_image).setVisibility(View.VISIBLE);
-				getImageSelected(SelectionType.all).add((Image) convertView.getTag());
+				getImageSelected(SelectionType.all).add((Media) convertView.getTag());
 			}
 			updateCount();
 		}
@@ -244,7 +256,7 @@ public class FlickrUploaderActivity extends Activity {
 	OnItemLongClickListener onItemLongClickListener = new OnItemLongClickListener() {
 		@Override
 		public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long id) {
-			Image image = (Image) v.getTag();
+			Media image = (Media) v.getTag();
 			final Folder selectedFolder = foldersMap.get(image);
 			Builder builder = new AlertDialog.Builder(FlickrUploaderActivity.this).setTitle("Auto upload");
 			if (Utils.isIgnored(selectedFolder)) {
@@ -274,10 +286,11 @@ public class FlickrUploaderActivity extends Activity {
 
 	void updateCount() {
 		int size = 0;
-		if (mainTabView.getCurrentView() == folderGrid) {
-			for (Image image : getImageSelected(SelectionType.all)) {
+		if (isFolderTab()) {
+			for (Media image : getImageSelected(SelectionType.all)) {
 				Folder folder = foldersMap.get(image);
-				size += folder.size;
+				if (folder != null)
+					size += folder.size;
 			}
 		} else {
 			size = getImageSelected(SelectionType.all).size();
@@ -287,7 +300,7 @@ public class FlickrUploaderActivity extends Activity {
 				mMode = startActionMode(mCallback);
 			if (mMode != null)
 				mMode.setTitle(size + "");
-			if (mainTabView.getCurrentView() != folderGrid) {
+			if (!isFolderTab()) {
 				setShareIntent();
 			}
 		} else if (size == 0 && mMode != null) {
@@ -301,7 +314,7 @@ public class FlickrUploaderActivity extends Activity {
 	void setShareIntent() {
 		if (!getImageSelected(SelectionType.all).isEmpty() && shareItem != null) {
 			Map<String, String> shortUrls = new LinkedHashMap<String, String>();
-			for (Image image : getImageSelected(SelectionType.all)) {
+			for (Media image : getImageSelected(SelectionType.all)) {
 				String photoId = FlickrApi.getPhotoId(image);
 				if (photoId != null) {
 					shortUrls.put(photoId, FlickrApi.getShortUrl(photoId));
@@ -380,7 +393,7 @@ public class FlickrUploaderActivity extends Activity {
 			case R.id.menu_item_select_all:
 				EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_select_all", 0L);
 				if (getImageSelected(SelectionType.auto).isEmpty()) {
-					Collection<Image> allImages;
+					Collection<Media> allImages;
 					if (isFolderTab()) {
 						allImages = foldersMap.keySet();
 					} else {
@@ -399,17 +412,17 @@ public class FlickrUploaderActivity extends Activity {
 				break;
 			case R.id.menu_item_privacy:
 				EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_privacy", 0L);
-				Collection<Image> selectedImages;
+				Collection<Media> selectedImages;
 				if (isFolderTab()) {
-					selectedImages = new ArrayList<Image>();
-					for (Image image : getImageSelected(SelectionType.all)) {
+					selectedImages = new ArrayList<Media>();
+					for (Media image : getImageSelected(SelectionType.all)) {
 						selectedImages.addAll(foldersMap.get(image).images);
 					}
 				} else {
 					selectedImages = getImageSelected(SelectionType.all);
 				}
 				PRIVACY privacy = null;
-				for (Image image : selectedImages) {
+				for (Media image : selectedImages) {
 					if (privacy == null) {
 						privacy = FlickrApi.getPrivacy(image);
 					} else {
@@ -424,7 +437,7 @@ public class FlickrUploaderActivity extends Activity {
 					public void onResult(PRIVACY result) {
 						if (result != null) {
 							List<String> photoIds = new ArrayList<String>();
-							for (Image image : getImageSelected(SelectionType.all)) {
+							for (Media image : getImageSelected(SelectionType.all)) {
 								String photoId = FlickrApi.getPhotoId(image);
 								if (photoId != null && FlickrApi.getPrivacy(photoId) != result) {
 									photoIds.add(photoId);
@@ -439,7 +452,7 @@ public class FlickrUploaderActivity extends Activity {
 				break;
 			case R.id.menu_item_upload:
 				EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_upload", 0L);
-				final List<Image> selection = new ArrayList<Image>(getImageSelected(SelectionType.all));
+				final List<Media> selection = new ArrayList<Media>(getImageSelected(SelectionType.all));
 				if (FlickrApi.isAuthentified()) {
 					// foldersMap.clear();
 					BackgroundExecutor.execute(new Runnable() {
@@ -466,7 +479,7 @@ public class FlickrUploaderActivity extends Activity {
 	};
 
 	@UiThread
-	void confirmUpload(final List<Image> selection) {
+	void confirmUpload(final List<Media> selection) {
 		if (isFolderTab()) {
 			new AlertDialog.Builder(this).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
 					.setItems(new String[] { "Default set (" + Utils.getInstantAlbumTitle() + ")", "One set per folder", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
@@ -475,7 +488,7 @@ public class FlickrUploaderActivity extends Activity {
 							int count = 0;
 							switch (which) {
 							case 0:
-								for (Image image : selection) {
+								for (Media image : selection) {
 									Folder folder = foldersMap.get(image);
 									count += folder.images.size();
 									UploadService.enqueue(folder.images, Utils.getInstantAlbumId(), STR.instantUpload);
@@ -483,7 +496,7 @@ public class FlickrUploaderActivity extends Activity {
 								toast(count + " photos enqueued");
 								break;
 							case 1:
-								for (Image image : selection) {
+								for (Media image : selection) {
 									Folder folder = foldersMap.get(image);
 									count += folder.images.size();
 									UploadService.enqueue(folder.images, folder, null, null);
@@ -530,7 +543,7 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	@UiThread
-	void showExistingSetDialog(final List<Image> selection) {
+	void showExistingSetDialog(final List<Media> selection) {
 		final ProgressDialog dialog = ProgressDialog.show(this, "", "Loading photosets", true);
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
@@ -558,7 +571,7 @@ public class FlickrUploaderActivity extends Activity {
 									String photoSetId = photosetIds.get(which);
 									int count = 0;
 									if (isFolderTab()) {
-										for (Image image : selection) {
+										for (Media image : selection) {
 											Folder folder = foldersMap.get(image);
 											count += folder.images.size();
 											UploadService.enqueue(folder.images, photoSetId, null);
@@ -579,7 +592,7 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	@UiThread
-	void showNewSetDialog(final List<Image> selection) {
+	void showNewSetDialog(final List<Media> selection) {
 		AlertDialog.Builder alert = new AlertDialog.Builder(this);
 
 		alert.setTitle("Photo Set Title");
@@ -597,7 +610,7 @@ public class FlickrUploaderActivity extends Activity {
 				} else {
 					int count = 0;
 					if (isFolderTab()) {
-						for (Image image : selection) {
+						for (Media image : selection) {
 							Folder folder = foldersMap.get(image);
 							count += folder.images.size();
 							UploadService.enqueue(folder.images, null, value);
@@ -621,7 +634,7 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	private boolean isFolderTab() {
-		return mainTabView.getCurrentView() == folderGrid;
+		return mainTabView.getCurrentView().getTag() == TAB.folder;
 	}
 
 	@UiThread
@@ -639,13 +652,13 @@ public class FlickrUploaderActivity extends Activity {
 		}
 	}
 
-	Map<String, List<Image>> imagesSelectedMap = new HashMap<String, List<Image>>();
+	Map<String, List<Media>> imagesSelectedMap = new HashMap<String, List<Media>>();
 
-	private List<Image> getImageSelected(SelectionType type) {
+	private List<Media> getImageSelected(SelectionType type) {
 		String key = mainTabView.getCurrentView().getClass().getSimpleName() + "_" + mainTabView.getCurrentView().getTag() + "_" + type;
-		List<Image> imagesSelected = imagesSelectedMap.get(key);
+		List<Media> imagesSelected = imagesSelectedMap.get(key);
 		if (imagesSelected == null) {
-			imagesSelected = new ArrayList<Image>();
+			imagesSelected = new ArrayList<Media>();
 			imagesSelectedMap.put(key, imagesSelected);
 		}
 		return imagesSelected;
@@ -655,21 +668,24 @@ public class FlickrUploaderActivity extends Activity {
 		all, auto
 	}
 
-	List<Image> images;
+	List<Media> images;
+	List<Media> videos;
 	List<Folder> folders;
-	Map<Image, Folder> foldersMap = new HashMap<Image, Folder>();
+	Map<Media, Folder> foldersMap = new HashMap<Media, Folder>();
 
 	class PhotoAdapter extends BaseAdapter {
 
-		private int thumbLayoutId;
+		private TAB tab;
 
-		public PhotoAdapter(int thumbLayoutId) {
-			this.thumbLayoutId = thumbLayoutId;
+		public PhotoAdapter(TAB tab) {
+			this.tab = tab;
 		}
 
 		@Override
 		public int getCount() {
-			if (thumbLayoutId == R.layout.folder_grid_thumb) {
+			if (tab == TAB.video) {
+				return videos.size();
+			} else if (tab == TAB.folder) {
 				return folders.size();
 			} else {
 				return images.size();
@@ -678,7 +694,9 @@ public class FlickrUploaderActivity extends Activity {
 
 		@Override
 		public Object getItem(int position) {
-			if (thumbLayoutId == R.layout.folder_grid_thumb) {
+			if (tab == TAB.video) {
+				return videos.get(position);
+			} else if (tab == TAB.folder) {
 				return folders.get(position).images.get(0);
 			} else {
 				return images.get(position);
@@ -693,36 +711,38 @@ public class FlickrUploaderActivity extends Activity {
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			if (convertView == null) {
-				convertView = getLayoutInflater().inflate(thumbLayoutId, parent, false);
-				if (thumbLayoutId == R.layout.photo_feed_thumb) {
+				convertView = getLayoutInflater().inflate(tab.thumbLayoutId, parent, false);
+				if (tab == TAB.feed) {
 					convertView.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Utils.getScreenWidthPx()));
-				} else if (thumbLayoutId == R.layout.folder_grid_thumb) {
+				} else if (tab == TAB.folder || tab == TAB.video) {
 					convertView.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Utils.getScreenWidthPx() / 2));
 				}
 			}
-			final Image image;
-			if (thumbLayoutId == R.layout.folder_grid_thumb) {
+			final Media image;
+			if (tab == TAB.video) {
+				image = videos.get(position);
+			} else if (tab == TAB.folder) {
 				image = folders.get(position).images.get(0);
 			} else {
 				image = images.get(position);
 			}
 			if (convertView.getTag() != image) {
 				convertView.setTag(image);
-				renderImageView(convertView, thumbLayoutId);
+				renderImageView(convertView, tab);
 			}
 			return convertView;
 		}
 
 	}
 
-	private void renderImageView(final View convertView, final int thumbLayoutId) {
-		final Image image = (Image) convertView.getTag();
+	private void renderImageView(final View convertView, final TAB tab) {
+		final Media image = (Media) convertView.getTag();
 		if (image == null) {
 			convertView.setVisibility(View.INVISIBLE);
 		} else {
 			convertView.setVisibility(View.VISIBLE);
 			convertView.findViewById(R.id.check_image).setVisibility(getImageSelected(SelectionType.all).contains(image) ? View.VISIBLE : View.GONE);
-			if (thumbLayoutId == R.layout.folder_grid_thumb) {
+			if (tab == TAB.folder) {
 				Folder folder = foldersMap.get(image);
 				((TextView) convertView.findViewById(R.id.size)).setText("" + folder.size);
 				((TextView) convertView.findViewById(R.id.title)).setText(folder.name);
@@ -735,17 +755,17 @@ public class FlickrUploaderActivity extends Activity {
 			final CacheableImageView imageView = (CacheableImageView) convertView.findViewById(R.id.image_view);
 			final ImageView uploadedImageView = (ImageView) convertView.findViewById(R.id.uploaded);
 			imageView.setTag(image);
-			BitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(image.path + "_" + thumbLayoutId);
+			BitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(image.path + "_" + tab.thumbLayoutId);
 			if (null != wrapper && !wrapper.getBitmap().isRecycled()) {
 				// The cache has it, so just display it
 				boolean isUploaded;
-				if (thumbLayoutId == R.layout.folder_grid_thumb) {
+				if (tab == TAB.folder) {
 					isUploaded = FlickrApi.isUploaded(foldersMap.get(image));
 				} else {
 					isUploaded = FlickrApi.isUploaded(image);
 				}
 				uploadedImageView.setVisibility(isUploaded ? View.VISIBLE : View.GONE);
-				if (isUploaded && thumbLayoutId != R.layout.folder_grid_thumb) {
+				if (isUploaded && tab != TAB.folder) {
 					uploadedImageView.setImageResource(getPrivacyResource(FlickrApi.getPrivacy(image)));
 				}
 				imageView.setImageDrawable(wrapper);
@@ -755,20 +775,20 @@ public class FlickrUploaderActivity extends Activity {
 					@Override
 					public void run() {
 						final boolean isUploaded;
-						if (thumbLayoutId == R.layout.folder_grid_thumb) {
+						if (tab == TAB.folder) {
 							isUploaded = FlickrApi.isUploaded(foldersMap.get(image));
 						} else {
 							isUploaded = FlickrApi.isUploaded(image);
 						}
-						final Bitmap bitmap = Utils.getBitmap(image, thumbLayoutId);
+						final Bitmap bitmap = Utils.getBitmap(image, tab);
 						if (bitmap != null) {
-							final CacheableBitmapDrawable bitmapDrawable = Utils.getCache().put(image.path + "_" + thumbLayoutId, bitmap);
+							final CacheableBitmapDrawable bitmapDrawable = Utils.getCache().put(image.path + "_" + tab.thumbLayoutId, bitmap);
 							runOnUiThread(new Runnable() {
 								@Override
 								public void run() {
 									if (imageView.getTag() == image) {
 										uploadedImageView.setVisibility(isUploaded ? View.VISIBLE : View.GONE);
-										if (isUploaded && thumbLayoutId != R.layout.folder_grid_thumb) {
+										if (isUploaded && tab != TAB.folder) {
 											uploadedImageView.setImageResource(getPrivacyResource(FlickrApi.getPrivacy(image)));
 										}
 										imageView.setImageDrawable(bitmapDrawable);
@@ -880,15 +900,17 @@ public class FlickrUploaderActivity extends Activity {
 		if (reload) {
 			load();
 		} else {
-			renderMenu();
-			for (int k = 0; k < mainTabView.getTabCount(); k++) {
-				ViewGroup grid = (ViewGroup) mainTabView.getTabView(k);
-				int childCount = grid.getChildCount();
-				for (int i = 0; i < childCount; i++) {
-					View convertView = grid.getChildAt(i);
-					Image image = (Image) convertView.getTag();
-					if (image != null) {
-						renderImageView(convertView, (Integer) grid.getTag());
+			if (mainTabView != null) {
+				renderMenu();
+				for (int k = 0; k < mainTabView.getTabCount(); k++) {
+					ViewGroup grid = (ViewGroup) mainTabView.getTabView(k);
+					int childCount = grid.getChildCount();
+					for (int i = 0; i < childCount; i++) {
+						View convertView = grid.getChildAt(i);
+						Media image = (Media) convertView.getTag();
+						if (image != null) {
+							renderImageView(convertView, (TAB) grid.getTag());
+						}
 					}
 				}
 			}

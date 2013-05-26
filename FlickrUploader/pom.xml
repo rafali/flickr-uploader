@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>FlickrUploader</groupId>
 	<artifactId>FlickrUploader</artifactId>
-	<version>1.1_4</version>
+	<version>1.2_5</version>
 	<packaging>apk</packaging>
 	<profiles>
 		<profile>

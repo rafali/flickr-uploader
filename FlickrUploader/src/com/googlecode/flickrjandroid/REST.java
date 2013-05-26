@@ -253,6 +253,7 @@ public class REST extends Transport {
 			conn.setRequestProperty("Host", "api.flickr.com");
 			conn.setDoInput(true);
 			conn.setDoOutput(true);
+			conn.setChunkedStreamingMode(0);
 			conn.connect();
 			progress = 1;
 			reportProgress(progressListener, progress);

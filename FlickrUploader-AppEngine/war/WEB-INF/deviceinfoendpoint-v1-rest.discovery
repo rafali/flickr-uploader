@@ -1,0 +1,179 @@
+{
+ "kind": "discovery#restDescription",
+ "etag": "\"_eRzJ5rb6y2Sm1GT1st-3xOUuXg/pjJtRbuYZnBcHD27gAoplTS83SE\"",
+ "discoveryVersion": "v1",
+ "id": "deviceinfoendpoint:v1",
+ "name": "deviceinfoendpoint",
+ "version": "v1",
+ "description": "This is an API",
+ "ownerDomain": "rafali.com",
+ "ownerName": "rafali.com",
+ "packagePath": "flickruploader",
+ "icons": {
+  "x16": "http://www.google.com/images/icons/product/search-16.gif",
+  "x32": "http://www.google.com/images/icons/product/search-32.gif"
+ },
+ "protocol": "rest",
+ "baseUrl": "https://ra-fa-li.appspot.com/_ah/api/deviceinfoendpoint/v1/",
+ "basePath": "/_ah/api/deviceinfoendpoint/v1/",
+ "rootUrl": "https://ra-fa-li.appspot.com/_ah/api/",
+ "servicePath": "deviceinfoendpoint/v1/",
+ "batchPath": "batch",
+ "parameters": {
+  "alt": {
+   "type": "string",
+   "description": "Data format for the response.",
+   "default": "json",
+   "enum": [
+    "json"
+   ],
+   "enumDescriptions": [
+    "Responses with Content-Type of application/json"
+   ],
+   "location": "query"
+  },
+  "fields": {
+   "type": "string",
+   "description": "Selector specifying which fields to include in a partial response.",
+   "location": "query"
+  },
+  "key": {
+   "type": "string",
+   "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+   "location": "query"
+  },
+  "oauth_token": {
+   "type": "string",
+   "description": "OAuth 2.0 token for the current user.",
+   "location": "query"
+  },
+  "prettyPrint": {
+   "type": "boolean",
+   "description": "Returns response with indentations and line breaks.",
+   "default": "true",
+   "location": "query"
+  },
+  "quotaUser": {
+   "type": "string",
+   "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters. Overrides userIp if both are provided.",
+   "location": "query"
+  },
+  "userIp": {
+   "type": "string",
+   "description": "IP address of the site where the request originates. Use this if you want to enforce per-user limits.",
+   "location": "query"
+  }
+ },
+ "schemas": {
+  "CollectionResponse_DeviceInfo": {
+   "id": "CollectionResponse_DeviceInfo",
+   "type": "object",
+   "properties": {
+    "items": {
+     "type": "array",
+     "items": {
+      "$ref": "DeviceInfo"
+     }
+    },
+    "nextPageToken": {
+     "type": "string"
+    }
+   }
+  },
+  "DeviceInfo": {
+   "id": "DeviceInfo",
+   "type": "object",
+   "properties": {
+    "deviceInformation": {
+     "type": "string"
+    },
+    "deviceRegistrationID": {
+     "type": "string"
+    },
+    "timestamp": {
+     "type": "string",
+     "format": "int64"
+    }
+   }
+  }
+ },
+ "methods": {
+  "getDeviceInfo": {
+   "id": "deviceinfoendpoint.getDeviceInfo",
+   "path": "deviceinfo/{id}",
+   "httpMethod": "GET",
+   "parameters": {
+    "id": {
+     "type": "string",
+     "required": true,
+     "location": "path"
+    }
+   },
+   "parameterOrder": [
+    "id"
+   ],
+   "response": {
+    "$ref": "DeviceInfo"
+   }
+  },
+  "insertDeviceInfo": {
+   "id": "deviceinfoendpoint.insertDeviceInfo",
+   "path": "deviceinfo",
+   "httpMethod": "POST",
+   "request": {
+    "$ref": "DeviceInfo"
+   },
+   "response": {
+    "$ref": "DeviceInfo"
+   }
+  },
+  "listDeviceInfo": {
+   "id": "deviceinfoendpoint.listDeviceInfo",
+   "path": "deviceinfo",
+   "httpMethod": "GET",
+   "parameters": {
+    "cursor": {
+     "type": "string",
+     "location": "query"
+    },
+    "limit": {
+     "type": "integer",
+     "format": "int32",
+     "location": "query"
+    }
+   },
+   "response": {
+    "$ref": "CollectionResponse_DeviceInfo"
+   }
+  },
+  "removeDeviceInfo": {
+   "id": "deviceinfoendpoint.removeDeviceInfo",
+   "path": "deviceinfo/{id}",
+   "httpMethod": "DELETE",
+   "parameters": {
+    "id": {
+     "type": "string",
+     "required": true,
+     "location": "path"
+    }
+   },
+   "parameterOrder": [
+    "id"
+   ],
+   "response": {
+    "$ref": "DeviceInfo"
+   }
+  },
+  "updateDeviceInfo": {
+   "id": "deviceinfoendpoint.updateDeviceInfo",
+   "path": "deviceinfo",
+   "httpMethod": "PUT",
+   "request": {
+    "$ref": "DeviceInfo"
+   },
+   "response": {
+    "$ref": "DeviceInfo"
+   }
+  }
+ }
+}

@@ -226,10 +226,10 @@ public class FlickrApi {
 				}
 				Utils.setMapProperty(STR.uploadedPhotos, uploadedPhotos);
 
-				List<Image> loadImages = Utils.loadImages(null);
+				List<Media> loadImages = Utils.loadImages(null);
 				Log.d(TAG, "loadImages : " + loadImages.size());
 				List<String> photoIds = new ArrayList<String>();
-				for (Image image : loadImages) {
+				for (Media image : loadImages) {
 					String sha1tag = Utils.getSHA1tag(image);
 					String photoId = uploadedPhotos.get(sha1tag);
 					if (photoId != null && instantPhotoIds.contains(photoId)) {
@@ -263,11 +263,11 @@ public class FlickrApi {
 	}
 
 	public static boolean isUploaded(Object object) {
-		if (object instanceof Image) {
-			String sha1tag = Utils.getSHA1tag((Image) object);
+		if (object instanceof Media) {
+			String sha1tag = Utils.getSHA1tag((Media) object);
 			return uploadedPhotos.get(sha1tag) != null;
 		} else if (object instanceof Folder) {
-			for (Image image : ((Folder) object).images) {
+			for (Media image : ((Folder) object).images) {
 				if (!isUploaded(image)) {
 					return false;
 				}
@@ -276,7 +276,7 @@ public class FlickrApi {
 		return true;
 	}
 
-	public static String getPhotoId(Image image) {
+	public static String getPhotoId(Media image) {
 		String sha1tag = Utils.getSHA1tag(image);
 		return uploadedPhotos.get(sha1tag);
 	}
@@ -301,7 +301,7 @@ public class FlickrApi {
 		return false;
 	}
 
-	public static boolean upload(Image image, String photosetId, String photoSetTitle, Folder folder, ProgressListener progressListener) {
+	public static boolean upload(Media image, String photosetId, String photoSetTitle, Folder folder, ProgressListener progressListener) {
 		boolean success = false;
 		int retry = 0;
 		String photoId = null;
@@ -464,7 +464,7 @@ public class FlickrApi {
 		return result;
 	}
 
-	public static PRIVACY getPrivacy(Image image) {
+	public static PRIVACY getPrivacy(Media image) {
 		return photosPrivacy.get(getPhotoId(image));
 	}
 

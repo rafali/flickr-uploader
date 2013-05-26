@@ -25,6 +25,7 @@ import org.acra.annotation.ReportsCrashes;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.util.Log;
 
 import com.googlecode.androidannotations.api.BackgroundExecutor;
@@ -40,7 +41,9 @@ public class FlickrUploader extends Application {
 	public void onCreate() {
 		super.onCreate();
 		FlickrUploader.context = getApplicationContext();
-		ACRA.init(this);
+		if (!isDebug()) {
+			ACRA.init(this);
+		}
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
@@ -64,6 +67,15 @@ public class FlickrUploader extends Application {
 
 	public static Context getAppContext() {
 		return context;
+	}
+
+	private static Boolean DEBUG = null;
+
+	public static boolean isDebug() {
+		if (DEBUG == null) {
+			DEBUG = (getAppContext().getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+		}
+		return DEBUG;
 	}
 
 }

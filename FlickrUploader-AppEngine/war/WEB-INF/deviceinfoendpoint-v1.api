@@ -1,0 +1,193 @@
+{
+  "extends" : "thirdParty.api",
+  "abstract" : false,
+  "root" : "https://ra-fa-li.appspot.com/_ah/api",
+  "name" : "deviceinfoendpoint",
+  "version" : "v1",
+  "defaultVersion" : false,
+  "adapter" : {
+    "bns" : "https://ra-fa-li.appspot.com/_ah/spi",
+    "deadline" : 10.0,
+    "type" : "lily"
+  },
+  "auth" : {
+    "allowCookieAuth" : false
+  },
+  "frontendLimits" : {
+    "unregisteredUserQps" : -1,
+    "unregisteredQps" : -1,
+    "unregisteredDaily" : -1,
+    "rules" : [ ]
+  },
+  "cacheControl" : {
+    "type" : "no-cache",
+    "maxAge" : 0
+  },
+  "ownerDomain" : "rafali.com",
+  "ownerName" : "rafali.com",
+  "packagePath" : "flickruploader",
+  "methods" : {
+    "deviceinfoendpoint.updateDeviceInfo" : {
+      "path" : "deviceinfo",
+      "httpMethod" : "PUT",
+      "scopes" : [ ],
+      "audiences" : [ ],
+      "clientIds" : [ ],
+      "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.updateDeviceInfo",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "deviceinfoendpoint.removeDeviceInfo" : {
+      "path" : "deviceinfo/{id}",
+      "httpMethod" : "DELETE",
+      "scopes" : [ ],
+      "audiences" : [ ],
+      "clientIds" : [ ],
+      "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.removeDeviceInfo",
+      "request" : {
+        "parameters" : {
+          "id" : {
+            "type" : "string",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "deviceinfoendpoint.getDeviceInfo" : {
+      "path" : "deviceinfo/{id}",
+      "httpMethod" : "GET",
+      "scopes" : [ ],
+      "audiences" : [ ],
+      "clientIds" : [ ],
+      "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.getDeviceInfo",
+      "request" : {
+        "parameters" : {
+          "id" : {
+            "type" : "string",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "deviceinfoendpoint.listDeviceInfo" : {
+      "path" : "deviceinfo",
+      "httpMethod" : "GET",
+      "scopes" : [ ],
+      "audiences" : [ ],
+      "clientIds" : [ ],
+      "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.listDeviceInfo",
+      "request" : {
+        "parameters" : {
+          "cursor" : {
+            "type" : "string",
+            "required" : false
+          },
+          "limit" : {
+            "type" : "int32",
+            "required" : false
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "deviceinfoendpoint.insertDeviceInfo" : {
+      "path" : "deviceinfo",
+      "httpMethod" : "POST",
+      "scopes" : [ ],
+      "audiences" : [ ],
+      "clientIds" : [ ],
+      "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.insertDeviceInfo",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    }
+  },
+  "descriptor" : {
+    "schemas" : {
+      "DeviceInfo" : {
+        "id" : "DeviceInfo",
+        "type" : "object",
+        "properties" : {
+          "deviceRegistrationID" : {
+            "type" : "string"
+          },
+          "deviceInformation" : {
+            "type" : "string"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "int64"
+          }
+        }
+      },
+      "CollectionResponse_DeviceInfo" : {
+        "id" : "CollectionResponse_DeviceInfo",
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "DeviceInfo"
+            }
+          },
+          "nextPageToken" : {
+            "type" : "string"
+          }
+        }
+      }
+    },
+    "methods" : {
+      "com.rafali.flickruploader.DeviceInfoEndpoint.updateDeviceInfo" : {
+        "request" : {
+          "$ref" : "DeviceInfo"
+        },
+        "response" : {
+          "$ref" : "DeviceInfo"
+        }
+      },
+      "com.rafali.flickruploader.DeviceInfoEndpoint.removeDeviceInfo" : {
+        "response" : {
+          "$ref" : "DeviceInfo"
+        }
+      },
+      "com.rafali.flickruploader.DeviceInfoEndpoint.getDeviceInfo" : {
+        "response" : {
+          "$ref" : "DeviceInfo"
+        }
+      },
+      "com.rafali.flickruploader.DeviceInfoEndpoint.listDeviceInfo" : {
+        "response" : {
+          "$ref" : "CollectionResponse_DeviceInfo"
+        }
+      },
+      "com.rafali.flickruploader.DeviceInfoEndpoint.insertDeviceInfo" : {
+        "request" : {
+          "$ref" : "DeviceInfo"
+        },
+        "response" : {
+          "$ref" : "DeviceInfo"
+        }
+      }
+    }
+  }
+}

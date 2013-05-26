@@ -1,0 +1,228 @@
+{
+ "kind": "discovery#rpcDescription",
+ "etag": "\"_eRzJ5rb6y2Sm1GT1st-3xOUuXg/alX7lJfp1Fzj8BD0DWvPUauuwvs\"",
+ "discoveryVersion": "v1",
+ "id": "appinstallendpoint:v1",
+ "name": "appinstallendpoint",
+ "version": "v1",
+ "description": "This is an API",
+ "ownerDomain": "rafali.com",
+ "ownerName": "rafali.com",
+ "packagePath": "flickruploader",
+ "icons": {
+  "x16": "http://www.google.com/images/icons/product/search-16.gif",
+  "x32": "http://www.google.com/images/icons/product/search-32.gif"
+ },
+ "protocol": "rpc",
+ "rootUrl": "https://ra-fa-li.appspot.com/_ah/api/",
+ "rpcUrl": "https://ra-fa-li.appspot.com/_ah/api/rpc",
+ "rpcPath": "/_ah/api/rpc",
+ "parameters": {
+  "alt": {
+   "type": "string",
+   "description": "Data format for the response.",
+   "default": "json",
+   "enum": [
+    "json"
+   ],
+   "enumDescriptions": [
+    "Responses with Content-Type of application/json"
+   ],
+   "location": "query"
+  },
+  "fields": {
+   "type": "string",
+   "description": "Selector specifying which fields to include in a partial response.",
+   "location": "query"
+  },
+  "key": {
+   "type": "string",
+   "description": "API key. Your API key identifies your project and provides you with API access, quota, and reports. Required unless you provide an OAuth 2.0 token.",
+   "location": "query"
+  },
+  "oauth_token": {
+   "type": "string",
+   "description": "OAuth 2.0 token for the current user.",
+   "location": "query"
+  },
+  "prettyPrint": {
+   "type": "boolean",
+   "description": "Returns response with indentations and line breaks.",
+   "default": "true",
+   "location": "query"
+  },
+  "quotaUser": {
+   "type": "string",
+   "description": "Available to use for quota purposes for server-side applications. Can be any arbitrary string assigned to a user, but should not exceed 40 characters. Overrides userIp if both are provided.",
+   "location": "query"
+  },
+  "userIp": {
+   "type": "string",
+   "description": "IP address of the site where the request originates. Use this if you want to enforce per-user limits.",
+   "location": "query"
+  }
+ },
+ "schemas": {
+  "AndroidDevice": {
+   "id": "AndroidDevice",
+   "type": "object",
+   "properties": {
+    "androidVersion": {
+     "type": "integer",
+     "format": "int32"
+    },
+    "appInstalled": {
+     "type": "boolean"
+    },
+    "appVersion": {
+     "type": "string"
+    },
+    "dateCreation": {
+     "type": "string",
+     "format": "date-time"
+    },
+    "emails": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "gcmId": {
+     "type": "string"
+    },
+    "id": {
+     "type": "string"
+    },
+    "language": {
+     "type": "string"
+    },
+    "modelInfo": {
+     "type": "string"
+    },
+    "otherInfos": {
+     "type": "string"
+    }
+   }
+  },
+  "AppInstall": {
+   "id": "AppInstall",
+   "type": "object",
+   "properties": {
+    "androidDevice": {
+     "$ref": "AndroidDevice"
+    },
+    "dateCreation": {
+     "type": "string",
+     "format": "date-time"
+    },
+    "deviceId": {
+     "type": "string"
+    },
+    "emails": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "ownerIds": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "CollectionResponse_AppInstall": {
+   "id": "CollectionResponse_AppInstall",
+   "type": "object",
+   "properties": {
+    "items": {
+     "type": "array",
+     "items": {
+      "$ref": "AppInstall"
+     }
+    },
+    "nextPageToken": {
+     "type": "string"
+    }
+   }
+  }
+ },
+ "methods": {
+  "appinstallendpoint.getAppInstall": {
+   "id": "appinstallendpoint.getAppInstall",
+   "allowGet": true,
+   "parameters": {
+    "id": {
+     "type": "string",
+     "required": true
+    }
+   },
+   "parameterOrder": [
+    "id"
+   ],
+   "returns": {
+    "$ref": "AppInstall"
+   }
+  },
+  "appinstallendpoint.insertAppInstall": {
+   "id": "appinstallendpoint.insertAppInstall",
+   "parameters": {
+    "resource": {
+     "$ref": "AppInstall"
+    }
+   },
+   "parameterOrder": [
+    "resource"
+   ],
+   "returns": {
+    "$ref": "AppInstall"
+   }
+  },
+  "appinstallendpoint.listAppInstall": {
+   "id": "appinstallendpoint.listAppInstall",
+   "allowGet": true,
+   "parameters": {
+    "cursor": {
+     "type": "string"
+    },
+    "limit": {
+     "type": "integer",
+     "format": "int32"
+    }
+   },
+   "returns": {
+    "$ref": "CollectionResponse_AppInstall"
+   }
+  },
+  "appinstallendpoint.removeAppInstall": {
+   "id": "appinstallendpoint.removeAppInstall",
+   "parameters": {
+    "id": {
+     "type": "string",
+     "required": true
+    }
+   },
+   "parameterOrder": [
+    "id"
+   ],
+   "returns": {
+    "$ref": "AppInstall"
+   }
+  },
+  "appinstallendpoint.updateAppInstall": {
+   "id": "appinstallendpoint.updateAppInstall",
+   "parameters": {
+    "resource": {
+     "$ref": "AppInstall"
+    }
+   },
+   "parameterOrder": [
+    "resource"
+   ],
+   "returns": {
+    "$ref": "AppInstall"
+   }
+  }
+ }
+}

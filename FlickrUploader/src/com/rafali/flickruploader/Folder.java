@@ -10,13 +10,13 @@ public class Folder {
 		this.path = path;
 		this.name = new File(path).getName();
 	}
-	public Folder(String path, Collection<Image> images) {
+	public Folder(String path, Collection<Media> images) {
 		this(path);
-		this.images = new ArrayList<Image>(images);
+		this.images = new ArrayList<Media>(images);
 		this.size = images.size();
 	}
 	public int size;
-	public List<Image> images;
+	public List<Media> images;
 	public final String path;
 	public final String name;
 }

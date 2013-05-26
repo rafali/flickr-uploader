@@ -7,6 +7,8 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -35,9 +37,10 @@ import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.preference.PreferenceManager;
-import android.provider.MediaStore;
-import android.provider.MediaStore.Images.Media;
+import android.provider.MediaStore.Images;
+import android.provider.MediaStore.Video;
 import android.provider.Settings.Secure;
 import android.util.Log;
 import android.util.TypedValue;
@@ -47,6 +50,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
+import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 
 public final class Utils {
 
@@ -223,35 +227,41 @@ public final class Utils {
 		editor.commit();
 	}
 
-	public static void setImages(String key, Collection<Image> images) {
-		String serialized;
-		if (images == null || images.isEmpty()) {
-			serialized = null;
-		} else {
-			List<Integer> ids = new ArrayList<Integer>();
-			for (Image image : images) {
-				ids.add(image.id);
+	public static void setImages(String key, Collection<Media> images) {
+		try {
+			String serialized;
+			synchronized (images) {
+				if (images == null || images.isEmpty()) {
+					serialized = null;
+				} else {
+					List<Integer> ids = new ArrayList<Integer>();
+					for (Media image : images) {
+						ids.add(image.id);
+					}
+					serialized = Joiner.on(",").join(ids);
+				}
 			}
-			serialized = Joiner.on(",").join(ids);
+			Log.d(TAG, "persisting images " + key + " : " + serialized);
+			setStringProperty(key, serialized);
+		} catch (Throwable e) {
+			Logger.e(TAG, e);
 		}
-		Log.d(TAG, "persisting images " + key + " : " + serialized);
-		setStringProperty(key, serialized);
 	}
 
-	public static List<Image> getImages(String key) {
+	public static List<Media> getImages(String key) {
 		String queueIds = getStringProperty(key);
 		if (ToolString.isNotBlank(queueIds)) {
-			String filter = MediaStore.Images.Media._ID + " IN (" + queueIds + ")";
-			List<Image> images = Utils.loadImages(filter);
+			String filter = Images.Media._ID + " IN (" + queueIds + ")";
+			List<Media> images = Utils.loadImages(filter);
 			Log.d(TAG, key + " - queueIds : " + queueIds.split(",").length + ", images:" + images.size());
 			return images;
 		}
 		return null;
 	}
 
-	public static Image getImage(int id) {
-		String filter = MediaStore.Images.Media._ID + " IN (" + id + ")";
-		List<Image> images = Utils.loadImages(filter);
+	public static Media getImage(int id) {
+		String filter = Images.Media._ID + " IN (" + id + ")";
+		List<Media> images = Utils.loadImages(filter);
 		if (!images.isEmpty()) {
 			return images.get(0);
 		}
@@ -303,11 +313,11 @@ public final class Utils {
 		return map;
 	}
 
-	private static String SHA1(Image image) {
+	private static String SHA1(Media image) {
 		return SHA1(image.path + "_" + new File(image.path).length());
 	}
 
-	public static String getSHA1tag(Image image) {
+	public static String getSHA1tag(Media image) {
 		return "file:sha1sig=" + SHA1(image).toLowerCase(Locale.US);
 	}
 
@@ -365,7 +375,7 @@ public final class Utils {
 
 	static final Map<String, String> md5Sums = new HashMap<String, String>();
 
-	public static final String getMD5Checksum(Image image) {
+	public static final String getMD5Checksum(Media image) {
 		String filename = image.path;
 		String md5sum = md5Sums.get(filename);
 		if (md5sum == null) {
@@ -402,25 +412,41 @@ public final class Utils {
 		}
 	}
 
-	public static List<Image> loadImages(String filter) {
+	public static enum MediaType {
+		photo, video
+	}
+
+	static final String[] projPhoto = { Images.Media._ID, Images.Media.DATA, Images.Media.DATE_ADDED, Images.Media.DATE_TAKEN, Images.Media.DISPLAY_NAME, Images.Media.SIZE };
+	static final String[] projVideo = { Video.Media._ID, Video.Media.DATA, Video.Media.DATE_ADDED, Video.Media.DATE_TAKEN, Video.Media.DISPLAY_NAME, Video.Media.SIZE };
+
+	public static List<Media> loadImages(String filter) {
+		List<Media> photos = Utils.loadImages(filter, MediaType.photo);
+		List<Media> videos = Utils.loadImages(filter, MediaType.video);
+		List<Media> images = new ArrayList<Media>(photos);
+		images.addAll(videos);
+		Collections.sort(images, MEDIA_COMPARATOR);
+		return images;
+	}
+
+	public static List<Media> loadImages(String filter, MediaType mediaType) {
 		Cursor cursor = null;
-		List<Image> images = new ArrayList<Image>();
+		List<Media> images = new ArrayList<Media>();
 		try {
-			String[] proj = { MediaStore.Images.Media._ID, MediaStore.Images.Media.DATA, MediaStore.Images.Media.DATE_ADDED, MediaStore.Images.Media.DATE_TAKEN, MediaStore.Images.Media.DISPLAY_NAME,
-					Media.SIZE };
 
 			// long oneDayAgo = System.currentTimeMillis() - 24 * 3600 * 1000L;
-			// String filter = MediaStore.Images.Media.DATE_TAKEN + " > " + oneDayAgo;
-			// String filter = MediaStore.Images.Media._ID + " IN (54820, 56342)";
+			// String filter = Images.Media.DATE_TAKEN + " > " + oneDayAgo;
+			// String filter = Images.Media._ID + " IN (54820, 56342)";
 
-			String orderBy = MediaStore.Images.Media.DATE_TAKEN + " DESC, " + MediaStore.Images.Media.DATE_ADDED + " DESC";
-			cursor = FlickrUploader.getAppContext().getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, proj, filter, null, orderBy);
-			int idColumn = cursor.getColumnIndex(Media._ID);
-			int dataColumn = cursor.getColumnIndex(Media.DATA);
-			int displayNameColumn = cursor.getColumnIndex(Media.DISPLAY_NAME);
-			int dateTakenColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_TAKEN);
-			int dateAddedColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED);
-			int sizeColumn = cursor.getColumnIndex(Media.SIZE);
+			String orderBy = Images.Media.DATE_TAKEN + " DESC, " + Images.Media.DATE_ADDED + " DESC";
+			Uri uri = mediaType == MediaType.photo ? Images.Media.EXTERNAL_CONTENT_URI : Video.Media.EXTERNAL_CONTENT_URI;
+			String[] proj = mediaType == MediaType.photo ? projPhoto : projVideo;
+			cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, filter, null, orderBy);
+			int idColumn = cursor.getColumnIndex(Images.Media._ID);
+			int dataColumn = cursor.getColumnIndex(Images.Media.DATA);
+			int displayNameColumn = cursor.getColumnIndex(Images.Media.DISPLAY_NAME);
+			int dateTakenColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_TAKEN);
+			int dateAddedColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_ADDED);
+			int sizeColumn = cursor.getColumnIndex(Images.Media.SIZE);
 			cursor.moveToFirst();
 			Log.d(TAG, "filter = " + filter + ", count = " + cursor.getCount());
 			while (cursor.isAfterLast() == false) {
@@ -443,14 +469,14 @@ public final class Utils {
 					date = Long.valueOf(timestampDateTaken);
 				}
 
-				Image item = new Image();
+				Media item = new Media();
 				item.id = cursor.getInt(idColumn);
+				item.mediaType = mediaType;
 				item.path = cursor.getString(dataColumn);
 				item.name = cursor.getString(displayNameColumn);
 				item.size = cursor.getInt(sizeColumn);
 				item.date = date;
 				images.add(item);
-				// Log.d(TAG, item.imageId + " : " + item.imagePath);
 				cursor.moveToNext();
 			}
 		} catch (Throwable e) {
@@ -461,10 +487,9 @@ public final class Utils {
 		}
 		return images;
 	}
-
-	public static List<Folder> getFolders(List<Image> images) {
-		final Multimap<String, Image> photoFiles = LinkedHashMultimap.create();
-		for (Image image : images) {
+	public static List<Folder> getFolders(List<Media> images) {
+		final Multimap<String, Media> photoFiles = LinkedHashMultimap.create();
+		for (Media image : images) {
 			int lastIndexOf = image.path.lastIndexOf("/");
 			if (lastIndexOf > 0) {
 				photoFiles.put(image.path.substring(0, lastIndexOf), image);
@@ -510,18 +535,23 @@ public final class Utils {
 		return mapE;
 	}
 
-	public static Bitmap getBitmap(Image image, int thumbLayoutId) {
+	public static Bitmap getBitmap(Media image, TAB tab) {
 		Bitmap bitmap = null;
 		int retry = 0;
 		while (bitmap == null && retry < 3) {
 			try {
 				BitmapFactory.Options options = new BitmapFactory.Options();
+				options.inSampleSize = 1;
 				options.inPurgeable = true;
 				options.inInputShareable = true;
-				if (thumbLayoutId == R.layout.photo_grid_thumb) {
-					bitmap = MediaStore.Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, MediaStore.Images.Thumbnails.MICRO_KIND, options);
-				} else if (thumbLayoutId == R.layout.folder_grid_thumb) {
-					bitmap = MediaStore.Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, MediaStore.Images.Thumbnails.MINI_KIND, options);
+				if (image.mediaType == MediaType.video) {
+					// bitmap = ThumbnailUtils.createVideoThumbnail(image.path, Images.Thumbnails.MINI_KIND);
+					bitmap = Video.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, Video.Thumbnails.MINI_KIND, null);
+					return bitmap;
+				} else if (tab == TAB.photo) {
+					bitmap = Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, Images.Thumbnails.MICRO_KIND, options);
+				} else if (tab == TAB.folder) {
+					bitmap = Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, Images.Thumbnails.MINI_KIND, options);
 				} else {
 					// First decode with inJustDecodeBounds=true to check dimensions
 					final BitmapFactory.Options opts = new BitmapFactory.Options();
@@ -661,4 +691,17 @@ public final class Utils {
 			return STR.instantUpload;
 		}
 	}
+
+	public static final Comparator<Media> MEDIA_COMPARATOR = new Comparator<Media>() {
+		@Override
+		public int compare(Media arg0, Media arg1) {
+			if (arg0.date > arg1.date) {
+				return -1;
+			} else if (arg0.date < arg1.date) {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+	};
 }
