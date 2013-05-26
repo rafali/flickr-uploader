@@ -48,6 +48,8 @@ public class Config {
 		if (DEBUG == null) {
 			DEBUG = (FlickrUploader.getAppContext().getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
 		}
+		if (DEBUG == null)
+			DEBUG = false;
 		return DEBUG;
 	}
 

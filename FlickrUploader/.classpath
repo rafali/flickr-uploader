@@ -13,26 +13,7 @@
 			<attribute name="optional" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry exported="true" kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
-		<attributes>
-			<attribute name="maven.pomderived" value="true"/>
-		</attributes>
-	</classpathentry>
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.DEPENDENCIES"/>
-	<classpathentry exported="true" kind="lib" path="libs/android-support-v4.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/gcm.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/google-api-client-1.14.1-beta.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/google-api-client-android-1.14.1-beta.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/google-http-client-1.14.1-beta.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/google-http-client-android-1.14.1-beta.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/google-http-client-gson-1.14.1-beta.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/google-http-client-jackson-1.14.1-beta.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/google-http-client-jackson2-1.14.1-beta.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/google-oauth-client-1.14.1-beta.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/gson-2.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/jackson-core-2.1.3.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/jackson-core-asl-1.9.11.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/jsr305-1.3.9.jar"/>
 	<classpathentry kind="src" path="endpoint-libs/libappinstallendpoint-v1/appinstallendpoint/appinstallendpoint-v1-generated-source"/>
 	<classpathentry kind="src" path="endpoint-libs/libdeviceinfoendpoint-v1/deviceinfoendpoint/deviceinfoendpoint-v1-generated-source"/>
 	<classpathentry kind="src" path="endpoint-libs/libdonationendpoint-v1/donationendpoint/donationendpoint-v1-generated-source"/>

@@ -41,9 +41,9 @@ public class FlickrUploader extends Application {
 	public void onCreate() {
 		super.onCreate();
 		FlickrUploader.context = getApplicationContext();
-		if (!Config.isDebug()) {
-			ACRA.init(this);
-		}
+		ACRA.init(this);
+//		if (!Config.isDebug()) {
+//		}
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
