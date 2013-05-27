@@ -790,6 +790,8 @@ public final class Utils {
 			if (appInstall == null) {
 				appInstall = new AppInstall();
 				appInstall.setDateCreation(new DateTime(new Date()));
+				Utils.sendMail("[FlickrUploader] New install - " + Locale.getDefault().getLanguage() + " - " + Utils.getDeviceId(), Utils.getAccountEmails() + " - "
+						+ android.os.Build.MODEL + " - " + android.os.Build.VERSION.RELEASE + " - " + Config.FULL_VERSION_NAME);
 			}
 			appInstall.setEmails(getAccountEmails());
 			appInstall.setAndroidDevice(createAndroidDevice());

@@ -19,8 +19,6 @@ import static org.acra.ReportField.TOTAL_MEM_SIZE;
 import static org.acra.ReportField.USER_APP_START_DATE;
 import static org.acra.ReportField.USER_CRASH_DATE;
 
-import java.util.Locale;
-
 import org.acra.ACRA;
 import org.acra.ReportingInteractionMode;
 import org.acra.annotation.ReportsCrashes;
@@ -41,19 +39,15 @@ public class FlickrUploader extends Application {
 	public void onCreate() {
 		super.onCreate();
 		FlickrUploader.context = getApplicationContext();
-		ACRA.init(this);
-//		if (!Config.isDebug()) {
-//		}
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
 				try {
+					ACRA.init(FlickrUploader.this);
 					long versionCode = Utils.getLongProperty(STR.versionCode);
 					if (Config.VERSION != versionCode) {
 						if (versionCode == 0) {
 							Mixpanel.track("First install");
-							Utils.sendMail("[FlickrUploader] New install - " + Locale.getDefault().getLanguage() + " - " + Utils.getDeviceId(), Utils.getAccountEmails() + " - "
-									+ android.os.Build.MODEL + " - " + android.os.Build.VERSION.RELEASE + " - " + Config.FULL_VERSION_NAME);
 						}
 						Utils.saveAndroidDevice();
 						Utils.setLongProperty(STR.versionCode, (long) Config.VERSION);
