@@ -11,6 +11,7 @@ import android.support.v4.app.NotificationCompat.Builder;
 
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
+import com.rafali.flickruploader.Utils.CAN_UPLOAD;
 
 public class Notifications {
 
@@ -20,6 +21,31 @@ public class Notifications {
 
 	private static Builder builderUploading;
 	private static Builder builderUploaded;
+	private static Builder builderQueued;
+
+	public static void notify(int queued, CAN_UPLOAD canUpload) {
+		if (canUpload == CAN_UPLOAD.ok) {
+			manager.cancelAll();
+		} else {
+			if (builderQueued == null) {
+				builderQueued = new NotificationCompat.Builder(FlickrUploader.getAppContext());
+				builderQueued.setSmallIcon(R.drawable.ic_launcher);
+				builderQueued.setPriority(NotificationCompat.PRIORITY_MIN);
+				builderQueued.setContentIntent(resultPendingIntent);
+				builderQueued.setProgress(0, 1000, false);
+				builderQueued.setAutoCancel(true);
+			}
+			if (FlickrUploaderActivity.getInstance() != null && !FlickrUploaderActivity.getInstance().isPaused()) {
+				builderQueued.setTicker(queued + " media queued");
+			}
+			builderQueued.setContentTitle(queued + " media queued");
+			builderQueued.setContentText("Waiting for " + canUpload);
+			Notification notification = builderQueued.build();
+			notification.icon = android.R.drawable.stat_sys_upload_done;
+			// notification.iconLevel = progress / 10;
+			manager.notify(0, notification);
+		}
+	}
 
 	public static void notify(int progress, final Media image, int currentPosition, int total) {
 		try {
@@ -49,6 +75,7 @@ public class Notifications {
 				builderUploaded.setTicker("Upload finished");
 				builderUploaded.setContentTitle("Upload finished");
 				builderUploaded.setAutoCancel(true);
+
 			}
 			// Log.d("Notifications", "realProgress : " + realProgress + ", progress:" + progress + ", currentPosition:" + currentPosition + ", total:" + total);
 

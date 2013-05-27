@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.rafali.flickruploader.Utils.CAN_UPLOAD;
+
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -51,7 +53,7 @@ public class UploadService extends Service {
 			@Override
 			public void onReceive(Context context, Intent intent) {
 				status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-				boolean charging = status == BatteryManager.BATTERY_STATUS_CHARGING;
+				boolean charging = (status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL);
 				Utils.setCharging(charging);
 				Logger.i("BatteryManager", "charging : " + charging);
 				wake();
@@ -108,9 +110,14 @@ public class UploadService extends Service {
 			int nbFail = 0;
 			while (running) {
 				try {
-					if (queue.isEmpty() || !Utils.canUploadNow()) {
-						if (queue.isEmpty())
+					CAN_UPLOAD canUploadNow = Utils.canUploadNow();
+					if (queue.isEmpty() || canUploadNow != Utils.CAN_UPLOAD.ok) {
+						if (queue.isEmpty()) {
 							uploaded.clear();
+						} else {
+							Notifications.notify(queue.size(), canUploadNow);
+						}
+
 						synchronized (mPauseLock) {
 							Log.d(TAG, "waiting for work");
 							mPauseLock.wait();

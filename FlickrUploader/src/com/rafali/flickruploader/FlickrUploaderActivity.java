@@ -127,10 +127,10 @@ public class FlickrUploaderActivity extends Activity {
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
-				images = Utils.loadImages(null, MediaType.photo);
+				photos = Utils.loadImages(null, MediaType.photo);
 				videos = Utils.loadImages(null, MediaType.video);
 
-				List<Media> all = new ArrayList<Media>(images);
+				List<Media> all = new ArrayList<Media>(photos);
 				all.addAll(videos);
 				folders = Utils.getFolders(all);
 				for (Folder folder : folders) {
@@ -175,7 +175,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	void testNotification() {
 		BackgroundExecutor.execute(new Runnable() {
-			Media image = images.get(0);
+			Media image = photos.get(0);
 			@Override
 			public void run() {
 				for (int i = 0; i <= 100; i++) {
@@ -373,8 +373,10 @@ public class FlickrUploaderActivity extends Activity {
 					Collection<Media> allImages;
 					if (isFolderTab()) {
 						allImages = foldersMap.keySet();
+					} else if (isVideoTab()) {
+						allImages = videos;
 					} else {
-						allImages = images;
+						allImages = photos;
 					}
 					getImageSelected(SelectionType.auto).addAll(allImages);
 					getImageSelected(SelectionType.auto).removeAll(getImageSelected(SelectionType.all));
@@ -614,6 +616,10 @@ public class FlickrUploaderActivity extends Activity {
 		return mainTabView.getCurrentView().getTag() == TAB.folder;
 	}
 
+	private boolean isVideoTab() {
+		return mainTabView.getCurrentView().getTag() == TAB.video;
+	}
+
 	@UiThread
 	void toast(String message) {
 		Toast.makeText(getBaseContext(), message, Toast.LENGTH_LONG).show();
@@ -645,7 +651,7 @@ public class FlickrUploaderActivity extends Activity {
 		all, auto
 	}
 
-	List<Media> images;
+	List<Media> photos;
 	List<Media> videos;
 	List<Folder> folders;
 	Map<Media, Folder> foldersMap = new HashMap<Media, Folder>();
@@ -665,7 +671,7 @@ public class FlickrUploaderActivity extends Activity {
 			} else if (tab == TAB.folder) {
 				return folders.size();
 			} else {
-				return images.size();
+				return photos.size();
 			}
 		}
 
@@ -676,7 +682,7 @@ public class FlickrUploaderActivity extends Activity {
 			} else if (tab == TAB.folder) {
 				return folders.get(position).images.get(0);
 			} else {
-				return images.get(position);
+				return photos.get(position);
 			}
 		}
 
@@ -701,7 +707,7 @@ public class FlickrUploaderActivity extends Activity {
 			} else if (tab == TAB.folder) {
 				image = folders.get(position).images.get(0);
 			} else {
-				image = images.get(position);
+				image = photos.get(position);
 			}
 			if (convertView.getTag() != image) {
 				convertView.setTag(image);
@@ -784,6 +790,8 @@ public class FlickrUploaderActivity extends Activity {
 
 	private MainTabView mainTabView;
 
+	private boolean paused = false;
+
 	@Override
 	public void onBackPressed() {
 		moveTaskToBack(true);
@@ -824,13 +832,15 @@ public class FlickrUploaderActivity extends Activity {
 
 	@Override
 	protected void onResume() {
+		paused = false;
 		super.onResume();
 		refresh(false);
+		UploadService.wake();
 	}
 
 	@UiThread
 	void confirmSync() {
-		final CharSequence[] modes = { "Sync current " + images.size() + " photos and auto-upload new photos", "Auto-upload new photos", "Manually upload photos" };
+		final CharSequence[] modes = { "Sync current " + photos.size() + " photos and auto-upload new photos", "Auto-upload new photos", "Manually upload photos" };
 		AlertDialog.Builder alt_bld = new AlertDialog.Builder(this);
 		alt_bld.setTitle("Flickr Sync (" + Utils.getStringProperty(STR.userName) + ")");
 		alt_bld.setSingleChoiceItems(modes, 0, null);
@@ -839,7 +849,7 @@ public class FlickrUploaderActivity extends Activity {
 				ListView lw = ((AlertDialog) dialog).getListView();
 				switch (lw.getCheckedItemPosition()) {
 				case 0:
-					UploadService.enqueue(images, Utils.getInstantAlbumId(), STR.instantUpload);
+					UploadService.enqueue(photos, Utils.getInstantAlbumId(), STR.instantUpload);
 					Utils.setBooleanProperty(Preferences.AUTOUPLOAD, true);
 					break;
 				case 1:
@@ -913,5 +923,16 @@ public class FlickrUploaderActivity extends Activity {
 		if (instance != null) {
 			instance.refresh(reload);
 		}
+	}
+	
+	@Override
+	protected void onPause() {
+		paused  = true;
+		super.onPause();
+	}
+	
+
+	public boolean isPaused() {
+		return paused;
 	}
 }

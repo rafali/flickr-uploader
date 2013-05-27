@@ -516,11 +516,13 @@ public final class Utils {
 		}
 		return folders;
 	}
+	
+	public enum CAN_UPLOAD {ok, network, wifi, charging}
 
-	public static boolean canUploadNow() {
+	public static CAN_UPLOAD canUploadNow() {
 		if (Utils.getBooleanProperty(Preferences.CHARGING_ONLY, false)) {
 			if (!isCharging()) {
-				return false;
+				return CAN_UPLOAD.charging;
 			}
 		}
 		
@@ -528,15 +530,15 @@ public final class Utils {
 		NetworkInfo activeNetwork = manager.getActiveNetworkInfo();
 
 		if (activeNetwork == null || !activeNetwork.isConnected()) {
-			return false;
+			return CAN_UPLOAD.network;
 		}
 
 		// if wifi is disabled and the user preference only allows wifi abort
 		if (sp.getString(Preferences.UPLOAD_NETWORK, "").equals("wifionly") && activeNetwork.getType() != ConnectivityManager.TYPE_WIFI) {
-			return false;
+			return CAN_UPLOAD.wifi;
 		}
 
-		return true;
+		return CAN_UPLOAD.ok;
 	}
 
 	public static interface Callback<E> {
