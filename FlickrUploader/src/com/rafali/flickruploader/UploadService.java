@@ -53,7 +53,7 @@ public class UploadService extends Service {
 			@Override
 			public void onReceive(Context context, Intent intent) {
 				status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-				boolean charging = (status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL);
+				boolean charging = (status != BatteryManager.BATTERY_STATUS_DISCHARGING);
 				Utils.setCharging(charging);
 				Logger.i("BatteryManager", "charging : " + charging);
 				wake();

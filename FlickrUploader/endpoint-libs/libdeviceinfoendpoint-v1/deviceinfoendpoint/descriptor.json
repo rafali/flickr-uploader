@@ -1,11 +1,11 @@
 {
   "files": [
     {
-      "path": "ra-fa-li-deviceinfoendpoint-v1-20130527123726-java-1.14.2-beta-sources.jar", 
+      "path": "ra-fa-li-deviceinfoendpoint-v1-20130527133017-java-1.14.2-beta-sources.jar", 
       "type": "source"
     }, 
     {
-      "path": "ra-fa-li-deviceinfoendpoint-v1-20130527123726-java-1.14.2-beta.jar.properties", 
+      "path": "ra-fa-li-deviceinfoendpoint-v1-20130527133017-java-1.14.2-beta.jar.properties", 
       "type": "android.properties"
     }
   ], 
@@ -689,7 +689,7 @@
     }
   ], 
   "language_version": "1.14.2-beta", 
-  "revision": 20130527123726, 
+  "revision": 20130527133017, 
   "id": "deviceinfoendpoint:v1", 
   "modulePath": "com/rafali/flickruploader"
 }
