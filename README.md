@@ -4,7 +4,7 @@ Flickr Uploader
 The goal of this project is to help Flickr users automatically backup the photos from their Android phone.
 It works like [Google+ Instant Upload](http://support.google.com/plus/answer/2910392?hl=en) or [Dropbox Camera Upload](https://blog.dropbox.com/2012/02/your-photos-simplified-part-1/).
 
-The main benefit of this app over Google+ Instant Upload is the fact that you can upload an **unlimited** number of photos in **high resolution** with a relatively cheap Flick Pro account.
+The main benefit of this app over Google+ Instant Upload is the fact that you can upload ONE FREAKING TERABYTE of photos&videos in **high resolution** for free!
 
 You can download it at : https://play.google.com/store/apps/details?id=com.rafali.flickruploader
 
@@ -17,3 +17,6 @@ It uses a few open source libraries:
 - [android-donations-lib](https://github.com/dschuermann/android-donations-lib) : allows users to make donations using Google Play, Paypal or Flattr
 - [AndroidAnnotation](https://github.com/excilys/androidannotations) : simplifies Android development with annotations to define code scope (UI thread, background thread…)
 - [google-collections](https://code.google.com/p/google-collections/) : simplifies use of lists, maps and multimaps 
+
+
+[![Mobile Analytics](https://cdn.mxpnl.com/site_media/images/partner/badge_blue.png)](https://mixpanel.com/f/partner)
