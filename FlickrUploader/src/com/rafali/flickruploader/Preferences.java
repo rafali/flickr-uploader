@@ -41,6 +41,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	public static final String UPLOAD_NETWORK = "upload_network";
 	public static final String UPLOAD_PRIVACY = "upload_privacy";
 	public static final String AUTOUPLOAD = "autoupload";
+	public static final String CHARGING_ONLY = "charging_only";
 
 	List<String> donations = Lists.newArrayList("Sakari Korpinen", "J R Whitehead", "José Harvey", "Rafael Balanza");
 

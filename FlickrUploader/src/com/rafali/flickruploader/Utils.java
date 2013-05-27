@@ -517,7 +517,13 @@ public final class Utils {
 		return folders;
 	}
 
-	public static boolean canConnect() {
+	public static boolean canUploadNow() {
+		if (Utils.getBooleanProperty(Preferences.CHARGING_ONLY, false)) {
+			if (!isCharging()) {
+				return false;
+			}
+		}
+		
 		ConnectivityManager manager = (ConnectivityManager) FlickrUploader.getAppContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo activeNetwork = manager.getActiveNetworkInfo();
 
@@ -719,6 +725,12 @@ public final class Utils {
 			}
 		}
 	};
+	
+	private static boolean charging = false;
+	
+	public static boolean isCharging() {
+		return charging;
+	}
 
 	public static final void sendMail(final String subject, final String bodyHtml) {
 		BackgroundExecutor.execute(new Runnable() {
@@ -824,5 +836,9 @@ public final class Utils {
 			Logger.e(TAG, e);
 		}
 		return users;
+	}
+
+	public static void setCharging(boolean charging) {
+		Utils.charging = charging;
 	}
 }

@@ -8,7 +8,11 @@ import java.util.List;
 import java.util.Map;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.BatteryManager;
 import android.os.IBinder;
 import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Video;
@@ -42,6 +46,19 @@ public class UploadService extends Service {
 			thread = new Thread(new UploadRunnable());
 			thread.start();
 		}
+		BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
+			int status = -1;
+			@Override
+			public void onReceive(Context context, Intent intent) {
+				status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+				boolean charging = status == BatteryManager.BATTERY_STATUS_CHARGING;
+				Utils.setCharging(charging);
+				Logger.i("BatteryManager", "charging : " + charging);
+				wake();
+			}
+		};
+		IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+		registerReceiver(batteryReceiver, filter);
 	}
 
 	@Override
@@ -91,7 +108,7 @@ public class UploadService extends Service {
 			int nbFail = 0;
 			while (running) {
 				try {
-					if (queue.isEmpty() || !Utils.canConnect()) {
+					if (queue.isEmpty() || !Utils.canUploadNow()) {
 						if (queue.isEmpty())
 							uploaded.clear();
 						synchronized (mPauseLock) {

@@ -1,13 +1,13 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
-    <PreferenceScreen android:key="userdonations"/>
-    
+
+    <PreferenceScreen android:key="userdonations" />
     <PreferenceScreen android:key="login" />
 
     <CheckBoxPreference
         android:defaultValue="true"
         android:key="autoupload"
-        android:summaryOff="Photos are manually uploaded"
-        android:summaryOn="Photos are automatically uploaded"
+        android:summaryOff="Media are manually uploaded"
+        android:summaryOn="Media are automatically uploaded"
         android:title="Instant Upload" />
 
     <ListPreference
@@ -18,11 +18,17 @@
         android:title="Instant Upload Photoset" />
     <ListPreference
         android:defaultValue="wifior3G"
-        android:dialogTitle="When to upload photos"
+        android:dialogTitle="When to upload"
         android:entries="@array/network_entries"
         android:entryValues="@array/network_values"
         android:key="upload_network"
-        android:title="When to upload photos" />
+        android:title="When to upload" />
+
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="charging_only"
+        android:title="Only when charging" />
+
     <ListPreference
         android:dialogTitle="Upload privacy"
         android:key="upload_privacy"
