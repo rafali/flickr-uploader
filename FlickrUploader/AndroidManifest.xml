@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.rafali.flickruploader"
     android:installLocation="internalOnly"
-    android:versionCode="8"
-    android:versionName="1.4.1" >
+    android:versionCode="10"
+    android:versionName="1.5" >
 
     <uses-sdk
         android:minSdkVersion="14"
@@ -84,8 +84,12 @@
             android:name=".Preferences"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:icon="@drawable/empty_shape"
-            android:label="Preferences" >
-        </activity>
+            android:label="Preferences" />
+        <activity
+            android:name=".PreferencesNotification"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:icon="@drawable/empty_shape"
+            android:label="Notifications" />
         <activity
             android:name=".WebAuth_"
             android:configChanges="orientation|screenSize|keyboardHidden"

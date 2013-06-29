@@ -419,8 +419,9 @@ public class FlickrApi {
 						Thread.sleep((long) (Math.pow(2, retry) * 1000));
 					} catch (InterruptedException ignore) {
 					}
-					retry++;
 				}
+			} finally {
+				retry++;
 			}
 		}
 		if (success) {
@@ -429,6 +430,8 @@ public class FlickrApi {
 		}
 		return success;
 	}
+	
+	
 
 	public static boolean isAuthentified() {
 		if (auth == null) {

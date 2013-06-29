@@ -11,6 +11,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
+import com.rafali.flickruploader.Utils.MediaType;
 
 public class ImageTableObserver extends ContentObserver {
 
@@ -29,7 +30,7 @@ public class ImageTableObserver extends ContentObserver {
 	@Override
 	public void onChange(boolean change) {
 		try {
-			if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true)) {
+			if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
 				Log.d(TAG, "autoupload disabled");
 				return;
 			}
@@ -49,32 +50,37 @@ public class ImageTableObserver extends ContentObserver {
 
 			List<Media> not_uploaded = new ArrayList<Media>();
 			for (Media image : media) {
-				boolean uploaded = FlickrApi.isUploaded(image);
-				Log.d(TAG, "uploaded : " + uploaded + ", " + image);
-				if (!uploaded) {
-					File file = new File(image.path);
-					if (Utils.isIgnored(new Folder(file.getParent()))) {
-						Log.d(TAG, "Ignored : " + file);
-					} else {
-						int sleep = 0;
-						while (file.length() < 100 && sleep < 5) {
-							Log.d(TAG, "sleeping a bit");
-							sleep++;
-							Thread.sleep(1000);
-						}
-						not_uploaded.add(image);
-						final Bitmap bitmap = Utils.getBitmap(image, TAB.photo);
-						if (bitmap != null) {
-							Utils.getCache().put(image.path + "_" + R.layout.photo_grid_thumb, bitmap);
+				if (image.mediaType == MediaType.photo && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true)) {
+					continue;
+				} else if (image.mediaType == MediaType.video && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
+					continue;
+				} else {
+					boolean uploaded = FlickrApi.isUploaded(image);
+					Log.d(TAG, "uploaded : " + uploaded + ", " + image);
+					if (!uploaded) {
+						File file = new File(image.path);
+						if (Utils.isIgnored(new Folder(file.getParent()))) {
+							Log.d(TAG, "Ignored : " + file);
+						} else {
+							int sleep = 0;
+							while (file.length() < 100 && sleep < 5) {
+								Log.d(TAG, "sleeping a bit");
+								sleep++;
+								Thread.sleep(1000);
+							}
+							not_uploaded.add(image);
+							final Bitmap bitmap = Utils.getBitmap(image, TAB.photo);
+							if (bitmap != null) {
+								Utils.getCache().put(image.path + "_" + R.layout.photo_grid_thumb, bitmap);
+							}
 						}
 					}
 				}
+				if (!not_uploaded.isEmpty()) {
+					FlickrUploaderActivity.staticRefresh(true);
+					UploadService.enqueue(not_uploaded, Utils.getInstantAlbumId(), STR.instantUpload);
+				}
 			}
-			if (!not_uploaded.isEmpty()) {
-				FlickrUploaderActivity.staticRefresh(true);
-				UploadService.enqueue(not_uploaded, Utils.getInstantAlbumId(), STR.instantUpload);
-			}
-
 		} catch (Throwable e) {
 			Log.e(TAG, e.getMessage(), e);
 		}

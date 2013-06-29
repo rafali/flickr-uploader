@@ -50,6 +50,7 @@ public class UploadService extends Service {
 		}
 		BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
 			int status = -1;
+
 			@Override
 			public void onReceive(Context context, Intent intent) {
 				status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
@@ -120,7 +121,11 @@ public class UploadService extends Service {
 
 						synchronized (mPauseLock) {
 							Log.d(TAG, "waiting for work");
-							mPauseLock.wait();
+							if (queue.isEmpty()) {
+								mPauseLock.wait();
+							} else {
+								mPauseLock.wait(30000);
+							}
 						}
 					} else {
 						if (FlickrApi.isAuthentified()) {
@@ -140,11 +145,11 @@ public class UploadService extends Service {
 								});
 							}
 							long time = System.currentTimeMillis() - start;
+							queue.remove(image);
+							persistQueue();
 							if (success) {
 								Log.d(TAG, "Upload success : " + time + "ms " + image);
-								queue.remove(image);
 								uploaded.add(image);
-								persistQueue();
 								nbFail = 0;
 								if (queue.isEmpty()) {
 									if (folder != null) {

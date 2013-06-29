@@ -24,28 +24,33 @@ public class Notifications {
 	private static Builder builderQueued;
 
 	public static void notify(int queued, CAN_UPLOAD canUpload) {
-		if (canUpload == CAN_UPLOAD.ok) {
-			manager.cancelAll();
-		} else {
-			if (builderQueued == null) {
-				builderQueued = new NotificationCompat.Builder(FlickrUploader.getAppContext());
-				builderQueued.setSmallIcon(R.drawable.ic_launcher);
-				builderQueued.setPriority(NotificationCompat.PRIORITY_MIN);
-				builderQueued.setContentIntent(resultPendingIntent);
-				builderQueued.setProgress(0, 1000, false);
-				builderQueued.setAutoCancel(true);
+		if (System.currentTimeMillis() - lastNotified > 30 * 60 * 1000L) {
+			if (canUpload == CAN_UPLOAD.ok || !Utils.getBooleanProperty("notification_paused", true)) {
+				manager.cancelAll();
+			} else {
+				if (builderQueued == null) {
+					builderQueued = new NotificationCompat.Builder(FlickrUploader.getAppContext());
+					builderQueued.setSmallIcon(R.drawable.ic_launcher);
+					builderQueued.setPriority(NotificationCompat.PRIORITY_MIN);
+					builderQueued.setContentIntent(resultPendingIntent);
+					builderQueued.setProgress(0, 1000, false);
+					builderQueued.setAutoCancel(true);
+				}
+				if (FlickrUploaderActivity.getInstance() != null && !FlickrUploaderActivity.getInstance().isPaused()) {
+					builderQueued.setTicker(queued + " media queued");
+				}
+				builderQueued.setContentTitle(queued + " media queued");
+				builderQueued.setContentText("Waiting for " + canUpload);
+				Notification notification = builderQueued.build();
+				notification.icon = android.R.drawable.stat_sys_upload_done;
+				// notification.iconLevel = progress / 10;
+				manager.notify(0, notification);
+				lastNotified = System.currentTimeMillis();
 			}
-			if (FlickrUploaderActivity.getInstance() != null && !FlickrUploaderActivity.getInstance().isPaused()) {
-				builderQueued.setTicker(queued + " media queued");
-			}
-			builderQueued.setContentTitle(queued + " media queued");
-			builderQueued.setContentText("Waiting for " + canUpload);
-			Notification notification = builderQueued.build();
-			notification.icon = android.R.drawable.stat_sys_upload_done;
-			// notification.iconLevel = progress / 10;
-			manager.notify(0, notification);
 		}
 	}
+
+	static long lastNotified = 0;
 
 	public static void notify(int progress, final Media image, int currentPosition, int total) {
 		try {
@@ -84,11 +89,18 @@ public class Notifications {
 
 			Builder builder;
 			if (uploading) {
+				if (!Utils.getBooleanProperty("notification_progress", true)) {
+					return;
+				}
 				builder = builderUploading;
 				builder.setProgress(100, realProgress, false);
 				builder.setContentText(image.name);
 				builder.setContentInfo(currentPosition + " / " + total);
 			} else {
+				if (!Utils.getBooleanProperty("notification_finished", true)) {
+					manager.cancelAll();
+					return;
+				}
 				builder = builderUploaded;
 				builder.setContentText(total + " media sent to Flickr");
 			}

@@ -1,0 +1,16 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="notification_progress"
+        android:title="Upload Progress" />
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="notification_finished"
+        android:title="Upload Finished" />
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="notification_paused"
+        android:title="Upload Paused" />
+
+</PreferenceScreen>

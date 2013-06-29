@@ -502,6 +502,7 @@ public final class Utils {
 		}
 		return images;
 	}
+
 	public static List<Folder> getFolders(List<Media> images) {
 		final Multimap<String, Media> photoFiles = LinkedHashMultimap.create();
 		for (Media image : images) {
@@ -516,8 +517,10 @@ public final class Utils {
 		}
 		return folders;
 	}
-	
-	public enum CAN_UPLOAD {ok, network, wifi, charging}
+
+	public enum CAN_UPLOAD {
+		ok, network, wifi, charging
+	}
 
 	public static CAN_UPLOAD canUploadNow() {
 		if (Utils.getBooleanProperty(Preferences.CHARGING_ONLY, false)) {
@@ -525,7 +528,7 @@ public final class Utils {
 				return CAN_UPLOAD.charging;
 			}
 		}
-		
+
 		ConnectivityManager manager = (ConnectivityManager) FlickrUploader.getAppContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo activeNetwork = manager.getActiveNetworkInfo();
 
@@ -727,9 +730,9 @@ public final class Utils {
 			}
 		}
 	};
-	
+
 	private static boolean charging = false;
-	
+
 	public static boolean isCharging() {
 		return charging;
 	}
@@ -744,7 +747,7 @@ public final class Utils {
 						}
 					});
 					Rpcendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
-					String admin = Config.getProperty("admin.email");
+					String admin = FlickrUploader.getAppContext().getString(R.string.admin_email);
 					endpoint.sendMail(admin, subject, bodyHtml, admin).execute();
 				} catch (Throwable e) {
 					Logger.e(TAG, e);
@@ -752,6 +755,7 @@ public final class Utils {
 			}
 		});
 	}
+
 	public static AndroidDevice createAndroidDevice() {
 		AndroidDevice androidDevice = new AndroidDevice();
 		androidDevice.setId(getDeviceId());
@@ -804,8 +808,8 @@ public final class Utils {
 			if (appInstall == null) {
 				appInstall = new AppInstall();
 				appInstall.setDateCreation(new DateTime(new Date()));
-				Utils.sendMail("[FlickrUploader] New install - " + Locale.getDefault().getLanguage() + " - " + Utils.getDeviceId(), Utils.getAccountEmails() + " - "
-						+ android.os.Build.MODEL + " - " + android.os.Build.VERSION.RELEASE + " - " + Config.FULL_VERSION_NAME);
+				Utils.sendMail("[FlickrUploader] New install - " + Locale.getDefault().getLanguage() + " - " + Utils.getDeviceId(), Utils.getAccountEmails() + " - " + android.os.Build.MODEL + " - "
+						+ android.os.Build.VERSION.RELEASE + " - " + Config.FULL_VERSION_NAME);
 			}
 			appInstall.setEmails(getAccountEmails());
 			appInstall.setAndroidDevice(createAndroidDevice());

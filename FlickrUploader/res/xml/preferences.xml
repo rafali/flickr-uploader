@@ -6,9 +6,16 @@
     <CheckBoxPreference
         android:defaultValue="true"
         android:key="autoupload"
-        android:summaryOff="Media are manually uploaded"
-        android:summaryOn="Media are automatically uploaded"
-        android:title="Instant Upload" />
+        android:summaryOff="Photos are manually uploaded"
+        android:summaryOn="Photos are automatically uploaded"
+        android:title="Photo Instant Upload" />
+
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="autouploadvideos"
+        android:summaryOff="Videos are manually uploaded"
+        android:summaryOn="Videos are automatically uploaded"
+        android:title="Video Instant Upload" />
 
     <ListPreference
         android:dialogTitle="Instant Upload Photoset"
@@ -34,6 +41,9 @@
         android:key="upload_privacy"
         android:title="Upload privacy" />
 
+    <PreferenceScreen
+        android:key="notifications"
+        android:title="Notifications" />
     <PreferenceScreen
         android:key="rate"
         android:summary="If you like this app, please rate it ★★★★★ on Google Play"

@@ -1,6 +1,6 @@
 {
  "kind": "discovery#rpcDescription",
- "etag": "\"_eRzJ5rb6y2Sm1GT1st-3xOUuXg/psaDLOISAdOxPl-kHcGGF-GfKNM\"",
+ "etag": "\"s1omim4x8ymp9_6H8kBMkfEDqpo/gIyrh439XZRuDWyPEnN3rn7ykiQ\"",
  "discoveryVersion": "v1",
  "id": "donationendpoint:v1",
  "name": "donationendpoint",
@@ -94,12 +94,16 @@
      "type": "string"
     },
     "id": {
-     "type": "any"
+     "$ref": "_any"
     },
     "name": {
      "type": "string"
     }
    }
+  },
+  "_any": {
+   "id": "_any",
+   "type": "any"
   }
  },
  "methods": {
