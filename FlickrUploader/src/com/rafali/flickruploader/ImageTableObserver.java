@@ -4,11 +4,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.LoggerFactory;
+
 import android.database.ContentObserver;
 import android.graphics.Bitmap;
 import android.os.Handler;
 import android.provider.MediaStore;
-import android.util.Log;
 
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import com.rafali.flickruploader.Utils.MediaType;
@@ -16,7 +17,7 @@ import com.rafali.flickruploader.Utils.MediaType;
 public class ImageTableObserver extends ContentObserver {
 
 	private static final String LAST_CHANGE = "lastChange";
-	static final String TAG = ImageTableObserver.class.getSimpleName();
+	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ImageTableObserver.class);
 
 	public ImageTableObserver() {
 		super(new Handler());
@@ -31,11 +32,11 @@ public class ImageTableObserver extends ContentObserver {
 	public void onChange(boolean change) {
 		try {
 			if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
-				Log.d(TAG, "autoupload disabled");
+				LOG.debug("autoupload disabled");
 				return;
 			}
 			if (!FlickrApi.isAuthentified()) {
-				Log.d(TAG, "Flickr not authentified yet");
+				LOG.debug("Flickr not authentified yet");
 				return;
 			}
 
@@ -44,7 +45,7 @@ public class ImageTableObserver extends ContentObserver {
 			lastChange = System.currentTimeMillis();
 			Utils.setLongProperty(LAST_CHANGE, lastChange);
 			if (media == null || media.isEmpty()) {
-				Log.d(TAG, "no new image since " + filter);
+				LOG.debug("no new image since " + filter);
 				return;
 			}
 
@@ -56,15 +57,15 @@ public class ImageTableObserver extends ContentObserver {
 					continue;
 				} else {
 					boolean uploaded = FlickrApi.isUploaded(image);
-					Log.d(TAG, "uploaded : " + uploaded + ", " + image);
+					LOG.debug("uploaded : " + uploaded + ", " + image);
 					if (!uploaded) {
 						File file = new File(image.path);
-						if (Utils.isIgnored(new Folder(file.getParent()))) {
-							Log.d(TAG, "Ignored : " + file);
+						if (!Utils.isSynced(new Folder(file.getParent()))) {
+							LOG.debug("Ignored : " + file);
 						} else {
 							int sleep = 0;
 							while (file.length() < 100 && sleep < 5) {
-								Log.d(TAG, "sleeping a bit");
+								LOG.debug("sleeping a bit");
 								sleep++;
 								Thread.sleep(1000);
 							}
@@ -82,7 +83,7 @@ public class ImageTableObserver extends ContentObserver {
 				}
 			}
 		} catch (Throwable e) {
-			Log.e(TAG, e.getMessage(), e);
+			LOG.error(e.getMessage(), e);
 		}
 	}
 }

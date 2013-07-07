@@ -3,14 +3,15 @@ package com.rafali.flickruploader;
 import java.util.Date;
 
 import org.json.JSONObject;
-
-import android.util.Log;
+import org.slf4j.LoggerFactory;
 
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.mixpanel.android.mpmetrics.MixpanelAPI;
 import com.mixpanel.android.mpmetrics.MixpanelAPI.People;
 
 public class Mixpanel {
+
+	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(Mixpanel.class);
 
 	private static MixpanelAPI mixpanel;
 
@@ -33,7 +34,7 @@ public class Mixpanel {
 					mixpanel.registerSuperProperties(json);
 				}
 			} catch (Throwable e) {
-				Log.e("Mixpanel", e.getMessage(), e);
+				LOG.error(e.getMessage(), e);
 			}
 
 		}
@@ -53,7 +54,7 @@ public class Mixpanel {
 					people.identify(Utils.getEmail());
 					people.increment(key, nb);
 				} catch (Throwable e) {
-					Log.e("Mixpanel", e.getMessage(), e);
+					LOG.error(e.getMessage(), e);
 				}
 			}
 		});
@@ -82,7 +83,7 @@ public class Mixpanel {
 					mixpanel.identify(Utils.getEmail());
 					mixpanel.track(event, jsonObject);
 				} catch (Throwable e) {
-					Log.e("Mixpanel", e.getMessage(), e);
+					LOG.error(e.getMessage(), e);
 				}
 			}
 		});

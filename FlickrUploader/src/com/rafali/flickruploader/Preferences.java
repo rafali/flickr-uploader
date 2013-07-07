@@ -1,11 +1,14 @@
 package com.rafali.flickruploader;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+
+import org.slf4j.LoggerFactory;
 
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -18,6 +21,7 @@ import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -41,7 +45,7 @@ import com.rafali.flickruploader.billing.Purchase;
 
 public class Preferences extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 
-	static final String TAG = Preferences.class.getSimpleName();
+	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(Preferences.class);
 	private static final String AUTOUPLOAD_PHOTOSET = "autoupload_photoset";
 	public static final String UPLOAD_NETWORK = "upload_network";
 	public static final String UPLOAD_PRIVACY = "upload_privacy";
@@ -49,7 +53,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	public static final String AUTOUPLOAD_VIDEOS = "autouploadvideos";
 	public static final String CHARGING_ONLY = "charging_only";
 
-	List<String> donations = Lists.newArrayList("S. Korpinen", "J. R. Whitehead", "J. Harvey", "R. Balanza", "I. A. Mendoza", "F. Jumayao", "O. M. Figueras", "R. Raghavn");
+	List<String> donations = Lists.newArrayList("S. Korpinen", "J. R. Whitehead", "J. Harvey", "R. Balanza", "I. A. Mendoza", "F. Jumayao", "O. M. Figueras", "R. Raghavn", "D. Riley");
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -128,7 +132,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		findPreference("donation").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
-				startDonation();
+				showDonation();
 				return false;
 			}
 		});
@@ -136,7 +140,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		findPreference("userdonations").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
-				startDonation();
+				showDonation();
 				return false;
 			}
 		});
@@ -154,30 +158,10 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
 				Mixpanel.track("Feedback");
-				Intent intent = new Intent(Intent.ACTION_SEND);
-				intent.setType("text/email");
-				intent.putExtra(Intent.EXTRA_EMAIL, new String[] { "flickruploader@rafali.com" });
-				intent.putExtra(Intent.EXTRA_SUBJECT, "Feedback on Flickr Instant Upload");
-				intent.putExtra(Intent.EXTRA_TEXT, "Here are some feedback to improve this app:");
-
-				final List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(intent, 0);
-
-				ResolveInfo gmailResolveInfo = null;
-				for (ResolveInfo resolveInfo : resInfoList) {
-					if ("com.google.android.gm".equals(resolveInfo.activityInfo.packageName)) {
-						gmailResolveInfo = resolveInfo;
-						break;
-					}
-				}
-
-				if (gmailResolveInfo != null) {
-					intent.setClassName(gmailResolveInfo.activityInfo.packageName, gmailResolveInfo.activityInfo.name);
-					startActivity(intent);
-				} else {
-					startActivity(Intent.createChooser(intent, "Send Feedback:"));
-				}
+				showEmailActivity("Feedback on Flickr Instant Upload", "Here are some feedback to improve this app:", true);
 				return false;
 			}
+
 		});
 
 		findPreference(AUTOUPLOAD_PHOTOSET).setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
@@ -237,6 +221,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		render();
 
 		renderDonation();
+
 	}
 
 	void loadDonations() {
@@ -251,6 +236,43 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 				}
 			}
 		});
+	}
+
+	private void showEmailActivity(String subject, String message, boolean attachLogs) {
+		Intent intent = new Intent(Intent.ACTION_SEND);
+		intent.setType("text/email");
+		intent.putExtra(Intent.EXTRA_EMAIL, new String[] { "flickruploader@rafali.com" });
+		intent.putExtra(Intent.EXTRA_SUBJECT, subject);
+		intent.putExtra(Intent.EXTRA_TEXT, message);
+
+		if (attachLogs) {
+			File log = Utils.getLogFile();
+			if (log.exists()) {
+				File publicDownloadDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+				File publicLog = new File(publicDownloadDirectory, "flickruploader_log.txt");
+				Utils.copyFile(log, publicLog);
+				Uri uri = Uri.fromFile(publicLog);
+				intent.putExtra(Intent.EXTRA_STREAM, uri);
+			} else {
+				LOG.warn(log + " does not exist");
+			}
+		}
+		final List<ResolveInfo> resInfoList = getPackageManager().queryIntentActivities(intent, 0);
+
+		ResolveInfo gmailResolveInfo = null;
+		for (ResolveInfo resolveInfo : resInfoList) {
+			if ("com.google.android.gm".equals(resolveInfo.activityInfo.packageName)) {
+				gmailResolveInfo = resolveInfo;
+				break;
+			}
+		}
+
+		if (gmailResolveInfo != null) {
+			intent.setClassName(gmailResolveInfo.activityInfo.packageName, gmailResolveInfo.activityInfo.name);
+			startActivity(intent);
+		} else {
+			startActivity(Intent.createChooser(intent, "Send Feedback:"));
+		}
 	}
 
 	@Override
@@ -337,11 +359,11 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 				}
 			}, 10000);
 		} catch (Throwable e) {
-			Logger.e("Preferences", e);
+			LOG.error(e.getMessage(), e);
 		}
 	}
 
-	String[] donationMessage = new String[] { "for your generous donation!", "for your support!", "for the coffee!", "for the donut!", "for the beer!", "for beeing awesome!" };
+	String[] donationMessage = new String[] { "for your generous donation!", "for your support!", "for the coffee!", "for the beer!", "for beeing awesome!" };
 	private boolean destroyed = false;
 
 	@Override
@@ -352,13 +374,13 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		destroyed = true;
 	}
 
-	private void startDonation() {
+	private void showDonation() {
 		Mixpanel.track("Donation");
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(Preferences.this);
 		String[] choices = new String[] { "a coffee ($2)", "a nicer coffee ($3)", "a beer! ($5)" };
 		final String[] choiceValuess = new String[] { "flickruploader.donation.2", "flickruploader.donation.3", "flickruploader.donation.5" };
-		builder.setTitle("Thank the developer with").setItems(choices, new DialogInterface.OnClickListener() {
+		builder.setTitle("This app is free and opensource. Thank the developer with").setItems(choices, new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) {
 				// startActivity(new Intent(Preferences.this, DonationsActivity.class));
 				final String inappKey = choiceValuess[which];
@@ -366,20 +388,24 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 				final OnIabPurchaseFinishedListener mPurchaseFinishedListener = new OnIabPurchaseFinishedListener() {
 					@Override
 					public void onIabPurchaseFinished(IabResult result, Purchase purchase) {
-						Logger.d(TAG, "result : " + result + ", purchase:" + purchase);
-						if (purchase != null) {
-							mHelper.consumeAsync(purchase, new OnConsumeFinishedListener() {
-								@Override
-								public void onConsumeFinished(Purchase purchase, IabResult result) {
-									Logger.i(TAG, "Donation success");
-								}
-							});
+						try {
+							LOG.debug("result : " + result + ", purchase:" + purchase);
+							if (result.isFailure()) {
+								Toast.makeText(Preferences.this, "Next time maybe ;)", Toast.LENGTH_LONG).show();
+								return;
+							}
 							Mixpanel.track("DonationSuccess");
 							thankYou();
 							Utils.sendMail("[FlickrUploader] Donation " + inappKey,
 									Utils.getDeviceId() + " - " + Utils.getEmail() + " - " + Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
-						} else {
-							Toast.makeText(Preferences.this, "Next time maybe ;)", Toast.LENGTH_LONG).show();
+							mHelper.consumeAsync(purchase, new OnConsumeFinishedListener() {
+								@Override
+								public void onConsumeFinished(Purchase purchase, IabResult result) {
+									LOG.info("Donation success");
+								}
+							});
+						} catch (Throwable e) {
+							LOG.error(e.getMessage(), e);
 						}
 					}
 				};
@@ -388,10 +414,10 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 
 				// Start setup. This is asynchronous and the specified listener
 				// will be called once setup completes.
-				Logger.d(TAG, "Starting setup.");
+				LOG.debug("Starting setup.");
 				mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
 					public void onIabSetupFinished(IabResult result) {
-						Logger.d(TAG, "Setup finished. : " + result);
+						LOG.debug("Setup finished. : " + result);
 						if (result.isSuccess()) {
 							mHelper.launchPurchaseFlow(Preferences.this, inappKey, 1231, mPurchaseFinishedListener, "");
 						}
@@ -406,9 +432,16 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
+				Mixpanel.track("ThankYou");
 				AlertDialog.Builder builder = new AlertDialog.Builder(Preferences.this);
 				builder.setMessage("Thank you for your support!\n\nIt feels really good to know you appreciate my work ;)\n\nMaxime");
-				builder.setPositiveButton("OK", null);
+				builder.setPositiveButton("Reply", new OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						showEmailActivity("Greetings!", "Hey Maxime,\n", false);
+					}
+				});
+				builder.setNegativeButton("OK", null);
 				// Create the AlertDialog object and return it
 				builder.create().show();
 			}

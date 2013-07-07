@@ -2,7 +2,10 @@ package com.rafali.flickruploader;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,6 +26,8 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.slf4j.LoggerFactory;
+
 import uk.co.senab.bitmapcache.BitmapLruCache;
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -40,11 +45,11 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Video;
 import android.provider.Settings.Secure;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.WindowManager;
 
@@ -69,7 +74,7 @@ import com.rafali.flickruploader.rpcendpoint.Rpcendpoint;
 
 public final class Utils {
 
-	private static final String TAG = Utils.class.getSimpleName();
+	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(Utils.class);
 	private static final float textSize = 16.0f;
 	private static BitmapLruCache mCache;
 
@@ -256,10 +261,11 @@ public final class Utils {
 					serialized = Joiner.on(",").join(ids);
 				}
 			}
-			Log.d(TAG, "persisting images " + key + " : " + serialized);
+			LOG.debug("persisting images " + key + " : " + serialized);
 			setStringProperty(key, serialized);
 		} catch (Throwable e) {
-			Logger.e(TAG, e);
+			LOG.error(e.getMessage(), e);
+
 		}
 	}
 
@@ -268,7 +274,7 @@ public final class Utils {
 		if (ToolString.isNotBlank(queueIds)) {
 			String filter = Images.Media._ID + " IN (" + queueIds + ")";
 			List<Media> images = Utils.loadImages(filter);
-			Log.d(TAG, key + " - queueIds : " + queueIds.split(",").length + ", images:" + images.size());
+			LOG.debug(key + " - queueIds : " + queueIds.split(",").length + ", images:" + images.size());
 			return images;
 		}
 		return null;
@@ -280,7 +286,7 @@ public final class Utils {
 		if (!images.isEmpty()) {
 			return images.get(0);
 		}
-		Log.w(TAG, "id " + id + " not found!");
+		LOG.warn("id " + id + " not found!");
 		return null;
 	}
 
@@ -344,7 +350,7 @@ public final class Utils {
 			sha1hash = md.digest();
 			return Utils.convertToHex(sha1hash);
 		} catch (Exception e) {
-			Log.e(TAG, "Error while hashing", e);
+			LOG.warn("Error while hashing", e);
 		}
 		return null;
 	}
@@ -463,7 +469,7 @@ public final class Utils {
 			int dateAddedColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_ADDED);
 			int sizeColumn = cursor.getColumnIndex(Images.Media.SIZE);
 			cursor.moveToFirst();
-			Log.d(TAG, "filter = " + filter + ", count = " + cursor.getCount());
+			LOG.debug("filter = " + filter + ", count = " + cursor.getCount());
 			while (cursor.isAfterLast() == false) {
 				Long date;
 				String timestampDateTaken = cursor.getString(dateTakenColumn);
@@ -495,7 +501,7 @@ public final class Utils {
 				cursor.moveToNext();
 			}
 		} catch (Throwable e) {
-			Log.e(TAG, e.getMessage(), e);
+			LOG.error(e.getMessage(), e);
 		} finally {
 			if (cursor != null)
 				cursor.close();
@@ -555,8 +561,8 @@ public final class Utils {
 			for (Entry<String, String> entry : map.entrySet()) {
 				mapE.put(entry.getKey(), Enum.valueOf(class1, entry.getValue()));
 			}
-		} catch (Exception e) {
-			Log.e(TAG, e.getMessage(), e);
+		} catch (Throwable e) {
+			LOG.warn(e.getMessage(), e);
 		}
 		return mapE;
 	}
@@ -593,9 +599,9 @@ public final class Utils {
 					bitmap = BitmapFactory.decodeFile(image.path, opts);
 				}
 			} catch (OutOfMemoryError e) {
-				Log.w(TAG, "retry : " + retry + ", " + e.getMessage(), e);
+				LOG.warn("retry : " + retry + ", " + e.getMessage(), e);
 			} catch (Throwable e) {
-				Log.e(TAG, e.getMessage(), e);
+				LOG.error(e.getMessage(), e);
 			} finally {
 				retry++;
 			}
@@ -603,32 +609,67 @@ public final class Utils {
 		return bitmap;
 	}
 
-	static Set<String> ignoredFolder;
+	static Set<String> syncedFolder;
 
-	static boolean isIgnored(Folder folder) {
-		if (ignoredFolder == null) {
-			ignoredFolder = new HashSet<String>(getStringList("ignoredFolder"));
+	static boolean isSynced(Folder folder) {
+		if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
+			return false;
 		}
-		return ignoredFolder.contains(folder.path);
+		if (syncedFolder == null) {
+			initSyncedFolder();
+		}
+		return syncedFolder.contains(folder.path);
 	}
 
-	static void setIgnored(Folder folder, boolean ignored) {
-		if (ignoredFolder == null) {
-			ignoredFolder = new HashSet<String>(getStringList("ignoredFolder"));
+	static void setSynced(Folder folder, boolean synced) {
+		if (syncedFolder == null) {
+			initSyncedFolder();
 		}
-		if (ignored) {
-			ignoredFolder.add(folder.path);
+		if (synced) {
+			syncedFolder.add(folder.path);
 		} else {
-			ignoredFolder.remove(folder.path);
+			syncedFolder.remove(folder.path);
 		}
-		Mixpanel.track("Ignore Folder", "name", folder.name);
-		setStringList("ignoredFolder", ignoredFolder);
+		Mixpanel.track("Sync Folder", "name", folder.name, "synced", synced);
+		setStringList("syncedFolder", syncedFolder);
+	}
+
+	private static void initSyncedFolder() {
+		List<String> persisted = getStringList("syncedFolder", true);
+		if (persisted == null) {
+			persisted = new ArrayList<String>();
+			try {
+				addFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), persisted);
+				addFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), persisted);
+				addFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), persisted);
+				LOG.debug("default synced folders : " + persisted);
+				setStringList("syncedFolder", persisted);
+			} catch (Throwable e) {
+				LOG.error(e.getMessage(), e);
+			}
+		}
+		syncedFolder = new HashSet<String>(persisted);
+	}
+
+	static void addFolder(File folder, List<String> persisted) {
+		for (File file : folder.listFiles()) {
+			if (file.isDirectory() && !file.isHidden()) {
+				persisted.add(file.getAbsolutePath());
+			}
+		}
+		persisted.add(folder.getAbsolutePath());
 	}
 
 	public static List<String> getStringList(String key) {
+		return getStringList(key, false);
+	}
+
+	public static List<String> getStringList(String key, boolean returnNull) {
 		String photosSeen = sp.getString(key, null);
 		if (photosSeen != null) {
 			return Arrays.asList(photosSeen.split("\\|"));
+		} else if (returnNull) {
+			return null;
 		}
 		return new ArrayList<String>();
 	}
@@ -750,7 +791,8 @@ public final class Utils {
 					String admin = FlickrUploader.getAppContext().getString(R.string.admin_email);
 					endpoint.sendMail(admin, subject, bodyHtml, admin).execute();
 				} catch (Throwable e) {
-					Logger.e(TAG, e);
+					LOG.error(e.getMessage(), e);
+
 				}
 			}
 		});
@@ -802,7 +844,7 @@ public final class Utils {
 			try {
 				appInstall = endpoint.getAppInstall(getDeviceId()).execute();
 			} catch (Throwable e) {
-				Logger.w(TAG, e.getMessage());
+				LOG.warn(e.getMessage(), e);
 			}
 			boolean newInstall = appInstall == null;
 			if (appInstall == null) {
@@ -820,7 +862,8 @@ public final class Utils {
 				endpoint.updateAppInstall(appInstall).execute();
 			}
 		} catch (Throwable e) {
-			Logger.e(TAG, e);
+			LOG.error(e.getMessage(), e);
+
 		}
 	}
 
@@ -837,14 +880,54 @@ public final class Utils {
 			for (Donation donation : donations.getItems()) {
 				users.add(donation.getName());
 			}
-			Logger.d(TAG, "users : " + users);
+			LOG.debug("users : " + users);
 		} catch (Throwable e) {
-			Logger.e(TAG, e);
+			LOG.error(e.getMessage(), e);
+
 		}
 		return users;
 	}
 
 	public static void setCharging(boolean charging) {
 		Utils.charging = charging;
+	}
+
+	private static boolean copyToFile(InputStream inputStream, File destFile) {
+		try {
+			OutputStream out = new FileOutputStream(destFile);
+			try {
+				byte[] buffer = new byte[4096];
+				int bytesRead;
+				while ((bytesRead = inputStream.read(buffer)) >= 0) {
+					out.write(buffer, 0, bytesRead);
+				}
+			} finally {
+				out.close();
+			}
+			return true;
+		} catch (IOException e) {
+			return false;
+		}
+	}
+
+	// copy a file from srcFile to destFile, return true if succeed, return
+	// false if fail
+	public static boolean copyFile(File srcFile, File destFile) {
+		boolean result = false;
+		try {
+			InputStream in = new FileInputStream(srcFile);
+			try {
+				result = copyToFile(in, destFile);
+			} finally {
+				in.close();
+			}
+		} catch (IOException e) {
+			result = false;
+		}
+		return result;
+	}
+	
+	public static File getLogFile() {
+		return new File(FlickrUploader.getAppContext().getFilesDir(), "flickruploader.log");
 	}
 }

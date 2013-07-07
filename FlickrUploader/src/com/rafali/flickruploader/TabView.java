@@ -69,7 +69,6 @@ public abstract class TabView extends LinearLayout implements ViewPager.OnPageCh
 
 		@Override
 		public Object instantiateItem(ViewGroup container, int position) {
-			// Logger.v(TAG, "instantiateItem(%s,%s)", pager.getCurrentItem(), position);
 			View view;
 			if (gridViewsArray[position] != null) {
 				view = gridViewsArray[position];

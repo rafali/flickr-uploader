@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.json.JSONException;
+import org.slf4j.LoggerFactory;
 
 import android.app.Activity;
 import android.app.PendingIntent;
@@ -32,7 +33,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.android.vending.billing.IInAppBillingService;
 
@@ -70,9 +70,11 @@ import com.android.vending.billing.IInAppBillingService;
  *
  */
 public class IabHelper {
+	
+	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(IabHelper.class);
+
     // Is debug logging enabled?
     boolean mDebugLog = false;
-    String mDebugTag = "IabHelper";
 
     // Is setup done?
     boolean mSetupDone = false;
@@ -168,7 +170,6 @@ public class IabHelper {
      */
     public void enableDebugLogging(boolean enable, String tag) {
         mDebugLog = enable;
-        mDebugTag = tag;
     }
     
     public void enableDebugLogging(boolean enable) {
@@ -945,14 +946,14 @@ public class IabHelper {
     }
     
     void logDebug(String msg) {
-        if (mDebugLog) Log.d(mDebugTag, msg);
+        if (mDebugLog) LOG.debug(msg);
     }
     
     void logError(String msg) {
-        Log.e(mDebugTag, "In-app billing error: " + msg);
+        LOG.error("In-app billing error: " + msg);
     }
     
     void logWarn(String msg) {
-        Log.w(mDebugTag, "In-app billing warning: " + msg);
+    	LOG.warn("In-app billing warning: " + msg);
     }
 }

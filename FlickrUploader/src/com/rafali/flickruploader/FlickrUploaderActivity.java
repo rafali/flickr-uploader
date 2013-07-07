@@ -8,11 +8,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.LoggerFactory;
+
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 import uk.co.senab.bitmapcache.CacheableImageView;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.AlertDialog.Builder;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -22,7 +23,6 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.support.v4.app.ShareCompat;
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.ActionMode;
 import android.view.Menu;
@@ -33,7 +33,6 @@ import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -55,7 +54,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	private static final int MAX_LINK_SHARE = 5;
 
-	static final String TAG = FlickrUploaderActivity.class.getSimpleName();
+	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrUploaderActivity.class);
 
 	static enum TAB {
 		feed(R.layout.photo_feed, R.layout.photo_feed_thumb, R.string.feed), photo(R.layout.photo_grid, R.layout.photo_grid_thumb, R.string.photos), video(R.layout.video_grid,
@@ -79,7 +78,7 @@ public class FlickrUploaderActivity extends Activity {
 	@Override
 	public void onCreate(Bundle bundle) {
 		super.onCreate(bundle);
-		Log.d(TAG, "onCreate " + bundle);
+		LOG.debug("onCreate " + bundle);
 		startService(new Intent(this, UploadService.class));
 		if (Utils.getStringProperty(STR.accessToken) == null) {
 			Utils.confirmSignIn(FlickrUploaderActivity.this);
@@ -159,13 +158,13 @@ public class FlickrUploaderActivity extends Activity {
 	protected void onNewIntent(Intent intent) {
 		super.onNewIntent(intent);
 		renderMenu();
-		Log.d(TAG, "onNewIntent : " + intent);
+		LOG.debug("onNewIntent : " + intent);
 	}
 
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
-		Log.d(TAG, "onConfigurationChanged");
+		LOG.debug("onConfigurationChanged");
 		refresh(false);
 	}
 
@@ -176,6 +175,7 @@ public class FlickrUploaderActivity extends Activity {
 	void testNotification() {
 		BackgroundExecutor.execute(new Runnable() {
 			Media image = photos.get(0);
+
 			@Override
 			public void run() {
 				for (int i = 0; i <= 100; i++) {
@@ -193,7 +193,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	@Override
 	protected void onDestroy() {
-		Log.d(TAG, "onDestroy");
+		LOG.debug("onDestroy");
 		super.onDestroy();
 		if (instance == this)
 			instance = null;
@@ -207,9 +207,6 @@ public class FlickrUploaderActivity extends Activity {
 			absListView.setAdapter(new PhotoAdapter(tab));
 			absListView.setTag(tab);
 			absListView.setOnItemClickListener(onItemClickListener);
-			if (tab == TAB.folder) {
-				absListView.setOnItemLongClickListener(onItemLongClickListener);
-			}
 		}
 		mainTabView = new MainTabView();
 		setContentView(mainTabView);
@@ -227,37 +224,6 @@ public class FlickrUploaderActivity extends Activity {
 				getImageSelected(SelectionType.all).add((Media) convertView.getTag());
 			}
 			updateCount();
-		}
-	};
-
-	OnItemLongClickListener onItemLongClickListener = new OnItemLongClickListener() {
-		@Override
-		public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long id) {
-			Media image = (Media) v.getTag();
-			final Folder selectedFolder = foldersMap.get(image);
-			Builder builder = new AlertDialog.Builder(FlickrUploaderActivity.this).setTitle("Auto upload");
-			if (Utils.isIgnored(selectedFolder)) {
-				builder.setMessage("Enable auto upload for " + selectedFolder.name + "?");
-				builder.setPositiveButton("Enable", new OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						Utils.setIgnored(selectedFolder, false);
-						refresh(false);
-					}
-				});
-			} else {
-				builder.setMessage("Disable auto upload for " + selectedFolder.name + "?");
-				builder.setPositiveButton("Disable", new OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						Utils.setIgnored(selectedFolder, true);
-						refresh(false);
-					}
-				});
-			}
-			builder.setNegativeButton("Cancel", null);
-			builder.show();
-			return false;
 		}
 	};
 
@@ -284,7 +250,10 @@ public class FlickrUploaderActivity extends Activity {
 			mMode.finish();
 		}
 	}
+
 	private MenuItem shareItem;
+	private MenuItem enableAutoUpload;
+	private MenuItem disableAutoUpload;
 	private ShareActionProvider shareActionProvider;
 
 	@UiThread(delay = 200)
@@ -309,6 +278,7 @@ public class FlickrUploaderActivity extends Activity {
 			}
 		}
 	}
+
 	private MenuItem privacyItem;
 	final ActionMode.Callback mCallback = new ActionMode.Callback() {
 
@@ -331,8 +301,13 @@ public class FlickrUploaderActivity extends Activity {
 		public boolean onCreateActionMode(ActionMode mode, Menu menu) {
 			getMenuInflater().inflate(R.menu.context_menu, menu);
 			shareItem = menu.findItem(R.id.menu_item_share);
+			enableAutoUpload = menu.findItem(R.id.menu_item_enable_auto_upload);
+			disableAutoUpload = menu.findItem(R.id.menu_item_disable_auto_upload);
 			if (isFolderTab()) {
 				shareItem.setVisible(false);
+			} else {
+				enableAutoUpload.setVisible(false);
+				disableAutoUpload.setVisible(false);
 			}
 			privacyItem = menu.findItem(R.id.menu_item_privacy);
 
@@ -340,7 +315,7 @@ public class FlickrUploaderActivity extends Activity {
 			shareActionProvider.setOnShareTargetSelectedListener(new ShareActionProvider.OnShareTargetSelectedListener() {
 				@Override
 				public boolean onShareTargetSelected(ShareActionProvider shareActionProvider, Intent intent) {
-					Log.d(TAG, "intent : " + intent);
+					LOG.debug("intent : " + intent);
 					if (intent.hasExtra("photoIds")) {
 						List<String> privatePhotoIds = new ArrayList<String>();
 						String[] photoIds = intent.getStringExtra("photoIds").split(",");
@@ -451,6 +426,19 @@ public class FlickrUploaderActivity extends Activity {
 				}
 
 				break;
+
+			case R.id.menu_item_enable_auto_upload:
+				for (Media image : getImageSelected(SelectionType.all)) {
+					Utils.setSynced(foldersMap.get(image), true);
+				}
+				refresh(false);
+				break;
+			case R.id.menu_item_disable_auto_upload:
+				for (Media image : getImageSelected(SelectionType.all)) {
+					Utils.setSynced(foldersMap.get(image), false);
+				}
+				refresh(false);
+				break;
 			}
 			return false;
 		}
@@ -491,7 +479,7 @@ public class FlickrUploaderActivity extends Activity {
 							default:
 								break;
 							}
-							Log.d(TAG, "which : " + which);
+							LOG.debug("which : " + which);
 						}
 					}).show();
 		} else {
@@ -513,7 +501,7 @@ public class FlickrUploaderActivity extends Activity {
 							default:
 								break;
 							}
-							Log.d(TAG, "which : " + which);
+							LOG.debug("which : " + which);
 						}
 					}).show();
 		}
@@ -546,7 +534,7 @@ public class FlickrUploaderActivity extends Activity {
 							builder.setItems(photosetTitlesArray, new OnClickListener() {
 								@Override
 								public void onClick(DialogInterface dialog, int which) {
-									Log.d(TAG, "selected : " + photosetIds.get(which) + " - " + photosetTitles.get(which));
+									LOG.debug("selected : " + photosetIds.get(which) + " - " + photosetTitles.get(which));
 									String photoSetId = photosetIds.get(which);
 									int count = 0;
 									if (isFolderTab()) {
@@ -583,7 +571,7 @@ public class FlickrUploaderActivity extends Activity {
 		alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int whichButton) {
 				String value = input.getText().toString();
-				Log.d(TAG, "value : " + value);
+				LOG.debug("value : " + value);
 				if (ToolString.isBlank(value)) {
 					showNewSetDialog(selection);
 				} else {
@@ -719,6 +707,7 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	private void renderImageView(final View convertView, final TAB tab) {
+		// LOG.debug("renderImageView " + tab);
 		final Media image = (Media) convertView.getTag();
 		if (image == null) {
 			convertView.setVisibility(View.INVISIBLE);
@@ -730,7 +719,7 @@ public class FlickrUploaderActivity extends Activity {
 				((TextView) convertView.findViewById(R.id.size)).setText("" + folder.size);
 				((TextView) convertView.findViewById(R.id.title)).setText(folder.name);
 				convertView.findViewById(R.id.uploading).setVisibility(UploadService.isUploading(folder) ? View.VISIBLE : View.GONE);
-				convertView.findViewById(R.id.ignore).setVisibility(Utils.isIgnored(folder) ? View.VISIBLE : View.GONE);
+				convertView.findViewById(R.id.synced).setVisibility(Utils.isSynced(folder) ? View.VISIBLE : View.GONE);
 			} else {
 				convertView.findViewById(R.id.uploading).setVisibility(UploadService.isUploading(image) ? View.VISIBLE : View.GONE);
 			}
@@ -763,6 +752,7 @@ public class FlickrUploaderActivity extends Activity {
 						} else {
 							isUploaded = FlickrApi.isUploaded(image);
 						}
+						// LOG.debug(tab + ", isUploaded=" + isUploaded);
 						final Bitmap bitmap = Utils.getBitmap(image, tab);
 						if (bitmap != null) {
 							final CacheableBitmapDrawable bitmapDrawable = Utils.getCache().put(image.path + "_" + tab.thumbLayoutId, bitmap);
@@ -784,6 +774,7 @@ public class FlickrUploaderActivity extends Activity {
 			}
 		}
 	}
+
 	static SparseArray<String> uploadedPhotos = new SparseArray<String>();
 
 	private Menu menu;
@@ -872,6 +863,7 @@ public class FlickrUploaderActivity extends Activity {
 		AlertDialog alert = alt_bld.create();
 		alert.show();
 	}
+
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (resultCode == WebAuth.RESULT_CODE_AUTH) {
@@ -903,6 +895,7 @@ public class FlickrUploaderActivity extends Activity {
 			}
 		}
 	}
+
 	int getPrivacyResource(PRIVACY privacy) {
 		if (privacy != null) {
 			switch (privacy) {
@@ -924,13 +917,12 @@ public class FlickrUploaderActivity extends Activity {
 			instance.refresh(reload);
 		}
 	}
-	
+
 	@Override
 	protected void onPause() {
-		paused  = true;
+		paused = true;
 		super.onPause();
 	}
-	
 
 	public boolean isPaused() {
 		return paused;

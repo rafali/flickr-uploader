@@ -2,12 +2,13 @@ package com.rafali.flickruploader;
 
 import java.net.URL;
 
+import org.slf4j.LoggerFactory;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
@@ -33,7 +34,7 @@ import com.googlecode.flickrjandroid.oauth.OAuthToken;
 public class WebAuth extends Activity {
 
 	public static final int RESULT_CODE_AUTH = 2227;
-	private static final String TAG = WebAuth.class.getSimpleName();
+	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(WebAuth.class);
 
 	@ViewById(R.id.web_view)
 	WebView webView;
@@ -62,7 +63,7 @@ public class WebAuth extends Activity {
 		webView.getSettings().setLayoutAlgorithm(LayoutAlgorithm.SINGLE_COLUMN);
 		webView.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
 		String userAgentString = webView.getSettings().getUserAgentString();
-		Log.d(TAG, "userAgentString: " + userAgentString);
+		LOG.debug("userAgentString: " + userAgentString);
 		webView.clearCache(true);
 		webView.destroyDrawingCache();
 
@@ -92,12 +93,12 @@ public class WebAuth extends Activity {
 			// Intent launchBrowser = new Intent(Intent.ACTION_VIEW, uriUrl);
 			// startActivity(launchBrowser);
 
-			Log.d(TAG, "oauthUrl : " + oauthUrl);
+			LOG.debug("oauthUrl : " + oauthUrl);
 			// redirect user to the genreated URL.
 			// redirect(oauthUrl);
 			loadUrl(oauthUrl.toString());
 		} catch (Throwable e) {
-			Log.e(TAG, e.getMessage(), e);
+			LOG.error(e.getMessage(), e);
 			onNetworkError();
 		}
 	}
@@ -138,7 +139,7 @@ public class WebAuth extends Activity {
 
 		@Override
 		public boolean shouldOverrideUrlLoading(WebView view, String url) {
-			Log.d(TAG, "Visiting url: " + url);
+			LOG.debug("Visiting url: " + url);
 			if (url.contains("oauth_token") && url.contains("oauth_verifier")) {
 				doDataCallback(url);
 			} else {
@@ -168,11 +169,11 @@ public class WebAuth extends Activity {
 					else if ("oauth_verifier".equals(split[0]))
 						oauth_verifier = split[1];
 				}
-				Log.d(TAG, "oauth_token : " + oauth_token);
-				Log.d(TAG, "oauth_verifier : " + oauth_verifier);
-				Log.d(TAG, "oauthToken : " + oauthToken.getOauthToken() + ", " + oauthToken.getOauthTokenSecret());
+				LOG.debug("oauth_token : " + oauth_token);
+				LOG.debug("oauth_verifier : " + oauth_verifier);
+				LOG.debug("oauthToken : " + oauthToken.getOauthToken() + ", " + oauthToken.getOauthTokenSecret());
 				OAuth accessToken = oAuthInterface.getAccessToken(oauthToken.getOauthToken(), oauthToken.getOauthTokenSecret(), oauth_verifier);
-				Log.d(TAG, "accessToken : " + accessToken);
+				LOG.debug("accessToken : " + accessToken);
 				Utils.setStringProperty(STR.accessToken, accessToken.getToken().getOauthToken());
 				Utils.setStringProperty(STR.accessTokenSecret, accessToken.getToken().getOauthTokenSecret());
 				Utils.setStringProperty(STR.userId, accessToken.getUser().getId());
@@ -192,13 +193,13 @@ public class WebAuth extends Activity {
 
 	@UiThread
 	void onFail(Throwable e) {
-		Log.w(TAG, e);
+		LOG.warn(e.getMessage(), e);
 		toast("An error occured, please retry : " + e.getMessage());
 	}
 
 	@UiThread
 	void toast(String message) {
-		Log.v(TAG, message);
+		LOG.debug(message);
 		Toast.makeText(WebAuth.this, message, Toast.LENGTH_SHORT).show();
 	}
 

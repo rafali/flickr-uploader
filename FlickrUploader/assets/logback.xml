@@ -1,0 +1,22 @@
+<configuration>
+  <!-- Create a file appender for a log in the application's data directory -->
+  <appender name="file" class="ch.qos.logback.core.FileAppender">
+    <file>/data/data/com.rafali.flickruploader/files/flickruploader.log</file>
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %class{0}.%method:%L > %msg%n</pattern>
+    </encoder>
+  </appender>
+  <appender name="logcat" class="ch.qos.logback.classic.android.LogcatAppender">
+    <encoder>
+      <pattern>%class{0}.%method:%L > %msg</pattern>
+    </encoder>
+    <tagEncoder>
+      <pattern>FlickrUploader</pattern>
+    </tagEncoder>
+  </appender>
+  <!-- Write INFO (and higher-level) messages to the log file -->
+  <root level="DEBUG">
+    <appender-ref ref="file" />
+    <appender-ref ref="logcat" />
+  </root>
+</configuration>

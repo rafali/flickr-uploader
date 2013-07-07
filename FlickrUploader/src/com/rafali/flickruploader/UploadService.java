@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.rafali.flickruploader.Utils.CAN_UPLOAD;
+import org.slf4j.LoggerFactory;
 
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -18,13 +18,14 @@ import android.os.BatteryManager;
 import android.os.IBinder;
 import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Video;
-import android.util.Log;
+
+import com.rafali.flickruploader.Utils.CAN_UPLOAD;
 
 public class UploadService extends Service {
 
 	private static final String QUEUE_IDS = "queueIds";
 
-	private static final String TAG = UploadService.class.getSimpleName();
+	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(UploadService.class);
 
 	@Override
 	public IBinder onBind(Intent arg0) {
@@ -34,7 +35,8 @@ public class UploadService extends Service {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		Log.d(TAG, "Service created ...");
+		FlickrUploader.init();
+		LOG.debug("Service created ...");
 		running = true;
 		List<Media> images = Utils.getImages(QUEUE_IDS);
 		if (images != null) {
@@ -56,7 +58,7 @@ public class UploadService extends Service {
 				status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
 				boolean charging = (status != BatteryManager.BATTERY_STATUS_DISCHARGING);
 				Utils.setCharging(charging);
-				Logger.i("BatteryManager", "charging : " + charging);
+				LOG.info("charging : " + charging);
 				wake();
 			}
 		};
@@ -67,7 +69,7 @@ public class UploadService extends Service {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		Log.d(TAG, "Service destroyed ...");
+		LOG.debug("Service destroyed ...");
 		running = false;
 		wake();
 	}
@@ -80,7 +82,7 @@ public class UploadService extends Service {
 	public static void enqueue(Collection<Media> images, Folder folder, String photoSetId, String photoSetTitle) {
 		for (Media image : images) {
 			if (!queue.contains(image)) {
-				Log.d(TAG, "enqueueing " + image);
+				LOG.debug("enqueueing " + image);
 				queue.add(image);
 				if (folder != null) {
 					uploadFolders.put(image, folder);
@@ -120,7 +122,7 @@ public class UploadService extends Service {
 						}
 
 						synchronized (mPauseLock) {
-							Log.d(TAG, "waiting for work");
+							LOG.debug("waiting for work");
 							if (queue.isEmpty()) {
 								mPauseLock.wait();
 							} else {
@@ -135,11 +137,11 @@ public class UploadService extends Service {
 							Folder folder = uploadFolders.get(image);
 							boolean success = folder == null && FlickrApi.isUploaded(image);
 							if (!success) {
-								Log.d(TAG, "Starting upload : " + image);
+								LOG.debug("Starting upload : " + image);
 								success = FlickrApi.upload(image, uploadPhotosetIds.get(image), uploadPhotosetTitles.get(image), folder, new ProgressListener() {
 									@Override
 									public void onProgress(int progress) {
-										Log.d(TAG, "progress : " + progress);
+										LOG.debug("progress : " + progress);
 										Notifications.notify(progress, image, uploaded.size() + 1, queue.size() + uploaded.size());
 									}
 								});
@@ -148,7 +150,7 @@ public class UploadService extends Service {
 							queue.remove(image);
 							persistQueue();
 							if (success) {
-								Log.d(TAG, "Upload success : " + time + "ms " + image);
+								LOG.debug("Upload success : " + time + "ms " + image);
 								uploaded.add(image);
 								nbFail = 0;
 								if (queue.isEmpty()) {
@@ -162,7 +164,7 @@ public class UploadService extends Service {
 								}
 							} else {
 								nbFail++;
-								Log.w(TAG, "Upload fail : nbFail=" + nbFail + " in " + time + "ms " + image);
+								LOG.warn("Upload fail : nbFail=" + nbFail + " in " + time + "ms " + image);
 								Thread.sleep((long) (Math.pow(2, nbFail) * 2000));
 							}
 						} else {
@@ -172,9 +174,9 @@ public class UploadService extends Service {
 						}
 					}
 				} catch (InterruptedException e) {
-					Log.w(TAG, "Thread interrupted");
+					LOG.warn("Thread interrupted");
 				} catch (Throwable e) {
-					Log.e(TAG, e.getMessage(), e);
+					LOG.error(e.getMessage(), e);
 				} finally {
 					FlickrUploaderActivity flickrPhotoUploader = FlickrUploaderActivity.getInstance();
 					if (flickrPhotoUploader != null)
@@ -203,7 +205,7 @@ public class UploadService extends Service {
 	static private Thread thread;
 
 	public static void cancel(boolean force) {
-		Log.w(TAG, "Canceling : queue = " + queue.size() + ", force = " + force);
+		LOG.warn("Canceling : queue = " + queue.size() + ", force = " + force);
 		queue.clear();
 		uploadFolders.clear();
 		persistQueue();

@@ -1,5 +1,7 @@
 package com.rafali.flickruploader;
 
+import org.slf4j.LoggerFactory;
+
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 import android.app.Notification;
 import android.app.PendingIntent;
@@ -14,6 +16,8 @@ import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import com.rafali.flickruploader.Utils.CAN_UPLOAD;
 
 public class Notifications {
+
+	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(Notifications.class);
 
 	static final android.app.NotificationManager manager = (android.app.NotificationManager) FlickrUploader.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
 	private static PendingIntent resultPendingIntent;
@@ -125,7 +129,7 @@ public class Notifications {
 			// notification.iconLevel = progress / 10;
 			manager.notify(0, notification);
 		} catch (Throwable e) {
-			Logger.e("Notifications", e);
+			LOG.error(e.getMessage(), e);
 		}
 
 	}

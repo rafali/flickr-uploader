@@ -1,9 +1,12 @@
 package com.rafali.flickruploader;
 
+import org.slf4j.LoggerFactory;
+
 import android.content.pm.ApplicationInfo;
 
 public class Config {
-	private static final String TAG = Config.class.getSimpleName();
+	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(Config.class);
+	
 
 	public static final int VERSION = getVersion();
 	public static final String VERSION_NAME = getVersionName();
@@ -22,7 +25,7 @@ public class Config {
 		try {
 			return FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).versionCode;
 		} catch (Exception e) {
-			Logger.e(TAG, e);
+			LOG.error(e.getMessage(), e);
 		}
 		return 0;
 	}
@@ -31,7 +34,7 @@ public class Config {
 		try {
 			return "" + FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).versionName;
 		} catch (Exception e) {
-			Logger.e(TAG, e);
+			LOG.error(e.getMessage(), e);
 		}
 		return "0";
 	}

@@ -29,8 +29,6 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
-import android.util.Log;
-
 import com.googlecode.flickrjandroid.oauth.OAuthUtils;
 import com.googlecode.flickrjandroid.uploader.ImageParameter;
 import com.googlecode.flickrjandroid.uploader.UploaderResponse;
@@ -317,7 +315,7 @@ public class REST extends Transport {
 			reportProgress(progressListener, progress);
 		}
 	}
-	
+
 	public String sendPost(String path, List<Parameter> parameters) throws IOException {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Send Post Input Params: path '{}'; parameters {}", path, parameters);
@@ -452,11 +450,11 @@ public class REST extends Transport {
 							currentProgress = tmpProgress;
 							if (currentProgress % 5 == 0)
 								out.flush();
-							Log.d("REST", "out.size() : " + out.size() + ", " + file.length());
+							logger.debug("out.size() : " + out.size() + ", " + file.length());
 							reportProgress(progressListener, currentProgress);
 						}
 					}
-					Log.d("REST", "output in " + (System.currentTimeMillis() - start) + " ms");
+					logger.debug("output in " + (System.currentTimeMillis() - start) + " ms");
 					progress = currentProgress;
 				} finally {
 					if (in != null) {
