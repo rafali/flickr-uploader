@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.rafali.flickruploader"
     android:installLocation="internalOnly"
-    android:versionCode="11"
-    android:versionName="1.5.1" >
+    android:versionCode="14"
+    android:versionName="1.5.3" >
 
     <uses-sdk
         android:minSdkVersion="14"
@@ -16,6 +16,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <!-- Required permission to use Google Play Store donations -->
     <uses-permission android:name="com.android.vending.BILLING" />
 

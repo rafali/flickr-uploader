@@ -35,7 +35,6 @@ public class UploadService extends Service {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		FlickrUploader.init();
 		LOG.debug("Service created ...");
 		running = true;
 		List<Media> images = Utils.getImages(QUEUE_IDS);
@@ -51,15 +50,14 @@ public class UploadService extends Service {
 			thread.start();
 		}
 		BroadcastReceiver batteryReceiver = new BroadcastReceiver() {
-			int status = -1;
-
 			@Override
 			public void onReceive(Context context, Intent intent) {
-				status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
-				boolean charging = (status != BatteryManager.BATTERY_STATUS_DISCHARGING);
+				int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+				boolean charging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL;
 				Utils.setCharging(charging);
-				LOG.info("charging : " + charging);
-				wake();
+				LOG.debug("charging : " + charging + ", status : " + status);
+				if (charging)
+					wake();
 			}
 		};
 		IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
@@ -89,6 +87,20 @@ public class UploadService extends Service {
 				}
 				uploadPhotosetIds.put(image, photoSetId);
 				uploadPhotosetTitles.put(image, photoSetTitle);
+			}
+		}
+		persistQueue();
+		wake();
+	}
+
+	public static void dequeue(Collection<Media> images) {
+		for (Media image : images) {
+			if (queue.contains(image)) {
+				LOG.debug("dequeueing " + image);
+				queue.remove(image);
+				uploadFolders.remove(image);
+				uploadPhotosetIds.remove(image);
+				uploadPhotosetTitles.remove(image);
 			}
 		}
 		persistQueue();
@@ -126,7 +138,7 @@ public class UploadService extends Service {
 							if (queue.isEmpty()) {
 								mPauseLock.wait();
 							} else {
-								mPauseLock.wait(30000);
+								mPauseLock.wait(60000);
 							}
 						}
 					} else {
@@ -141,7 +153,7 @@ public class UploadService extends Service {
 								success = FlickrApi.upload(image, uploadPhotosetIds.get(image), uploadPhotosetTitles.get(image), folder, new ProgressListener() {
 									@Override
 									public void onProgress(int progress) {
-										LOG.debug("progress : " + progress);
+										LOG.trace("progress : " + progress);
 										Notifications.notify(progress, image, uploaded.size() + 1, queue.size() + uploaded.size());
 									}
 								});
@@ -173,6 +185,9 @@ public class UploadService extends Service {
 							Notifications.clear();
 						}
 					}
+
+					FlickrUploader.deleteOldLogs();
+
 				} catch (InterruptedException e) {
 					LOG.warn("Thread interrupted");
 				} catch (Throwable e) {

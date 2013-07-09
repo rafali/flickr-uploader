@@ -1,11 +1,29 @@
 <configuration>
   <!-- Create a file appender for a log in the application's data directory -->
-  <appender name="file" class="ch.qos.logback.core.FileAppender">
+<!--   <appender name="file" class="ch.qos.logback.core.FileAppender"> -->
+<!--     <file>/data/data/com.rafali.flickruploader/files/flickruploader.log</file> -->
+<!--     <encoder> -->
+<!--       <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %class{0}.%method:%L > %msg%n</pattern> -->
+<!--     </encoder> -->
+<!--   </appender> -->
+  <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>/data/data/com.rafali.flickruploader/files/flickruploader.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <!-- daily rollover -->
+        <fileNamePattern>/data/data/com.rafali.flickruploader/files/log/flickruploader.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+        <timeBasedFileNamingAndTriggeringPolicy
+            class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+            <maxFileSize>2MB</maxFileSize>
+        </timeBasedFileNamingAndTriggeringPolicy>
+        <maxHistory>3</maxHistory>
+    </rollingPolicy>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter"> 
+        <level>debug</level>
+    </filter>
     <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %class{0}.%method:%L > %msg%n</pattern>
+        <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %class{0}.%method:%L > %msg%n</pattern>         
     </encoder>
-  </appender>
+</appender> 
   <appender name="logcat" class="ch.qos.logback.classic.android.LogcatAppender">
     <encoder>
       <pattern>%class{0}.%method:%L > %msg</pattern>
@@ -15,8 +33,8 @@
     </tagEncoder>
   </appender>
   <!-- Write INFO (and higher-level) messages to the log file -->
-  <root level="DEBUG">
+  <root>
     <appender-ref ref="file" />
-    <appender-ref ref="logcat" />
+<!--     <appender-ref ref="logcat" /> -->
   </root>
 </configuration>

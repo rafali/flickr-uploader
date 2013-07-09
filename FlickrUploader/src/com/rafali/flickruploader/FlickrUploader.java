@@ -1,6 +1,7 @@
 package com.rafali.flickruploader;
 
 import static org.acra.ReportField.ANDROID_VERSION;
+import static org.acra.ReportField.APPLICATION_LOG;
 import static org.acra.ReportField.APP_VERSION_CODE;
 import static org.acra.ReportField.APP_VERSION_NAME;
 import static org.acra.ReportField.AVAILABLE_MEM_SIZE;
@@ -18,9 +19,9 @@ import static org.acra.ReportField.THREAD_DETAILS;
 import static org.acra.ReportField.TOTAL_MEM_SIZE;
 import static org.acra.ReportField.USER_APP_START_DATE;
 import static org.acra.ReportField.USER_CRASH_DATE;
-import static org.acra.ReportField.APPLICATION_LOG;
 
 import java.io.File;
+import java.util.Date;
 
 import org.acra.ACRA;
 import org.acra.ReportingInteractionMode;
@@ -31,7 +32,8 @@ import android.app.Application;
 import android.content.Context;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.FileAppender;
+import ch.qos.logback.core.rolling.RollingFileAppender;
+import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 
@@ -52,7 +54,7 @@ public class FlickrUploader extends Application {
 			@Override
 			public void run() {
 				try {
-					init();
+					initLogs();
 					ACRA.init(FlickrUploader.this);
 					ACRA.getConfig().setApplicationLogFile(Utils.getLogFile().getAbsolutePath());
 					long versionCode = Utils.getLongProperty(STR.versionCode);
@@ -63,6 +65,8 @@ public class FlickrUploader extends Application {
 						Utils.saveAndroidDevice();
 						Utils.setLongProperty(STR.versionCode, (long) Config.VERSION);
 					}
+					long firstInstallTime = context.getPackageManager().getPackageInfo(getPackageName(), 0).firstInstallTime;
+					LOG.info("firstInstallTime : " + new Date(firstInstallTime));
 				} catch (Throwable e) {
 					LOG.error(e.getMessage(), e);
 				}
@@ -74,23 +78,31 @@ public class FlickrUploader extends Application {
 		return context;
 	}
 
-	static boolean ignited = false;
+	private static synchronized void initLogs() {
+		try {
+			File logFile = Utils.getLogFile();
+			ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+			RollingFileAppender<ILoggingEvent> appender = (RollingFileAppender<ILoggingEvent>) root.getAppender("file");
+			appender.setFile(logFile.getAbsolutePath());
+			@SuppressWarnings("unchecked")
+			TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = (TimeBasedRollingPolicy<ILoggingEvent>) appender.getRollingPolicy();
+			rollingPolicy.setFileNamePattern(logFile.getParent() + "/log/flickruploader.%d{yyyy-MM-dd}.%i.log");
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
+	}
 
-	public static synchronized void init() {
-		if (!ignited) {
-			try {
-				ignited = true;
-				ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-				FileAppender<ILoggingEvent> appender = (FileAppender<ILoggingEvent>) root.getAppender("file");
-				File logFile = Utils.getLogFile();
-				if (logFile.exists() && logFile.length() > 2 * 1024 * 1024L) {// 2MB
-					Utils.copyFile(logFile, new File(logFile.getParent(), logFile.getName() + ".old"));
-					logFile.delete();
+	public static void deleteOldLogs() {
+		try {
+			File logFile = Utils.getLogFile();
+			File logDir = new File(logFile.getParent(), "log");
+			if (logDir.exists() && logDir.isDirectory()) {
+				for (File file : logDir.listFiles()) {
+					file.delete();
 				}
-				appender.setFile(logFile.getAbsolutePath());
-			} catch (Throwable e) {
-				e.printStackTrace();
 			}
+		} catch (Throwable e) {
+			e.printStackTrace();
 		}
 	}
 }

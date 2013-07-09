@@ -89,15 +89,6 @@ public class FlickrApi {
 	private static Map<String, String> uploadedFolders = Utils.getMapProperty(STR.uploadedFolders);
 	private static Map<String, PRIVACY> photosPrivacy = Utils.getMapProperty(STR.photosPrivacy, PRIVACY.class);
 
-	static {
-		BackgroundExecutor.execute(new Runnable() {
-			@Override
-			public void run() {
-				// syncUploadedPhotosMap();
-			}
-		});
-	}
-
 	static PRIVACY getPrivacy(Photo photo) {
 		if (photo.isPublicFlag()) {
 			return PRIVACY.PUBLIC;
@@ -284,7 +275,7 @@ public class FlickrApi {
 		return uploadedPhotos.get(sha1tag);
 	}
 
-	public static boolean containsUploadedPhotos(String photosetId) {
+	private static boolean containsUploadedPhotos(String photosetId) {
 		try {
 			int per_page = 100;
 			// Log.i(TAG, "persisted uploadedPhotos : " + uploadedPhotos);

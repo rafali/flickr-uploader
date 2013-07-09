@@ -35,6 +35,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.database.Cursor;
@@ -44,6 +46,7 @@ import android.graphics.Point;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Environment;
 import android.preference.PreferenceManager;
@@ -530,7 +533,7 @@ public final class Utils {
 
 	public static CAN_UPLOAD canUploadNow() {
 		if (Utils.getBooleanProperty(Preferences.CHARGING_ONLY, false)) {
-			if (!isCharging()) {
+			if (!checkIfCharging()) {
 				return CAN_UPLOAD.charging;
 			}
 		}
@@ -652,12 +655,17 @@ public final class Utils {
 	}
 
 	static void addFolder(File folder, List<String> persisted) {
-		for (File file : folder.listFiles()) {
-			if (file.isDirectory() && !file.isHidden()) {
-				persisted.add(file.getAbsolutePath());
+		if (folder != null) {
+			File[] listFiles = folder.listFiles();
+			if (listFiles != null) {
+				for (File file : listFiles) {
+					if (file.isDirectory() && !file.isHidden()) {
+						persisted.add(file.getAbsolutePath());
+					}
+				}
 			}
+			persisted.add(folder.getAbsolutePath());
 		}
-		persisted.add(folder.getAbsolutePath());
 	}
 
 	public static List<String> getStringList(String key) {
@@ -774,10 +782,6 @@ public final class Utils {
 
 	private static boolean charging = false;
 
-	public static boolean isCharging() {
-		return charging;
-	}
-
 	public static final void sendMail(final String subject, final String bodyHtml) {
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
@@ -892,6 +896,19 @@ public final class Utils {
 		Utils.charging = charging;
 	}
 
+	public static boolean checkIfCharging() {
+		try {
+			IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+			Intent batteryStatus = FlickrUploader.getAppContext().registerReceiver(null, ifilter);
+			int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+			boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL;
+			setCharging(isCharging);
+		} catch (Throwable e) {
+			LOG.error(e.getMessage(), e);
+		}
+		return charging;
+	}
+
 	private static boolean copyToFile(InputStream inputStream, File destFile) {
 		try {
 			OutputStream out = new FileOutputStream(destFile);
@@ -926,7 +943,7 @@ public final class Utils {
 		}
 		return result;
 	}
-	
+
 	public static File getLogFile() {
 		return new File(FlickrUploader.getAppContext().getFilesDir(), "flickruploader.log");
 	}

@@ -318,7 +318,7 @@ public class REST extends Transport {
 
 	public String sendPost(String path, List<Parameter> parameters) throws IOException {
 		if (logger.isDebugEnabled()) {
-			logger.debug("Send Post Input Params: path '{}'; parameters {}", path, parameters);
+			logger.trace("Send Post Input Params: path '{}'; parameters {}", path, parameters);
 		}
 		HttpURLConnection conn = null;
 		DataOutputStream out = null;
@@ -326,7 +326,7 @@ public class REST extends Transport {
 		try {
 			URL url = UrlUtilities.buildPostUrl(getHost(), getPort(), path);
 			if (logger.isDebugEnabled()) {
-				logger.debug("Post URL: {}", url.toString());
+				logger.trace("Post URL: {}", url.toString());
 			}
 			conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod("POST");
@@ -367,7 +367,7 @@ public class REST extends Transport {
 			if (conn != null)
 				conn.disconnect();
 			if (logger.isDebugEnabled()) {
-				logger.debug("Send Post Result: {}", data);
+				logger.trace("Send Post Result: {}", data);
 			}
 		}
 	}
@@ -450,7 +450,7 @@ public class REST extends Transport {
 							currentProgress = tmpProgress;
 							if (currentProgress % 5 == 0)
 								out.flush();
-							logger.debug("out.size() : " + out.size() + ", " + file.length());
+							logger.trace("out.size() : " + out.size() + ", " + file.length());
 							reportProgress(progressListener, currentProgress);
 						}
 					}

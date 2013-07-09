@@ -12,6 +12,10 @@
         android:showAsAction="always"
         android:title="Upload"/>
     <item
+        android:id="@+id/menu_item_dequeue"
+        android:showAsAction="never"
+        android:title="Remove from queue"/>
+    <item
         android:id="@+id/menu_item_select_all"
         android:showAsAction="never"
         android:title="Select all"/>
