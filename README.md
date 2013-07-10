@@ -16,7 +16,6 @@ It uses a few open source libraries:
 - [Android-BitmapCache](https://github.com/chrisbanes/Android-BitmapCache) : takes care of bitmaps caching/recycling for you
 - [Android-ViewPagerIndicator](https://github.com/JakeWharton/Android-ViewPagerIndicator) : displays a nice tab UI above a ViewPager
 - [ACRA](https://github.com/ACRA/acra) : sends crash report to a configurable url
-- [android-donations-lib](https://github.com/dschuermann/android-donations-lib) : allows users to make donations using Google Play, Paypal or Flattr
 - [AndroidAnnotation](https://github.com/excilys/androidannotations) : simplifies Android development with annotations to define code scope (UI thread, background thread…)
 - [google-collections](https://code.google.com/p/google-collections/) : simplifies use of lists, maps and multimaps 
 
