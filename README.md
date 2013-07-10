@@ -8,7 +8,7 @@ The main benefit of this app over Google+ Instant Upload is the fact that you ca
 
 You can download it at : https://play.google.com/store/apps/details?id=com.rafali.flickruploader
 
-You can fork this project or use the source code for any project that does not blatantly copy the app. In other words, you may not use the code to build a concurrent app.
+You can fork this project or use the source code for any project that does not blatantly copy the app. In other words, you may not use the code to build a concurrent app, unless you keep it is for your own use of course.
 If you have any doubt on what you can do, just ask me at flickruploader@rafali.com
 
 It uses a few open source libraries:
