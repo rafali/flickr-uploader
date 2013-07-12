@@ -1,6 +1,6 @@
 {
  "kind": "discovery#rpcDescription",
- "etag": "\"s1omim4x8ymp9_6H8kBMkfEDqpo/388u0bTT8_TTY3dMiGn3RPuRTEw\"",
+ "etag": "\"s1omim4x8ymp9_6H8kBMkfEDqpo/xtsisMNSpGULMee-EfFjvEgHtjk\"",
  "discoveryVersion": "v1",
  "id": "appinstallendpoint:v1",
  "name": "appinstallendpoint",
@@ -129,6 +129,9 @@
      "items": {
       "type": "string"
      }
+    },
+    "premium": {
+     "type": "boolean"
     }
    }
   },
@@ -163,6 +166,22 @@
    ],
    "returns": {
     "$ref": "AppInstall"
+   }
+  },
+  "appinstallendpoint.getAppInstallsByEmails": {
+   "id": "appinstallendpoint.getAppInstallsByEmails",
+   "allowGet": true,
+   "parameters": {
+    "concatenatedEmails": {
+     "type": "string",
+     "required": true
+    }
+   },
+   "parameterOrder": [
+    "concatenatedEmails"
+   ],
+   "returns": {
+    "$ref": "CollectionResponse_AppInstall"
    }
   },
   "appinstallendpoint.insertAppInstall": {

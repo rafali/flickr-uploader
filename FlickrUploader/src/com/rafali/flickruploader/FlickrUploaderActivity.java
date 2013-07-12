@@ -1,5 +1,7 @@
 package com.rafali.flickruploader;
 
+import java.sql.Date;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,19 +41,23 @@ import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.ShareActionProvider;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.analytics.tracking.android.EasyTracker;
 import com.google.common.base.Joiner;
+import com.googlecode.androidannotations.annotations.AfterViews;
+import com.googlecode.androidannotations.annotations.Click;
 import com.googlecode.androidannotations.annotations.EActivity;
 import com.googlecode.androidannotations.annotations.UiThread;
+import com.googlecode.androidannotations.annotations.ViewById;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.Utils.MediaType;
 
-@EActivity
+@EActivity(R.layout.flickr_uploader_activity)
 public class FlickrUploaderActivity extends Activity {
 
 	private static final int MAX_LINK_SHARE = 5;
@@ -89,7 +95,6 @@ public class FlickrUploaderActivity extends Activity {
 		if (instance != null)
 			instance.finish();
 		instance = this;
-
 	}
 
 	AbsListView[] views = new AbsListView[TAB.values().length];
@@ -199,7 +204,10 @@ public class FlickrUploaderActivity extends Activity {
 		super.onDestroy();
 		if (instance == this)
 			instance = null;
+		destroyed = true;
 	}
+
+	boolean destroyed = false;
 
 	@UiThread
 	void init() {
@@ -211,7 +219,22 @@ public class FlickrUploaderActivity extends Activity {
 			absListView.setOnItemClickListener(onItemClickListener);
 		}
 		mainTabView = new MainTabView();
-		setContentView(mainTabView);
+		RelativeLayout relativeLayout = (RelativeLayout) findViewById(R.id.container);
+		relativeLayout.addView(mainTabView, 0);
+	}
+
+	@ViewById(R.id.footer)
+	TextView footer;
+
+	@AfterViews
+	void afterViews() {
+		Utils.checkPremium(this);
+		renderPremium();
+	}
+
+	@Click(R.id.footer)
+	void onFooterClick() {
+		Utils.showPremiumDialog(this);
 	}
 
 	OnItemClickListener onItemClickListener = new OnItemClickListener() {
@@ -983,4 +1006,22 @@ public class FlickrUploaderActivity extends Activity {
 	public boolean isPaused() {
 		return paused;
 	}
+
+	@UiThread
+	public void renderPremium() {
+		if (!destroyed) {
+			if (Utils.isPremium()) {
+				footer.setVisibility(View.GONE);
+			} else {
+				footer.setVisibility(View.VISIBLE);
+				if (Utils.isTrial()) {
+					footer.setText("You are currently using the trial version of Flickr Uploader. All feature will be available for you to test until "
+							+ SimpleDateFormat.getDateInstance().format(new Date(Utils.trialUntil())) + ".");
+				} else {
+					footer.setText("Your trial has expired. To continue to use premium features, please click here.");
+				}
+			}
+		}
+	}
+
 }

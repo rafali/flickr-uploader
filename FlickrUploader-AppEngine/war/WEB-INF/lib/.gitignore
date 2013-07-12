@@ -1,0 +1,7 @@
+/appengine-*.jar
+/datanucleus-*.jar
+/asm-*.jar
+/geronimo-*.jar
+/jdo-*.jar
+/jsr*.jar
+/jta*.jar

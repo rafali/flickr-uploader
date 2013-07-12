@@ -16,4 +16,5 @@ public class STR {
 	public static final String uploadedFolders = "uploadedFolders";
 	public static final String instantCustomAlbumId = "instantCustomAlbumId";
 	public static final String instantCustomAlbumTitle = "instantCustomAlbumTitle";
+	public static final String premium = "premium";
 }

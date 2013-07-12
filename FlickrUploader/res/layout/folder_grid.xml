@@ -5,5 +5,7 @@
     android:gravity="center"
     android:horizontalSpacing="0dp"
     android:numColumns="2"
+    android:clipToPadding="false"
+    android:paddingBottom="60dp"
     android:stretchMode="columnWidth"
     android:verticalSpacing="2dp" />

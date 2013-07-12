@@ -21,7 +21,6 @@ import static org.acra.ReportField.USER_APP_START_DATE;
 import static org.acra.ReportField.USER_CRASH_DATE;
 
 import java.io.File;
-import java.util.Date;
 
 import org.acra.ACRA;
 import org.acra.ReportingInteractionMode;
@@ -65,8 +64,6 @@ public class FlickrUploader extends Application {
 						Utils.saveAndroidDevice();
 						Utils.setLongProperty(STR.versionCode, (long) Config.VERSION);
 					}
-					long firstInstallTime = context.getPackageManager().getPackageInfo(getPackageName(), 0).firstInstallTime;
-					LOG.info("firstInstallTime : " + new Date(firstInstallTime));
 				} catch (Throwable e) {
 					LOG.error(e.getMessage(), e);
 				}

@@ -1,11 +1,11 @@
 {
   "files": [
     {
-      "path": "ra-fa-li-messageEndpoint-v1-20130712150602-java-1.15.0-rc-sources.jar", 
+      "path": "ra-fa-li-messageEndpoint-v1-20130712195759-java-1.15.0-rc-sources.jar", 
       "type": "source"
     }, 
     {
-      "path": "ra-fa-li-messageEndpoint-v1-20130712150602-java-1.15.0-rc.jar.properties", 
+      "path": "ra-fa-li-messageEndpoint-v1-20130712195759-java-1.15.0-rc.jar.properties", 
       "type": "android.properties"
     }
   ], 
@@ -689,7 +689,7 @@
     }
   ], 
   "language_version": "1.15.0-rc", 
-  "revision": 20130712150602, 
+  "revision": 20130712195759, 
   "id": "messageEndpoint:v1", 
   "modulePath": "com/rafali/flickruploader"
 }

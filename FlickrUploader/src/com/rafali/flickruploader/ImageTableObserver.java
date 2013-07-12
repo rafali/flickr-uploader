@@ -35,6 +35,11 @@ public class ImageTableObserver extends ContentObserver {
 				LOG.debug("autoupload disabled");
 				return;
 			}
+			if (!Utils.isPremium() && !Utils.isTrial()) {
+				LOG.debug("no autoupload, trial has ended");
+				return;
+			}
+
 			if (!FlickrApi.isAuthentified()) {
 				LOG.debug("Flickr not authentified yet");
 				return;

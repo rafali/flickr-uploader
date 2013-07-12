@@ -1,6 +1,6 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
 
-    <PreferenceScreen android:key="userdonations" />
+    <PreferenceScreen android:key="premium" />
     <PreferenceScreen android:key="login" />
 
     <CheckBoxPreference
@@ -9,7 +9,6 @@
         android:summaryOff="Photos are manually uploaded"
         android:summaryOn="Photos are automatically uploaded"
         android:title="Photo Instant Upload" />
-
     <CheckBoxPreference
         android:defaultValue="true"
         android:key="autouploadvideos"
@@ -48,10 +47,6 @@
         android:key="rate"
         android:summary="If you like this app, please rate it ★★★★★ on Google Play"
         android:title="Rate the app" />
-    <PreferenceScreen
-        android:key="donation"
-        android:summary="Offer him a coffee or a donut!"
-        android:title="Thank the developer" />
     <PreferenceScreen
         android:key="feedback"
         android:summary="Something is missing? Send a feedback to help improve the app"

@@ -35,6 +35,9 @@ public class AppInstall implements Serializable {
 	private List<String> ownerIds;
 
 	@Persistent
+	private Boolean premium;
+
+	@Persistent
 	private Date dateCreation;
 
 	public AppInstall(String deviceId, AndroidDevice androidDevice, Collection<String> emails) {
@@ -84,4 +87,26 @@ public class AppInstall implements Serializable {
 			ownerIds.add(userId);
 	}
 
+	public boolean isPremium() {
+		if (premium == null)
+			return false;
+		return true;
+	}
+
+	public void setPremium(boolean premium) {
+		this.premium = premium;
+	}
+
+	@Override
+	public int hashCode() {
+		return deviceId.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof AppInstall) {
+			return deviceId.equals(((AppInstall) obj).deviceId);
+		}
+		return false;
+	}
 }

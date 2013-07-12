@@ -35,10 +35,12 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -55,6 +57,7 @@ import android.provider.MediaStore.Video;
 import android.provider.Settings.Secure;
 import android.util.TypedValue;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.http.HttpRequest;
@@ -63,6 +66,7 @@ import com.google.api.client.json.jackson.JacksonFactory;
 import com.google.api.client.util.DateTime;
 import com.google.common.base.Joiner;
 import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
@@ -70,9 +74,14 @@ import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import com.rafali.flickruploader.appinstallendpoint.Appinstallendpoint;
 import com.rafali.flickruploader.appinstallendpoint.model.AndroidDevice;
 import com.rafali.flickruploader.appinstallendpoint.model.AppInstall;
-import com.rafali.flickruploader.donationendpoint.Donationendpoint;
-import com.rafali.flickruploader.donationendpoint.model.CollectionResponseDonation;
-import com.rafali.flickruploader.donationendpoint.model.Donation;
+import com.rafali.flickruploader.appinstallendpoint.model.CollectionResponseAppInstall;
+import com.rafali.flickruploader.billing.IabException;
+import com.rafali.flickruploader.billing.IabHelper;
+import com.rafali.flickruploader.billing.IabHelper.OnConsumeFinishedListener;
+import com.rafali.flickruploader.billing.IabHelper.OnIabPurchaseFinishedListener;
+import com.rafali.flickruploader.billing.IabResult;
+import com.rafali.flickruploader.billing.Inventory;
+import com.rafali.flickruploader.billing.Purchase;
 import com.rafali.flickruploader.rpcendpoint.Rpcendpoint;
 
 public final class Utils {
@@ -871,27 +880,6 @@ public final class Utils {
 		}
 	}
 
-	public static List<String> getDonationUsers() {
-		List<String> users = new ArrayList<String>();
-		try {
-			Donationendpoint.Builder endpointBuilder = new Donationendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
-				public void initialize(HttpRequest httpRequest) {
-				}
-			});
-
-			Donationendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
-			CollectionResponseDonation donations = endpoint.listDonation().execute();
-			for (Donation donation : donations.getItems()) {
-				users.add(donation.getName());
-			}
-			LOG.debug("users : " + users);
-		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
-
-		}
-		return users;
-	}
-
 	public static void setCharging(boolean charging) {
 		Utils.charging = charging;
 	}
@@ -946,5 +934,254 @@ public final class Utils {
 
 	public static File getLogFile() {
 		return new File(FlickrUploader.getAppContext().getFilesDir(), "flickruploader.log");
+	}
+
+	static void thankYou(final Activity activity) {
+		activity.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				Mixpanel.track("ThankYou");
+				AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+				builder.setMessage("Thank you for your support!\n\nIt feels really good to know you appreciate my work ;)\n\nMaxime");
+				builder.setPositiveButton("Reply", new OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						showEmailActivity(activity, "Greetings!", "Hey Maxime,\n", false);
+					}
+				});
+				builder.setNegativeButton("OK", null);
+				// Create the AlertDialog object and return it
+				builder.create().show();
+			}
+		});
+	}
+
+	public static void showEmailActivity(final Activity activity, String subject, String message, boolean attachLogs) {
+		Intent intent = new Intent(Intent.ACTION_SEND);
+		intent.setType("text/email");
+		intent.putExtra(Intent.EXTRA_EMAIL, new String[] { "flickruploader@rafali.com" });
+		intent.putExtra(Intent.EXTRA_SUBJECT, subject);
+		intent.putExtra(Intent.EXTRA_TEXT, message);
+
+		if (attachLogs) {
+			File log = Utils.getLogFile();
+			if (log.exists()) {
+				File publicDownloadDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+				File publicLog = new File(publicDownloadDirectory, "flickruploader_log.txt");
+				Utils.copyFile(log, publicLog);
+				Uri uri = Uri.fromFile(publicLog);
+				intent.putExtra(Intent.EXTRA_STREAM, uri);
+			} else {
+				LOG.warn(log + " does not exist");
+			}
+		}
+		final List<ResolveInfo> resInfoList = activity.getPackageManager().queryIntentActivities(intent, 0);
+
+		ResolveInfo gmailResolveInfo = null;
+		for (ResolveInfo resolveInfo : resInfoList) {
+			if ("com.google.android.gm".equals(resolveInfo.activityInfo.packageName)) {
+				gmailResolveInfo = resolveInfo;
+				break;
+			}
+		}
+
+		if (gmailResolveInfo != null) {
+			intent.setClassName(gmailResolveInfo.activityInfo.packageName, gmailResolveInfo.activityInfo.name);
+			activity.startActivity(intent);
+		} else {
+			activity.startActivity(Intent.createChooser(intent, "Send Feedback:"));
+		}
+	}
+
+	public static void showPremiumDialog(final Activity activity) {
+		Mixpanel.track("PremiumShow");
+
+		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+		builder.setTitle("Premium features").setMessage("- auto uploads\n- future features").setNegativeButton("Later", null).setPositiveButton("Get Premium Now", new OnClickListener() {
+
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				// TODO Auto-generated method stub
+				final IabHelper mHelper = new IabHelper(activity, Utils.getString(R.string.google_play_billing_key));
+				final OnIabPurchaseFinishedListener mPurchaseFinishedListener = new OnIabPurchaseFinishedListener() {
+					@Override
+					public void onIabPurchaseFinished(IabResult result, Purchase purchase) {
+						try {
+							LOG.debug("result : " + result + ", purchase:" + purchase);
+							if (result.isFailure()) {
+								Toast.makeText(activity, "Next time maybe ;)", Toast.LENGTH_LONG).show();
+								return;
+							}
+							Mixpanel.track("PremiumSuccess");
+							thankYou(activity);
+							Utils.sendMail("[FlickrUploader] PremiumSuccess",
+									Utils.getDeviceId() + " - " + Utils.getEmail() + " - " + Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
+							mHelper.consumeAsync(purchase, new OnConsumeFinishedListener() {
+								@Override
+								public void onConsumeFinished(Purchase purchase, IabResult result) {
+									LOG.info("Premium success");
+								}
+							});
+						} catch (Throwable e) {
+							LOG.error(e.getMessage(), e);
+						}
+					}
+				};
+				// enable debug logging (for a production application, you should set this to false).
+				mHelper.enableDebugLogging(Config.isDebug());
+
+				// Start setup. This is asynchronous and the specified listener
+				// will be called once setup completes.
+				LOG.debug("Starting setup.");
+				mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
+					public void onIabSetupFinished(IabResult result) {
+						LOG.debug("Setup finished. : " + result);
+						if (result.isSuccess()) {
+							mHelper.launchPurchaseFlow(activity, getPremiumSku(), 1231, mPurchaseFinishedListener, "");
+						}
+					}
+				});
+
+			}
+		});
+
+		// .setItems(choices, new DialogInterface.OnClickListener() {
+		// public void onClick(DialogInterface dialog, int which) {
+		// // startActivity(new Intent(activity, DonationsActivity.class));
+		// });
+		builder.create().show();
+	}
+
+	public static String getPremiumSku() {
+		return "android.test.purchased";
+	}
+
+	public static void setPremium(final boolean premium) {
+		setBooleanProperty(STR.premium, premium);
+		if (premium) {
+			BackgroundExecutor.execute(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						Appinstallendpoint.Builder endpointBuilder = new Appinstallendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
+							public void initialize(HttpRequest httpRequest) {
+							}
+						});
+						Appinstallendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
+						try {
+							CollectionResponseAppInstall collectionResponseAppInstall = endpoint.getAppInstallsByEmails(Joiner.on(",").join(getAccountEmails())).execute();
+							if (collectionResponseAppInstall.getItems() != null) {
+								List<AppInstall> items = collectionResponseAppInstall.getItems();
+								for (AppInstall appInstall : items) {
+									appInstall.setPremium(premium);
+									endpoint.updateAppInstall(appInstall).execute();
+								}
+							}
+							// ListAppInstall listAppInstall = endpoint.listAppInstall();
+							// listAppInstall.setLimit(10);
+							// CollectionResponseAppInstall collectionResponseAppInstall = listAppInstall.execute();
+							LOG.debug("emails : " + getAccountEmails() + " : " + collectionResponseAppInstall.getItems());
+						} catch (Throwable e) {
+							LOG.warn(e.getMessage(), e);
+						}
+					} catch (Throwable e) {
+						LOG.error(e.getMessage(), e);
+					}
+				}
+			});
+		}
+	}
+
+	public static void checkPremium(final FlickrUploaderActivity activity) {
+		if (isPremium()) {
+			LOG.info("yeah! already premium");
+			activity.renderPremium();
+		} else {
+			BackgroundExecutor.execute(new Runnable() {
+				@Override
+				public void run() {
+					boolean premium = false;
+					try {
+						try {
+							Appinstallendpoint.Builder endpointBuilder = new Appinstallendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
+								public void initialize(HttpRequest httpRequest) {
+								}
+							});
+							Appinstallendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
+							try {
+
+								CollectionResponseAppInstall collectionResponseAppInstall = endpoint.getAppInstallsByEmails(Joiner.on(",").join(getAccountEmails())).execute();
+								if (collectionResponseAppInstall.getItems() != null) {
+									List<AppInstall> items = collectionResponseAppInstall.getItems();
+									for (AppInstall appInstall : items) {
+										if (appInstall.getPremium()) {
+											premium = true;
+											break;
+										}
+									}
+								}
+								// ListAppInstall listAppInstall = endpoint.listAppInstall();
+								// listAppInstall.setLimit(10);
+								// CollectionResponseAppInstall collectionResponseAppInstall = listAppInstall.execute();
+								LOG.debug("emails : " + getAccountEmails() + " : " + collectionResponseAppInstall.getItems());
+							} catch (Throwable e) {
+								LOG.warn(e.getMessage(), e);
+							}
+						} catch (Throwable e) {
+							LOG.error(e.getMessage(), e);
+						}
+						if (premium) {
+							setPremium(true);
+							activity.renderPremium();
+						} else {
+							final IabHelper mHelper = new IabHelper(activity, Utils.getString(R.string.google_play_billing_key));
+							mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
+								public void onIabSetupFinished(IabResult result) {
+									try {
+										LOG.debug("Setup finished: " + result);
+										if (result.isSuccess()) {
+											Inventory queryInventory = mHelper.queryInventory(true, Lists.newArrayList(Utils.getPremiumSku()));
+											LOG.debug("queryInventory : " + Utils.getPremiumSku() + " : " + queryInventory.hasPurchase(Utils.getPremiumSku()));
+											if (queryInventory.hasPurchase(Utils.getPremiumSku())) {
+												Utils.setPremium(true);
+												activity.renderPremium();
+											}
+										}
+									} catch (IabException e) {
+										LOG.error(e.getMessage(), e);
+									}
+								}
+							});
+						}
+					} catch (Throwable e) {
+						LOG.error(e.getMessage(), e);
+					}
+				}
+			});
+		}
+	}
+
+	public static boolean isPremium() {
+		return getBooleanProperty(STR.premium, false);
+	}
+
+	private static long releasePremiumDate = 1373778000000L;
+
+	public static long trialUntil() {
+		try {
+			long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;
+			if (firstInstallTime < releasePremiumDate) {
+				return firstInstallTime + 6 * 31 * 24 * 3600 * 1000L;
+			} else {
+				return firstInstallTime + 7 * 24 * 3600 * 1000L;
+			}
+		} catch (Throwable e) {
+			LOG.error(e.getMessage(), e);
+		}
+		return System.currentTimeMillis() + 7 * 24 * 3600 * 1000L;
+	}
+
+	public static boolean isTrial() {
+		return trialUntil() > System.currentTimeMillis();
 	}
 }

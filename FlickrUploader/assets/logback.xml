@@ -35,6 +35,6 @@
   <!-- Write INFO (and higher-level) messages to the log file -->
   <root>
     <appender-ref ref="file" />
-<!--     <appender-ref ref="logcat" /> -->
+    <appender-ref ref="logcat" />
   </root>
 </configuration>

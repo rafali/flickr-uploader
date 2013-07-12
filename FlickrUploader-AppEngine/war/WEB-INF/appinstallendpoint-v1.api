@@ -27,6 +27,41 @@
   "ownerName" : "rafali.com",
   "packagePath" : "flickruploader",
   "methods" : {
+    "appinstallendpoint.getAppInstallsByEmails" : {
+      "path" : "collectionresponse_appinstall/{concatenatedEmails}",
+      "httpMethod" : "GET",
+      "scopes" : [ ],
+      "audiences" : [ ],
+      "clientIds" : [ ],
+      "rosyMethod" : "com.rafali.flickruploader.AppInstallEndpoint.getAppInstallsByEmails",
+      "request" : {
+        "parameters" : {
+          "concatenatedEmails" : {
+            "type" : "string",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "appinstallendpoint.updateAppInstall" : {
+      "path" : "appinstall",
+      "httpMethod" : "PUT",
+      "scopes" : [ ],
+      "audiences" : [ ],
+      "clientIds" : [ ],
+      "rosyMethod" : "com.rafali.flickruploader.AppInstallEndpoint.updateAppInstall",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
     "appinstallendpoint.listAppInstall" : {
       "path" : "appinstall",
       "httpMethod" : "GET",
@@ -46,21 +81,6 @@
           }
         },
         "body" : "empty"
-      },
-      "response" : {
-        "body" : "autoTemplate(backendResponse)"
-      }
-    },
-    "appinstallendpoint.updateAppInstall" : {
-      "path" : "appinstall",
-      "httpMethod" : "PUT",
-      "scopes" : [ ],
-      "audiences" : [ ],
-      "clientIds" : [ ],
-      "rosyMethod" : "com.rafali.flickruploader.AppInstallEndpoint.updateAppInstall",
-      "request" : {
-        "body" : "autoTemplate(backendRequest)",
-        "bodyName" : "resource"
       },
       "response" : {
         "body" : "autoTemplate(backendResponse)"
@@ -161,6 +181,9 @@
               "type" : "string"
             }
           },
+          "premium" : {
+            "type" : "boolean"
+          },
           "dateCreation" : {
             "type" : "string",
             "format" : "date-time"
@@ -209,7 +232,7 @@
       }
     },
     "methods" : {
-      "com.rafali.flickruploader.AppInstallEndpoint.listAppInstall" : {
+      "com.rafali.flickruploader.AppInstallEndpoint.getAppInstallsByEmails" : {
         "response" : {
           "$ref" : "CollectionResponse_AppInstall"
         }
@@ -220,6 +243,11 @@
         },
         "response" : {
           "$ref" : "AppInstall"
+        }
+      },
+      "com.rafali.flickruploader.AppInstallEndpoint.listAppInstall" : {
+        "response" : {
+          "$ref" : "CollectionResponse_AppInstall"
         }
       },
       "com.rafali.flickruploader.AppInstallEndpoint.insertAppInstall" : {
