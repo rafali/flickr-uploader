@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"s1omim4x8ymp9_6H8kBMkfEDqpo/gIyrh439XZRuDWyPEnN3rn7ykiQ\"",
+ "etag": "\"s1omim4x8ymp9_6H8kBMkfEDqpo/3GdFOdAuDF72X8HxTUdbtFTw6oY\"",
  "discoveryVersion": "v1",
  "id": "donationendpoint:v1",
  "name": "donationendpoint",
@@ -133,7 +133,8 @@
    "path": "donation",
    "httpMethod": "POST",
    "request": {
-    "$ref": "Donation"
+    "$ref": "Donation",
+    "parameterName": "resource"
    },
    "response": {
     "$ref": "Donation"
@@ -182,7 +183,8 @@
    "path": "donation",
    "httpMethod": "PUT",
    "request": {
-    "$ref": "Donation"
+    "$ref": "Donation",
+    "parameterName": "resource"
    },
    "response": {
     "$ref": "Donation"

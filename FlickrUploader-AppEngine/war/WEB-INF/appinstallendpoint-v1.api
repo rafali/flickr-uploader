@@ -27,21 +27,6 @@
   "ownerName" : "rafali.com",
   "packagePath" : "flickruploader",
   "methods" : {
-    "appinstallendpoint.updateAppInstall" : {
-      "path" : "appinstall",
-      "httpMethod" : "PUT",
-      "scopes" : [ ],
-      "audiences" : [ ],
-      "clientIds" : [ ],
-      "rosyMethod" : "com.rafali.flickruploader.AppInstallEndpoint.updateAppInstall",
-      "request" : {
-        "body" : "autoTemplate(backendRequest)",
-        "bodyName" : "resource"
-      },
-      "response" : {
-        "body" : "autoTemplate(backendResponse)"
-      }
-    },
     "appinstallendpoint.listAppInstall" : {
       "path" : "appinstall",
       "httpMethod" : "GET",
@@ -61,6 +46,21 @@
           }
         },
         "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "appinstallendpoint.updateAppInstall" : {
+      "path" : "appinstall",
+      "httpMethod" : "PUT",
+      "scopes" : [ ],
+      "audiences" : [ ],
+      "clientIds" : [ ],
+      "rosyMethod" : "com.rafali.flickruploader.AppInstallEndpoint.updateAppInstall",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
       },
       "response" : {
         "body" : "autoTemplate(backendResponse)"
@@ -124,6 +124,21 @@
   },
   "descriptor" : {
     "schemas" : {
+      "CollectionResponse_AppInstall" : {
+        "id" : "CollectionResponse_AppInstall",
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "AppInstall"
+            }
+          },
+          "nextPageToken" : {
+            "type" : "string"
+          }
+        }
+      },
       "AppInstall" : {
         "id" : "AppInstall",
         "type" : "object",
@@ -191,35 +206,20 @@
             "type" : "integer"
           }
         }
-      },
-      "CollectionResponse_AppInstall" : {
-        "id" : "CollectionResponse_AppInstall",
-        "type" : "object",
-        "properties" : {
-          "items" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "AppInstall"
-            }
-          },
-          "nextPageToken" : {
-            "type" : "string"
-          }
-        }
       }
     },
     "methods" : {
+      "com.rafali.flickruploader.AppInstallEndpoint.listAppInstall" : {
+        "response" : {
+          "$ref" : "CollectionResponse_AppInstall"
+        }
+      },
       "com.rafali.flickruploader.AppInstallEndpoint.updateAppInstall" : {
         "request" : {
           "$ref" : "AppInstall"
         },
         "response" : {
           "$ref" : "AppInstall"
-        }
-      },
-      "com.rafali.flickruploader.AppInstallEndpoint.listAppInstall" : {
-        "response" : {
-          "$ref" : "CollectionResponse_AppInstall"
         }
       },
       "com.rafali.flickruploader.AppInstallEndpoint.insertAppInstall" : {

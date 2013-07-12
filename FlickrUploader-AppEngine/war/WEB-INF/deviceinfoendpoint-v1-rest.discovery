@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"s1omim4x8ymp9_6H8kBMkfEDqpo/pjJtRbuYZnBcHD27gAoplTS83SE\"",
+ "etag": "\"s1omim4x8ymp9_6H8kBMkfEDqpo/ErjahB-cXO7oIjfeeOyzN9_by9I\"",
  "discoveryVersion": "v1",
  "id": "deviceinfoendpoint:v1",
  "name": "deviceinfoendpoint",
@@ -121,7 +121,8 @@
    "path": "deviceinfo",
    "httpMethod": "POST",
    "request": {
-    "$ref": "DeviceInfo"
+    "$ref": "DeviceInfo",
+    "parameterName": "resource"
    },
    "response": {
     "$ref": "DeviceInfo"
@@ -169,7 +170,8 @@
    "path": "deviceinfo",
    "httpMethod": "PUT",
    "request": {
-    "$ref": "DeviceInfo"
+    "$ref": "DeviceInfo",
+    "parameterName": "resource"
    },
    "response": {
     "$ref": "DeviceInfo"
