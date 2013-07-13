@@ -1013,6 +1013,7 @@ public final class Utils {
 								callback.onResult(false);
 								return;
 							}
+							setPremium(true);
 							callback.onResult(true);
 							Mixpanel.track("PremiumSuccess");
 							thankYou(activity);
