@@ -56,6 +56,7 @@ import com.googlecode.androidannotations.annotations.ViewById;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.Utils.MediaType;
+import com.rafali.flickruploader.billing.IabHelper;
 
 @EActivity(R.layout.flickr_uploader_activity)
 public class FlickrUploaderActivity extends Activity {
@@ -950,7 +951,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (Utils.mHelper != null && Utils.mHelper.handleActivityResult(requestCode, resultCode, data)) {
+		if (IabHelper.get(false) != null && IabHelper.get(false).handleActivityResult(requestCode, resultCode, data)) {
 			return;
 		}
 		if (resultCode == WebAuth.RESULT_CODE_AUTH) {

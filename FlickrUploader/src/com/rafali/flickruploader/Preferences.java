@@ -20,6 +20,7 @@ import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
@@ -33,6 +34,7 @@ import com.google.analytics.tracking.android.EasyTracker;
 import com.google.analytics.tracking.android.Log;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
+import com.rafali.flickruploader.billing.IabHelper;
 
 public class Preferences extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 
@@ -252,6 +254,22 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 			} else {
 				premium.setTitle("Premium Trial Ended");
 				premium.setSummary("Click here to go Premium");
+				((CheckBoxPreference) findPreference(AUTOUPLOAD)).setChecked(false);
+				((CheckBoxPreference) findPreference(AUTOUPLOAD_VIDEOS)).setChecked(false);
+				OnPreferenceClickListener onPreferenceClickListener = new OnPreferenceClickListener() {
+					@Override
+					public boolean onPreferenceClick(Preference preference) {
+						Utils.showPremiumDialog(Preferences.this, new Utils.Callback<Boolean>() {
+							@Override
+							public void onResult(Boolean result) {
+								render();
+							}
+						});
+						return false;
+					}
+				};
+				findPreference(AUTOUPLOAD).setOnPreferenceClickListener(onPreferenceClickListener);
+				findPreference(AUTOUPLOAD_VIDEOS).setOnPreferenceClickListener(onPreferenceClickListener);
 			}
 			premium.setOnPreferenceClickListener(new OnPreferenceClickListener() {
 				@Override
@@ -269,7 +287,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	}
 
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (Utils.mHelper != null && Utils.mHelper.handleActivityResult(requestCode, resultCode, data)) {
+		if (IabHelper.get(false) != null && IabHelper.get(false).handleActivityResult(requestCode, resultCode, data)) {
 			return;
 		}
 		super.onActivityResult(requestCode, resultCode, data);

@@ -1003,7 +1003,6 @@ public final class Utils {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
 						// TODO Auto-generated method stub
-						mHelper = new IabHelper(activity, Utils.getString(R.string.google_play_billing_key));
 						final OnIabPurchaseFinishedListener mPurchaseFinishedListener = new OnIabPurchaseFinishedListener() {
 							@Override
 							public void onIabPurchaseFinished(IabResult result, Purchase purchase) {
@@ -1020,28 +1019,22 @@ public final class Utils {
 									thankYou(activity);
 									Utils.sendMail("[FlickrUploader] PremiumSuccess",
 											Utils.getDeviceId() + " - " + Utils.getEmail() + " - " + Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
-									mHelper.consumeAsync(purchase, new OnConsumeFinishedListener() {
-										@Override
-										public void onConsumeFinished(Purchase purchase, IabResult result) {
-											LOG.info("Premium success");
-										}
-									});
 								} catch (Throwable e) {
 									LOG.error(e.getMessage(), e);
 								}
 							}
 						};
 						// enable debug logging (for a production application, you should set this to false).
-						mHelper.enableDebugLogging(Config.isDebug());
+						IabHelper.get().enableDebugLogging(Config.isDebug());
 
 						// Start setup. This is asynchronous and the specified listener
 						// will be called once setup completes.
 						LOG.debug("Starting setup.");
-						mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
+						IabHelper.get().ensureSetup(new IabHelper.OnIabSetupFinishedListener() {
 							public void onIabSetupFinished(IabResult result) {
 								LOG.debug("Setup finished. : " + result);
 								if (result.isSuccess()) {
-									mHelper.launchPurchaseFlow(activity, getPremiumSku(), 1231, mPurchaseFinishedListener, "");
+									IabHelper.get().launchPurchaseFlow(activity, getPremiumSku(), 1231, mPurchaseFinishedListener, "");
 								}
 							}
 						});
@@ -1057,6 +1050,9 @@ public final class Utils {
 	}
 
 	public static String getPremiumSku() {
+		if (Config.isDebug()) {
+			return "android.test.purchased";
+		}
 		return "premium.5";
 	}
 
@@ -1135,13 +1131,12 @@ public final class Utils {
 							setPremium(true);
 							activity.renderPremium();
 						} else {
-							final IabHelper mHelper = new IabHelper(activity, Utils.getString(R.string.google_play_billing_key));
-							mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
+							IabHelper.get().ensureSetup(new IabHelper.OnIabSetupFinishedListener() {
 								public void onIabSetupFinished(IabResult result) {
 									try {
 										LOG.debug("Setup finished: " + result);
 										if (result.isSuccess()) {
-											Inventory queryInventory = mHelper.queryInventory(true, Lists.newArrayList(Utils.getPremiumSku()));
+											Inventory queryInventory = IabHelper.get().queryInventory(true, Lists.newArrayList(Utils.getPremiumSku()));
 											LOG.debug("queryInventory : " + Utils.getPremiumSku() + " : " + queryInventory.hasPurchase(Utils.getPremiumSku()));
 											for (String sku : Arrays.asList("flickruploader.donation.1", "flickruploader.donation.2", "flickruploader.donation.3", "flickruploader.donation.5",
 													"flickruploader.donation.8", Utils.getPremiumSku())) {
@@ -1166,19 +1161,16 @@ public final class Utils {
 		}
 	}
 
-	static IabHelper mHelper;
-
 	public static void consumePurchase(final Activity activity) {
-		mHelper = new IabHelper(activity, Utils.getString(R.string.google_play_billing_key));
-		mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
+		IabHelper.get().ensureSetup(new IabHelper.OnIabSetupFinishedListener() {
 			public void onIabSetupFinished(IabResult result) {
 				try {
 					LOG.debug("Setup finished: " + result);
 					if (result.isSuccess()) {
-						Inventory queryInventory = mHelper.queryInventory(true, Lists.newArrayList(Utils.getPremiumSku()));
+						Inventory queryInventory = IabHelper.get().queryInventory(true, Lists.newArrayList(Utils.getPremiumSku()));
 						LOG.debug("queryInventory : " + Utils.getPremiumSku() + " : " + queryInventory.hasPurchase(Utils.getPremiumSku()));
 						if (queryInventory.hasPurchase(Utils.getPremiumSku())) {
-							mHelper.consumeAsync(queryInventory.getPurchase(Utils.getPremiumSku()), new OnConsumeFinishedListener() {
+							IabHelper.get().consumeAsync(queryInventory.getPurchase(Utils.getPremiumSku()), new OnConsumeFinishedListener() {
 								@Override
 								public void onConsumeFinished(Purchase purchase, IabResult result) {
 									LOG.info("purchase consumed : " + purchase);

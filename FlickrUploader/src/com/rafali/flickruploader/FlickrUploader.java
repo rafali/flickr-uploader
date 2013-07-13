@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import android.app.Application;
 import android.content.Context;
 import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.android.LogcatAppender;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
@@ -84,6 +85,13 @@ public class FlickrUploader extends Application {
 			@SuppressWarnings("unchecked")
 			TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = (TimeBasedRollingPolicy<ILoggingEvent>) appender.getRollingPolicy();
 			rollingPolicy.setFileNamePattern(logFile.getParent() + "/log/flickruploader.%d{yyyy-MM-dd}.%i.log");
+
+			if (!Config.isDebug()) {
+				LogcatAppender logcatAppender = (LogcatAppender) root.getAppender("logcat");
+				if (logcatAppender != null) {
+					logcatAppender.stop();
+				}
+			}
 		} catch (Throwable e) {
 			e.printStackTrace();
 		}
