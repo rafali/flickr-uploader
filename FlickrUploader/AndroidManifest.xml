@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.rafali.flickruploader"
     android:installLocation="internalOnly"
-    android:versionCode="16"
+    android:versionCode="18"
     android:versionName="1.6.0" >
 
     <uses-sdk

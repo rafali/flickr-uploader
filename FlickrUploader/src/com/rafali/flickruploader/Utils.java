@@ -1197,7 +1197,7 @@ public final class Utils {
 		return getBooleanProperty(STR.premium, false);
 	}
 
-	private static long releasePremiumDate = 1373778000000L;
+	private static long releasePremiumDate = 1373742056622L;
 
 	public static long trialUntil() {
 		try {
