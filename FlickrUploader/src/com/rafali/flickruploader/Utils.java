@@ -997,56 +997,57 @@ public final class Utils {
 		Mixpanel.track("PremiumShow");
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-		builder.setTitle("Premium features").setMessage("Get the premium today and enjoy the automatic uploads and the next app improvements for life.").setNegativeButton("Later", null).setPositiveButton("Get Premium Now", new OnClickListener() {
+		builder.setTitle("Premium features").setMessage("Get the premium today and enjoy the automatic uploads and the next app improvements for life.").setNegativeButton("Later", null)
+				.setPositiveButton("Get Premium Now", new OnClickListener() {
 
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				// TODO Auto-generated method stub
-				mHelper = new IabHelper(activity, Utils.getString(R.string.google_play_billing_key));
-				final OnIabPurchaseFinishedListener mPurchaseFinishedListener = new OnIabPurchaseFinishedListener() {
 					@Override
-					public void onIabPurchaseFinished(IabResult result, Purchase purchase) {
-						try {
-							LOG.debug("result : " + result + ", purchase:" + purchase);
-							if (result.isFailure()) {
-								Toast.makeText(activity, "Next time maybe ;)", Toast.LENGTH_LONG).show();
-								callback.onResult(false);
-								return;
-							}
-							setPremium(true);
-							callback.onResult(true);
-							Mixpanel.track("PremiumSuccess");
-							thankYou(activity);
-							Utils.sendMail("[FlickrUploader] PremiumSuccess",
-									Utils.getDeviceId() + " - " + Utils.getEmail() + " - " + Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
-							mHelper.consumeAsync(purchase, new OnConsumeFinishedListener() {
-								@Override
-								public void onConsumeFinished(Purchase purchase, IabResult result) {
-									LOG.info("Premium success");
+					public void onClick(DialogInterface dialog, int which) {
+						// TODO Auto-generated method stub
+						mHelper = new IabHelper(activity, Utils.getString(R.string.google_play_billing_key));
+						final OnIabPurchaseFinishedListener mPurchaseFinishedListener = new OnIabPurchaseFinishedListener() {
+							@Override
+							public void onIabPurchaseFinished(IabResult result, Purchase purchase) {
+								try {
+									LOG.debug("result : " + result + ", purchase:" + purchase);
+									if (result.isFailure()) {
+										Toast.makeText(activity, "Next time maybe ;)", Toast.LENGTH_LONG).show();
+										callback.onResult(false);
+										return;
+									}
+									setPremium(true);
+									callback.onResult(true);
+									Mixpanel.track("PremiumSuccess");
+									thankYou(activity);
+									Utils.sendMail("[FlickrUploader] PremiumSuccess",
+											Utils.getDeviceId() + " - " + Utils.getEmail() + " - " + Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
+									mHelper.consumeAsync(purchase, new OnConsumeFinishedListener() {
+										@Override
+										public void onConsumeFinished(Purchase purchase, IabResult result) {
+											LOG.info("Premium success");
+										}
+									});
+								} catch (Throwable e) {
+									LOG.error(e.getMessage(), e);
 								}
-							});
-						} catch (Throwable e) {
-							LOG.error(e.getMessage(), e);
-						}
-					}
-				};
-				// enable debug logging (for a production application, you should set this to false).
-				mHelper.enableDebugLogging(Config.isDebug());
+							}
+						};
+						// enable debug logging (for a production application, you should set this to false).
+						mHelper.enableDebugLogging(Config.isDebug());
 
-				// Start setup. This is asynchronous and the specified listener
-				// will be called once setup completes.
-				LOG.debug("Starting setup.");
-				mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
-					public void onIabSetupFinished(IabResult result) {
-						LOG.debug("Setup finished. : " + result);
-						if (result.isSuccess()) {
-							mHelper.launchPurchaseFlow(activity, getPremiumSku(), 1231, mPurchaseFinishedListener, "");
-						}
+						// Start setup. This is asynchronous and the specified listener
+						// will be called once setup completes.
+						LOG.debug("Starting setup.");
+						mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
+							public void onIabSetupFinished(IabResult result) {
+								LOG.debug("Setup finished. : " + result);
+								if (result.isSuccess()) {
+									mHelper.launchPurchaseFlow(activity, getPremiumSku(), 1231, mPurchaseFinishedListener, "");
+								}
+							}
+						});
+
 					}
 				});
-
-			}
-		});
 
 		// .setItems(choices, new DialogInterface.OnClickListener() {
 		// public void onClick(DialogInterface dialog, int which) {
@@ -1123,9 +1124,6 @@ public final class Utils {
 										}
 									}
 								}
-								// ListAppInstall listAppInstall = endpoint.listAppInstall();
-								// listAppInstall.setLimit(10);
-								// CollectionResponseAppInstall collectionResponseAppInstall = listAppInstall.execute();
 								LOG.debug("emails : " + getAccountEmails() + " : " + collectionResponseAppInstall.getItems());
 							} catch (Throwable e) {
 								LOG.warn(e.getMessage(), e);
@@ -1145,9 +1143,13 @@ public final class Utils {
 										if (result.isSuccess()) {
 											Inventory queryInventory = mHelper.queryInventory(true, Lists.newArrayList(Utils.getPremiumSku()));
 											LOG.debug("queryInventory : " + Utils.getPremiumSku() + " : " + queryInventory.hasPurchase(Utils.getPremiumSku()));
-											if (queryInventory.hasPurchase(Utils.getPremiumSku())) {
-												Utils.setPremium(true);
-												activity.renderPremium();
+											for (String sku : Arrays.asList("flickruploader.donation.1", "flickruploader.donation.2", "flickruploader.donation.3", "flickruploader.donation.5",
+													"flickruploader.donation.8", Utils.getPremiumSku())) {
+												if (queryInventory.hasPurchase(sku)) {
+													Utils.setPremium(true);
+													activity.renderPremium();
+													break;
+												}
 											}
 										}
 									} catch (IabException e) {
