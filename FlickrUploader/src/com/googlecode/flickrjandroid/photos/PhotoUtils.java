@@ -9,11 +9,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.googlecode.flickrjandroid.people.User;
-import com.googlecode.flickrjandroid.photos.GeoData;
-import com.googlecode.flickrjandroid.photos.Note;
-import com.googlecode.flickrjandroid.photos.PhotoContext;
-import com.googlecode.flickrjandroid.photos.PhotoList;
-import com.googlecode.flickrjandroid.photos.Size;
 import com.googlecode.flickrjandroid.tags.Tag;
 import com.googlecode.flickrjandroid.util.JSONUtils;
 

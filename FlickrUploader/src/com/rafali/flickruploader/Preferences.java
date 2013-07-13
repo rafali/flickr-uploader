@@ -1,5 +1,7 @@
 package com.rafali.flickruploader;
 
+import java.sql.Date;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -239,6 +241,38 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 			login.setTitle("Sign out");
 			login.setSummary(Utils.getStringProperty(STR.userName) + " is currently logged in");
 		}
+		Preference premium = findPreference(STR.premium);
+		if (Utils.isPremium()) {
+			premium.setTitle("You are a Premium user");
+			premium.setSummary("Thank you for supporting the development of this app");
+		} else {
+			if (Utils.isTrial()) {
+				premium.setTitle("Premium Trial");
+				premium.setSummary("It ends on " + SimpleDateFormat.getDateInstance().format(new Date(Utils.trialUntil())));
+			} else {
+				premium.setTitle("Premium Trial Ended");
+				premium.setSummary("Click here to go Premium");
+			}
+			premium.setOnPreferenceClickListener(new OnPreferenceClickListener() {
+				@Override
+				public boolean onPreferenceClick(Preference preference) {
+					Utils.showPremiumDialog(Preferences.this, new Utils.Callback<Boolean>() {
+						@Override
+						public void onResult(Boolean result) {
+							render();
+						}
+					});
+					return false;
+				}
+			});
+		}
+	}
+
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (Utils.mHelper != null && Utils.mHelper.handleActivityResult(requestCode, resultCode, data)) {
+			return;
+		}
+		super.onActivityResult(requestCode, resultCode, data);
 	}
 
 	String currentDonation;

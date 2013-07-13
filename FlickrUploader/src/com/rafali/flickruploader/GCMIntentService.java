@@ -13,7 +13,6 @@ import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.json.jackson.JacksonFactory;
-
 import com.rafali.flickruploader.deviceinfoendpoint.Deviceinfoendpoint;
 import com.rafali.flickruploader.deviceinfoendpoint.model.DeviceInfo;
 

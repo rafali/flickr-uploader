@@ -17,13 +17,6 @@ import java.util.Locale;
 
 import com.googlecode.flickrjandroid.FlickrException;
 import com.googlecode.flickrjandroid.people.User;
-import com.googlecode.flickrjandroid.photos.Editability;
-import com.googlecode.flickrjandroid.photos.GeoData;
-import com.googlecode.flickrjandroid.photos.Note;
-import com.googlecode.flickrjandroid.photos.Permissions;
-import com.googlecode.flickrjandroid.photos.PhotoUrl;
-import com.googlecode.flickrjandroid.photos.PhotosInterface;
-import com.googlecode.flickrjandroid.photos.Size;
 import com.googlecode.flickrjandroid.tags.Tag;
 
 /**

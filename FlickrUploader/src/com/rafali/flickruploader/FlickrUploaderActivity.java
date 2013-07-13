@@ -234,7 +234,12 @@ public class FlickrUploaderActivity extends Activity {
 
 	@Click(R.id.footer)
 	void onFooterClick() {
-		Utils.showPremiumDialog(this);
+		Utils.showPremiumDialog(this, new Utils.Callback<Boolean>() {
+			@Override
+			public void onResult(Boolean result) {
+				renderPremium();
+			}
+		});
 	}
 
 	OnItemClickListener onItemClickListener = new OnItemClickListener() {
@@ -945,6 +950,9 @@ public class FlickrUploaderActivity extends Activity {
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (Utils.mHelper != null && Utils.mHelper.handleActivityResult(requestCode, resultCode, data)) {
+			return;
+		}
 		if (resultCode == WebAuth.RESULT_CODE_AUTH) {
 			if (FlickrApi.isAuthentified() && getImageSelected(SelectionType.all).isEmpty())
 				confirmSync();

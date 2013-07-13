@@ -942,7 +942,7 @@ public final class Utils {
 			public void run() {
 				Mixpanel.track("ThankYou");
 				AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-				builder.setMessage("Thank you for your support!\n\nIt feels really good to know you appreciate my work ;)\n\nMaxime");
+				builder.setMessage("Thank you!\n\nThanks to users like you, I can continue on improving the app. If you have any suggestion, feel free to send me a mail!\n\nMaxime");
 				builder.setPositiveButton("Reply", new OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
@@ -993,16 +993,16 @@ public final class Utils {
 		}
 	}
 
-	public static void showPremiumDialog(final Activity activity) {
+	public static void showPremiumDialog(final Activity activity, final Callback<Boolean> callback) {
 		Mixpanel.track("PremiumShow");
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-		builder.setTitle("Premium features").setMessage("- auto uploads\n- future features").setNegativeButton("Later", null).setPositiveButton("Get Premium Now", new OnClickListener() {
+		builder.setTitle("Premium features").setMessage("Get the premium today and enjoy the automatic uploads and the next app improvements for life.").setNegativeButton("Later", null).setPositiveButton("Get Premium Now", new OnClickListener() {
 
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				// TODO Auto-generated method stub
-				final IabHelper mHelper = new IabHelper(activity, Utils.getString(R.string.google_play_billing_key));
+				mHelper = new IabHelper(activity, Utils.getString(R.string.google_play_billing_key));
 				final OnIabPurchaseFinishedListener mPurchaseFinishedListener = new OnIabPurchaseFinishedListener() {
 					@Override
 					public void onIabPurchaseFinished(IabResult result, Purchase purchase) {
@@ -1010,8 +1010,10 @@ public final class Utils {
 							LOG.debug("result : " + result + ", purchase:" + purchase);
 							if (result.isFailure()) {
 								Toast.makeText(activity, "Next time maybe ;)", Toast.LENGTH_LONG).show();
+								callback.onResult(false);
 								return;
 							}
+							callback.onResult(true);
 							Mixpanel.track("PremiumSuccess");
 							thankYou(activity);
 							Utils.sendMail("[FlickrUploader] PremiumSuccess",
@@ -1053,7 +1055,7 @@ public final class Utils {
 	}
 
 	public static String getPremiumSku() {
-		return "android.test.purchased";
+		return "premium.5";
 	}
 
 	public static void setPremium(final boolean premium) {
@@ -1159,6 +1161,33 @@ public final class Utils {
 				}
 			});
 		}
+	}
+
+	static IabHelper mHelper;
+
+	public static void consumePurchase(final Activity activity) {
+		mHelper = new IabHelper(activity, Utils.getString(R.string.google_play_billing_key));
+		mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
+			public void onIabSetupFinished(IabResult result) {
+				try {
+					LOG.debug("Setup finished: " + result);
+					if (result.isSuccess()) {
+						Inventory queryInventory = mHelper.queryInventory(true, Lists.newArrayList(Utils.getPremiumSku()));
+						LOG.debug("queryInventory : " + Utils.getPremiumSku() + " : " + queryInventory.hasPurchase(Utils.getPremiumSku()));
+						if (queryInventory.hasPurchase(Utils.getPremiumSku())) {
+							mHelper.consumeAsync(queryInventory.getPurchase(Utils.getPremiumSku()), new OnConsumeFinishedListener() {
+								@Override
+								public void onConsumeFinished(Purchase purchase, IabResult result) {
+									LOG.info("purchase consumed : " + purchase);
+								}
+							});
+						}
+					}
+				} catch (IabException e) {
+					LOG.error(e.getMessage(), e);
+				}
+			}
+		});
 	}
 
 	public static boolean isPremium() {

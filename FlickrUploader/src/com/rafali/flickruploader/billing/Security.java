@@ -28,8 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import android.text.TextUtils;
 
-import com.rafali.flickruploader.Notifications;
-
 /**
  * Security-related methods. For a secure implementation, all of this code should be implemented on a server that communicates with the application on the device. For the sake of simplicity and
  * clarity of this example, this code is included here and is executed on the device. If you must verify the purchases on the phone, you should obfuscate this code to make it harder for an attacker to
