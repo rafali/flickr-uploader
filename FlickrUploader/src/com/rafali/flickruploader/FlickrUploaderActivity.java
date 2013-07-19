@@ -212,16 +212,22 @@ public class FlickrUploaderActivity extends Activity {
 
 	@UiThread
 	void init() {
-		for (int i = 0; i < TAB.values().length; i++) {
-			TAB tab = TAB.values()[i];
-			AbsListView absListView = views[i] = (AbsListView) View.inflate(FlickrUploaderActivity.this, tab.layoutId, null);
-			absListView.setAdapter(new PhotoAdapter(tab));
-			absListView.setTag(tab);
-			absListView.setOnItemClickListener(onItemClickListener);
+		if (mainTabView == null) {
+			for (int i = 0; i < TAB.values().length; i++) {
+				TAB tab = TAB.values()[i];
+				AbsListView absListView = views[i] = (AbsListView) View.inflate(FlickrUploaderActivity.this, tab.layoutId, null);
+				absListView.setAdapter(new PhotoAdapter(tab));
+				absListView.setTag(tab);
+				absListView.setOnItemClickListener(onItemClickListener);
+			}
+			mainTabView = new MainTabView();
+			RelativeLayout relativeLayout = (RelativeLayout) findViewById(R.id.container);
+			relativeLayout.addView(mainTabView, 0);
+		} else {
+			for (int i = 0; i < TAB.values().length; i++) {
+				((PhotoAdapter) views[i].getAdapter()).notifyDataSetChanged();
+			}
 		}
-		mainTabView = new MainTabView();
-		RelativeLayout relativeLayout = (RelativeLayout) findViewById(R.id.container);
-		relativeLayout.addView(mainTabView, 0);
 	}
 
 	@ViewById(R.id.footer)

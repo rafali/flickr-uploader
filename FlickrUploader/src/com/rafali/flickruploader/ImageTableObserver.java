@@ -9,24 +9,17 @@ import org.slf4j.LoggerFactory;
 import android.database.ContentObserver;
 import android.graphics.Bitmap;
 import android.os.Handler;
-import android.provider.MediaStore;
 
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import com.rafali.flickruploader.Utils.MediaType;
 
 public class ImageTableObserver extends ContentObserver {
 
-	private static final String LAST_CHANGE = "lastChange";
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(ImageTableObserver.class);
 
 	public ImageTableObserver() {
 		super(new Handler());
-		lastChange = Utils.getLongProperty(LAST_CHANGE);
-		if (lastChange == 0)
-			lastChange = System.currentTimeMillis();
 	}
-
-	long lastChange = 0;
 
 	@Override
 	public void onChange(boolean change) {
@@ -45,20 +38,19 @@ public class ImageTableObserver extends ContentObserver {
 				return;
 			}
 
-			String filter = MediaStore.Images.Media.DATE_ADDED + " > " + (lastChange / 1000);
-			List<Media> media = Utils.loadImages(filter);
-			lastChange = System.currentTimeMillis();
-			Utils.setLongProperty(LAST_CHANGE, lastChange);
+			List<Media> media = Utils.loadImages(null, 10);
 			if (media == null || media.isEmpty()) {
-				LOG.debug("no new image since " + filter);
+				LOG.debug("no media found");
 				return;
 			}
 
 			List<Media> not_uploaded = new ArrayList<Media>();
 			for (Media image : media) {
 				if (image.mediaType == MediaType.photo && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true)) {
+					LOG.debug("not uploading " + media + " because photo upload disabled");
 					continue;
 				} else if (image.mediaType == MediaType.video && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
+					LOG.debug("not uploading " + media + " because video upload disabled");
 					continue;
 				} else {
 					boolean uploaded = FlickrApi.isUploaded(image);
@@ -82,10 +74,11 @@ public class ImageTableObserver extends ContentObserver {
 						}
 					}
 				}
-				if (!not_uploaded.isEmpty()) {
-					FlickrUploaderActivity.staticRefresh(true);
-					UploadService.enqueue(not_uploaded, Utils.getInstantAlbumId(), STR.instantUpload);
-				}
+			}
+			if (!not_uploaded.isEmpty()) {
+				LOG.debug("enqueuing " + not_uploaded.size() + " media: " + not_uploaded);
+				UploadService.enqueue(not_uploaded, Utils.getInstantAlbumId(), STR.instantUpload);
+				FlickrUploaderActivity.staticRefresh(true);
 			}
 		} catch (Throwable e) {
 			LOG.error(e.getMessage(), e);

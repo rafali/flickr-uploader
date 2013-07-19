@@ -394,6 +394,7 @@ public class FlickrApi {
 			} catch (Throwable e) {
 				if (e instanceof FlickrException) {
 					FlickrException fe = (FlickrException) e;
+					LOG.warn("retry " + retry + " : " + fe.getErrorCode() + " : " + fe.getErrorMessage());
 					if ("1".equals(fe.getErrorCode())) {// Photoset not found
 						if (folder != null) {
 							uploadedFolders.remove(folder.path);
@@ -413,8 +414,9 @@ public class FlickrApi {
 						break;
 					}
 				}
+				LOG.error(e.getMessage(), e);
 				if (!success) {
-					LOG.error("retry " + retry + " : " + e.getMessage(), e);
+					LOG.error("retry " + retry + " : " + e.getClass().getSimpleName() + " : " + e.getMessage());
 					try {
 						Thread.sleep((long) (Math.pow(2, retry) * 1000));
 					} catch (InterruptedException ignore) {

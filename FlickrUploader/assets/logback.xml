@@ -25,7 +25,10 @@
     </encoder>
 </appender> 
   <appender name="logcat" class="ch.qos.logback.classic.android.LogcatAppender">
-    <encoder>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter"> 
+        <level>trace</level>
+    </filter>
+      <encoder>
       <pattern>%class{0}.%method:%L > %msg</pattern>
     </encoder>
     <tagEncoder>

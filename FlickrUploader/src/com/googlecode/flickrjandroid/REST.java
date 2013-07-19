@@ -14,7 +14,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -45,7 +44,7 @@ import com.rafali.flickruploader.ProgressListener;
  * @version $Id: REST.java,v 1.26 2009/07/01 22:07:08 x-mago Exp $
  */
 public class REST extends Transport {
-	private static final Logger logger = LoggerFactory.getLogger(REST.class);
+	private static final Logger LOG = LoggerFactory.getLogger(REST.class);
 
 	private static final String UTF8 = "UTF-8";
 	public static final String PATH = "/services/rest/";
@@ -142,8 +141,8 @@ public class REST extends Transport {
 
 	private InputStream getInputStream(String path, List<Parameter> parameters) throws IOException {
 		URL url = UrlUtilities.buildUrl(getHost(), getPort(), path, parameters);
-		if (logger.isDebugEnabled()) {
-			logger.debug("GET URL: {}", url.toString());
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("GET URL: {}", url.toString());
 		}
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 		conn.addRequestProperty("Cache-Control", "no-cache,max-age=0");
@@ -231,8 +230,8 @@ public class REST extends Transport {
 	 * @see com.gmail.yuyang226.flickr.Transport#sendUpload(java.lang.String, java.util.List)
 	 */
 	public Response sendUpload(String path, List<Parameter> parameters, final ProgressListener progressListener) throws IOException, FlickrException, SAXException {
-		if (logger.isDebugEnabled()) {
-			logger.debug("Send Upload Input Params: path '{}'; parameters {}", path, parameters);
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("Send Upload Input Params: path '{}'; parameters {}", path, parameters);
 		}
 		HttpURLConnection conn = null;
 		DataOutputStream out = null;
@@ -241,8 +240,8 @@ public class REST extends Transport {
 		reportProgress(progressListener, 0);
 		try {
 			URL url = UrlUtilities.buildPostUrl(getHost(), getPort(), path);
-			if (logger.isDebugEnabled()) {
-				logger.debug("Post URL: {}", url.toString());
+			if (LOG.isDebugEnabled()) {
+				LOG.debug("Post URL: {}", url.toString());
 			}
 			conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod("POST");
@@ -251,27 +250,65 @@ public class REST extends Transport {
 			conn.setRequestProperty("Host", "api.flickr.com");
 			conn.setDoInput(true);
 			conn.setDoOutput(true);
-			conn.setChunkedStreamingMode(0);
+
+			boundary = "--" + boundary;
+
+			boolean shouldStream = false;
+			int contentLength = 0;
+			contentLength += boundary.getBytes("UTF-8").length;
+			for (Parameter parameter : parameters) {
+				contentLength += "\r\n".getBytes("UTF-8").length;
+				if (parameter.getValue() instanceof String) {
+					contentLength += ("Content-Disposition: form-data; name=\"" + parameter.getName() + "\"\r\n").getBytes("UTF-8").length;
+					contentLength += ("Content-Type: text/plain; charset=UTF-8\r\n\r\n").getBytes("UTF-8").length;
+					contentLength += ((String) parameter.getValue()).getBytes("UTF-8").length;
+				} else if (parameter instanceof ImageParameter && parameter.getValue() instanceof File) {
+					ImageParameter imageParam = (ImageParameter) parameter;
+					File file = (File) parameter.getValue();
+					if (file.length() > 10 * 1024 * 1024L) {
+						shouldStream = true;
+					}
+					contentLength += String.format(Locale.US, "Content-Disposition: form-data; name=\"%s\"; filename=\"%s\";\r\n", parameter.getName(), imageParam.getImageName()).getBytes("UTF-8").length;
+					contentLength += String.format(Locale.US, "Content-Type: image/%s\r\n\r\n", imageParam.getImageType()).getBytes("UTF-8").length;
+
+					LOG.debug("set to upload " + file + " : " + file.length() + " bytes");
+					contentLength += file.length();
+					break;
+				}
+				contentLength += "\r\n".getBytes("UTF-8").length;
+				contentLength += boundary.getBytes("UTF-8").length;
+			}
+			contentLength += "--\r\n\r\n".getBytes("UTF-8").length;
+
+			contentLength += 213;// dirty hack to account for missing param somewhere
+			LOG.debug("contentLength : " + contentLength);
+
+			if (shouldStream) {// may be buggy due to the aforementioned dirty hack so only on big files
+				conn.setRequestProperty("Content-Length", "" + contentLength);
+				conn.setFixedLengthStreamingMode(contentLength);
+			}
 			conn.connect();
 			progress = 1;
 			reportProgress(progressListener, progress);
 			out = new DataOutputStream(conn.getOutputStream());
-			boundary = "--" + boundary;
 			out.writeBytes(boundary);
 			progress = 2;
 			reportProgress(progressListener, progress);
-			Iterator<Parameter> iter = parameters.iterator();
-			while (iter.hasNext()) {
-				Parameter p = iter.next();
-				progress = writeParam(progress, p, out, boundary, progressListener);
+
+			for (Parameter parameter : parameters) {
+				progress = writeParam(progress, parameter, out, boundary, progressListener);
 			}
+
 			out.writeBytes("--\r\n\r\n");
 			out.flush();
+
+			LOG.debug("out.size() : " + out.size());
+
 			out.close();
 
 			progress = 51;
 			reportProgress(progressListener, progress);
-			int responseCode = HttpURLConnection.HTTP_OK;
+			int responseCode = -1;
 			final int[] progressArray = new int[] { progress };
 			try {
 				new Thread(new Runnable() {
@@ -290,7 +327,7 @@ public class REST extends Transport {
 				}).start();
 				responseCode = conn.getResponseCode();
 			} catch (IOException e) {
-				logger.error("Failed to get the POST response code", e);
+				LOG.error("Failed to get the POST response code", e);
 				if (conn.getErrorStream() != null) {
 					responseCode = conn.getResponseCode();
 				}
@@ -299,9 +336,13 @@ public class REST extends Transport {
 				progressArray[0] = progress;
 				reportProgress(progressListener, progress);
 			}
-			if ((responseCode != HttpURLConnection.HTTP_OK)) {
+			if (responseCode < 0) {
+				LOG.error("some error occured");
+			} else if ((responseCode != HttpURLConnection.HTTP_OK)) {
 				String errorMessage = readFromStream(conn.getErrorStream());
-				throw new IOException("Connection Failed. Response Code: " + responseCode + ", Response Message: " + conn.getResponseMessage() + ", Error: " + errorMessage);
+				String detailMessage = "Connection Failed. Response Code: " + responseCode + ", Response Message: " + conn.getResponseMessage() + ", Error: " + errorMessage;
+				LOG.error("detailMessage : " + detailMessage);
+				throw new IOException(detailMessage);
 			}
 			UploaderResponse response = new UploaderResponse();
 			Document document = builder.parse(conn.getInputStream());
@@ -315,18 +356,17 @@ public class REST extends Transport {
 			reportProgress(progressListener, progress);
 		}
 	}
-
 	public String sendPost(String path, List<Parameter> parameters) throws IOException {
-		if (logger.isDebugEnabled()) {
-			logger.trace("Send Post Input Params: path '{}'; parameters {}", path, parameters);
+		if (LOG.isDebugEnabled()) {
+			LOG.trace("Send Post Input Params: path '{}'; parameters {}", path, parameters);
 		}
 		HttpURLConnection conn = null;
 		DataOutputStream out = null;
 		String data = null;
 		try {
 			URL url = UrlUtilities.buildPostUrl(getHost(), getPort(), path);
-			if (logger.isDebugEnabled()) {
-				logger.trace("Post URL: {}", url.toString());
+			if (LOG.isDebugEnabled()) {
+				LOG.trace("Post URL: {}", url.toString());
 			}
 			conn = (HttpURLConnection) url.openConnection();
 			conn.setRequestMethod("POST");
@@ -349,7 +389,7 @@ public class REST extends Transport {
 			try {
 				responseCode = conn.getResponseCode();
 			} catch (IOException e) {
-				logger.error("Failed to get the POST response code", e);
+				LOG.error("Failed to get the POST response code", e);
 				if (conn.getErrorStream() != null) {
 					responseCode = conn.getResponseCode();
 				}
@@ -366,8 +406,8 @@ public class REST extends Transport {
 			IOUtilities.close(out);
 			if (conn != null)
 				conn.disconnect();
-			if (logger.isDebugEnabled()) {
-				logger.trace("Send Post Result: {}", data);
+			if (LOG.isDebugEnabled()) {
+				LOG.trace("Send Post Result: {}", data);
 			}
 		}
 	}
@@ -448,13 +488,13 @@ public class REST extends Transport {
 						int tmpProgress = (int) Math.min(49, progress + (48 - progress) * Double.valueOf(out.size()) / file.length());
 						if (currentProgress != tmpProgress) {
 							currentProgress = tmpProgress;
-							if (currentProgress % 5 == 0)
-								out.flush();
-							logger.trace("out.size() : " + out.size() + ", " + file.length());
+							// if (currentProgress % 5 == 0)
+							// out.flush();
+							LOG.trace("out.size() : " + out.size() + ", " + file.length());
 							reportProgress(progressListener, currentProgress);
 						}
 					}
-					logger.debug("output in " + (System.currentTimeMillis() - start) + " ms");
+					LOG.debug("output in " + (System.currentTimeMillis() - start) + " ms");
 					progress = currentProgress;
 				} finally {
 					if (in != null) {

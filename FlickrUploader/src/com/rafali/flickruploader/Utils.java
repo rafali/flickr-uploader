@@ -453,8 +453,12 @@ public final class Utils {
 	static final String[] projVideo = { Video.Media._ID, Video.Media.DATA, Video.Media.DATE_ADDED, Video.Media.DATE_TAKEN, Video.Media.DISPLAY_NAME, Video.Media.SIZE };
 
 	public static List<Media> loadImages(String filter) {
-		List<Media> photos = Utils.loadImages(filter, MediaType.photo);
-		List<Media> videos = Utils.loadImages(filter, MediaType.video);
+		return loadImages(filter, 0);
+	}
+
+	public static List<Media> loadImages(String filter, int limit) {
+		List<Media> photos = Utils.loadImages(filter, MediaType.photo, limit);
+		List<Media> videos = Utils.loadImages(filter, MediaType.video, limit);
 		List<Media> images = new ArrayList<Media>(photos);
 		images.addAll(videos);
 		Collections.sort(images, MEDIA_COMPARATOR);
@@ -462,6 +466,10 @@ public final class Utils {
 	}
 
 	public static List<Media> loadImages(String filter, MediaType mediaType) {
+		return loadImages(filter, mediaType, 0);
+	}
+
+	public static List<Media> loadImages(String filter, MediaType mediaType, int limit) {
 		Cursor cursor = null;
 		List<Media> images = new ArrayList<Media>();
 		try {
@@ -471,6 +479,9 @@ public final class Utils {
 			// String filter = Images.Media._ID + " IN (54820, 56342)";
 
 			String orderBy = Images.Media.DATE_TAKEN + " DESC, " + Images.Media.DATE_ADDED + " DESC";
+			if (limit > 0) {
+				orderBy += " LIMIT " + limit;
+			}
 			Uri uri = mediaType == MediaType.photo ? Images.Media.EXTERNAL_CONTENT_URI : Video.Media.EXTERNAL_CONTENT_URI;
 			String[] proj = mediaType == MediaType.photo ? projPhoto : projVideo;
 			cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, filter, null, orderBy);
