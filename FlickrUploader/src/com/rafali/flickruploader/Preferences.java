@@ -119,6 +119,14 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 			}
 		});
 
+//		findPreference("coupons").setOnPreferenceClickListener(new OnPreferenceClickListener() {
+//			@Override
+//			public boolean onPreferenceClick(Preference preference) {
+//				Utils.showCouponDialog(Preferences.this);
+//				return false;
+//			}
+//		});
+
 		findPreference("pictarine").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {

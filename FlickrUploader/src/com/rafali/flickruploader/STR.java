@@ -17,4 +17,5 @@ public class STR {
 	public static final String instantCustomAlbumId = "instantCustomAlbumId";
 	public static final String instantCustomAlbumTitle = "instantCustomAlbumTitle";
 	public static final String premium = "premium";
+	public static final String couponInfo = "couponInfo";
 }

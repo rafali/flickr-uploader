@@ -1030,10 +1030,10 @@ public class FlickrUploaderActivity extends Activity {
 			} else {
 				footer.setVisibility(View.VISIBLE);
 				if (Utils.isTrial()) {
-					footer.setText("You are currently using the trial version of Flickr Uploader. All feature will be available for you to test until "
-							+ SimpleDateFormat.getDateInstance().format(new Date(Utils.trialUntil())) + ".");
+					footer.setText("You are in the trial period. The premium Auto-Upload feature is available to you in trial until "
+							+ SimpleDateFormat.getDateInstance().format(new Date(Utils.trialUntil())) + ". Click here for more info.");
 				} else {
-					footer.setText("Your trial has expired. To continue to use premium features, please click here.");
+					footer.setText("Your trial period has expired. Click here to continue to use the Auto-Upload feature.");
 				}
 			}
 		}

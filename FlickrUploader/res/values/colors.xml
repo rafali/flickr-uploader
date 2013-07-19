@@ -24,5 +24,6 @@
     <color name="midgray">#666</color>
     <color name="midlitegray">#AAA</color>
     <color name="litegray">#DDD</color>
+    <color name="holoblue">#33b5e5</color>
 
 </resources>

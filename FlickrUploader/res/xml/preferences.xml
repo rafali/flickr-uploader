@@ -49,8 +49,8 @@
         android:title="Rate the app" />
     <PreferenceScreen
         android:key="feedback"
-        android:summary="Something is missing? Send a feedback to help improve the app"
-        android:title="Feedback" />
+        android:summary="Something is not right? Need some help? Ideas for improvements?"
+        android:title="Feedback / Help" />
     <PreferenceScreen
         android:key="pictarine"
         android:summary="Browse your photos and friends photos from Flickr, Facebook, Instagram, Twitter, Tumblr and more"

@@ -57,7 +57,6 @@ import android.provider.MediaStore.Video;
 import android.provider.Settings.Secure;
 import android.util.TypedValue;
 import android.view.WindowManager;
-import android.widget.Toast;
 
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.http.HttpRequest;
@@ -1004,60 +1003,119 @@ public final class Utils {
 		}
 	}
 
+	public static void showCouponInfoDialog(final Activity activity) {
+		Mixpanel.track("CouponInfoShow");
+		setBooleanProperty(STR.couponInfo, true);
+
+		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+		builder.setTitle("Win Coupons").setMessage("You can get the Premium for a lower price or even for free if you help me advertise it a bit.");
+		builder.setNegativeButton("Later", new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				LOG.debug("coupon for later then");
+				Mixpanel.track("CouponInfoLater");
+			}
+		});
+		builder.setPositiveButton("Get coupons now", new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				Mixpanel.track("CouponInfoOk");
+				String url = "https://github.com/rafali/flickr-uploader/wiki/Coupons";
+				Intent i = new Intent(Intent.ACTION_VIEW);
+				i.setData(Uri.parse(url));
+				activity.startActivity(i);
+			}
+		});
+	}
+
+	// public static void showCouponDialog(final Activity activity) {
+	// Mixpanel.track("CouponInfoShow");
+	// setBooleanProperty(STR.couponInfo, true);
+	//
+	// AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+	// EditText editText = new EditText(activity);
+	// builder.setView(editText);
+	// builder.setTitle("Enter your coupon");
+	// builder.setNegativeButton("Cancel", new OnClickListener() {
+	// @Override
+	// public void onClick(DialogInterface dialog, int which) {
+	// LOG.debug("coupon cancel");
+	// Mixpanel.track("CouponCanel");
+	// }
+	// });
+	// builder.setPositiveButton("OK", new OnClickListener() {
+	// @Override
+	// public void onClick(DialogInterface dialog, int which) {
+	// Mixpanel.track("CouponOk");
+	//
+	// }
+	// });
+	// builder.create().show();
+	// }
 	public static void showPremiumDialog(final Activity activity, final Callback<Boolean> callback) {
 		Mixpanel.track("PremiumShow");
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-		builder.setTitle("Premium features").setMessage("Get the premium today and enjoy the automatic uploads and the next app improvements for life.").setNegativeButton("Later", null)
-				.setPositiveButton("Get Premium Now", new OnClickListener() {
-
+		builder.setTitle("Premium features").setMessage("Get the premium today and enjoy the automatic uploads and the next app improvements for life.")
+				.setNegativeButton("Later", new OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						// TODO Auto-generated method stub
-						final OnIabPurchaseFinishedListener mPurchaseFinishedListener = new OnIabPurchaseFinishedListener() {
-							@Override
-							public void onIabPurchaseFinished(IabResult result, Purchase purchase) {
-								try {
-									LOG.debug("result : " + result + ", purchase:" + purchase);
-									if (result.isFailure()) {
-										Toast.makeText(activity, "Next time maybe ;)", Toast.LENGTH_LONG).show();
-										callback.onResult(false);
-										return;
-									}
-									setPremium(true);
-									callback.onResult(true);
-									Mixpanel.track("PremiumSuccess");
-									thankYou(activity);
-									Utils.sendMail("[FlickrUploader] PremiumSuccess",
-											Utils.getDeviceId() + " - " + Utils.getEmail() + " - " + Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
-								} catch (Throwable e) {
-									LOG.error(e.getMessage(), e);
-								}
-							}
-						};
-						// enable debug logging (for a production application, you should set this to false).
-						IabHelper.get().enableDebugLogging(Config.isDebug());
-
-						// Start setup. This is asynchronous and the specified listener
-						// will be called once setup completes.
-						LOG.debug("Starting setup.");
-						IabHelper.get().ensureSetup(new IabHelper.OnIabSetupFinishedListener() {
-							public void onIabSetupFinished(IabResult result) {
-								LOG.debug("Setup finished. : " + result);
-								if (result.isSuccess()) {
-									IabHelper.get().launchPurchaseFlow(activity, getPremiumSku(), 1231, mPurchaseFinishedListener, "");
-								}
-							}
-						});
-
+						LOG.debug("premium for later then");
+						Mixpanel.track("PremiumLater");
+					}
+				}).setPositiveButton("Get Premium Now", new OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						startPayment(activity, callback);
 					}
 				});
 
-		// .setItems(choices, new DialogInterface.OnClickListener() {
-		// public void onClick(DialogInterface dialog, int which) {
-		// // startActivity(new Intent(activity, DonationsActivity.class));
-		// });
 		builder.create().show();
+	}
+
+	public static void startPayment(final Activity activity, final Callback<Boolean> callback) {
+		final OnIabPurchaseFinishedListener mPurchaseFinishedListener = new OnIabPurchaseFinishedListener() {
+			@Override
+			public void onIabPurchaseFinished(IabResult result, Purchase purchase) {
+				try {
+					LOG.debug("result : " + result + ", purchase:" + purchase);
+					if (result.isFailure()) {
+						if (result.getResponse() == IabHelper.IABHELPER_USER_CANCELLED) {
+							Mixpanel.track("PremiumCancelPayment");
+							if (nbDaysInstalled() > 2) {
+								showCouponInfoDialog(activity);
+							}
+						} else {
+							Mixpanel.track("PremiumError", "type", result.getResponse());
+						}
+						callback.onResult(false);
+						return;
+					}
+					setPremium(true);
+					callback.onResult(true);
+					Mixpanel.track("PremiumSuccess");
+					thankYou(activity);
+					Utils.sendMail("[FlickrUploader] PremiumSuccess",
+							Utils.getDeviceId() + " - " + Utils.getEmail() + " - " + Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
+				} catch (Throwable e) {
+					LOG.error(e.getMessage(), e);
+				}
+			}
+		};
+		// enable debug logging (for a production application, you should set this to false).
+		IabHelper.get().enableDebugLogging(Config.isDebug());
+
+		// Start setup. This is asynchronous and the specified listener
+		// will be called once setup completes.
+		LOG.debug("Starting setup.");
+		IabHelper.get().ensureSetup(new IabHelper.OnIabSetupFinishedListener() {
+			public void onIabSetupFinished(IabResult result) {
+				LOG.debug("Setup finished. : " + result);
+				if (result.isSuccess()) {
+					IabHelper.get().launchPurchaseFlow(activity, getPremiumSku(), 1231, mPurchaseFinishedListener, "");
+				}
+			}
+		});
 	}
 
 	public static String getPremiumSku() {
@@ -1214,6 +1272,16 @@ public final class Utils {
 			LOG.error(e.getMessage(), e);
 		}
 		return System.currentTimeMillis() + 7 * 24 * 3600 * 1000L;
+	}
+
+	public static long nbDaysInstalled() {
+		try {
+			long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;
+			return (System.currentTimeMillis() - firstInstallTime) / (24 * 60 * 60 * 1000L);
+		} catch (Throwable e) {
+			LOG.error(e.getMessage(), e);
+		}
+		return 0;
 	}
 
 	public static boolean isTrial() {
