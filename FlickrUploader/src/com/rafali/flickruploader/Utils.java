@@ -1,8 +1,10 @@
 package com.rafali.flickruploader;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -966,40 +968,73 @@ public final class Utils {
 		});
 	}
 
-	public static void showEmailActivity(final Activity activity, String subject, String message, boolean attachLogs) {
-		Intent intent = new Intent(Intent.ACTION_SEND);
-		intent.setType("text/email");
-		intent.putExtra(Intent.EXTRA_EMAIL, new String[] { "flickruploader@rafali.com" });
-		intent.putExtra(Intent.EXTRA_SUBJECT, subject);
-		intent.putExtra(Intent.EXTRA_TEXT, message);
+	static boolean showingEmailActivity = false;
 
-		if (attachLogs) {
-			File log = Utils.getLogFile();
-			if (log.exists()) {
-				File publicDownloadDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-				File publicLog = new File(publicDownloadDirectory, "flickruploader_log.txt");
-				Utils.copyFile(log, publicLog);
-				Uri uri = Uri.fromFile(publicLog);
-				intent.putExtra(Intent.EXTRA_STREAM, uri);
-			} else {
-				LOG.warn(log + " does not exist");
-			}
-		}
-		final List<ResolveInfo> resInfoList = activity.getPackageManager().queryIntentActivities(intent, 0);
+	public static void showEmailActivity(final Activity activity, final String subject, final String message, final boolean attachLogs) {
+		if (!showingEmailActivity) {
+			showingEmailActivity = true;
+			BackgroundExecutor.execute(new Runnable() {
 
-		ResolveInfo gmailResolveInfo = null;
-		for (ResolveInfo resolveInfo : resInfoList) {
-			if ("com.google.android.gm".equals(resolveInfo.activityInfo.packageName)) {
-				gmailResolveInfo = resolveInfo;
-				break;
-			}
-		}
+				@Override
+				public void run() {
+					try {
+						Intent intent = new Intent(Intent.ACTION_SEND);
+						intent.setType("text/email");
+						intent.putExtra(Intent.EXTRA_EMAIL, new String[] { "flickruploader@rafali.com" });
+						intent.putExtra(Intent.EXTRA_SUBJECT, subject);
+						intent.putExtra(Intent.EXTRA_TEXT, message);
 
-		if (gmailResolveInfo != null) {
-			intent.setClassName(gmailResolveInfo.activityInfo.packageName, gmailResolveInfo.activityInfo.name);
-			activity.startActivity(intent);
-		} else {
-			activity.startActivity(Intent.createChooser(intent, "Send Feedback:"));
+						if (attachLogs) {
+							File log = Utils.getLogFile();
+							if (log.exists()) {
+								File publicDownloadDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+								File publicLog = new File(publicDownloadDirectory, "flickruploader_log.txt");
+								Utils.copyFile(log, publicLog);
+								try {
+									BufferedWriter bW = new BufferedWriter(new FileWriter(publicLog, true));
+									bW.newLine();
+									bW.write("app version : " + Config.FULL_VERSION_NAME);
+									bW.newLine();
+									bW.write("device id : " + getDeviceId());
+									bW.newLine();
+									bW.write("date install : " + FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime);
+									bW.newLine();
+									bW.write("premium : " + isPremium());
+									bW.newLine();
+									bW.flush();
+									bW.close();
+								} catch (Throwable e) {
+									LOG.error(e.getMessage(), e);
+								}
+								Uri uri = Uri.fromFile(publicLog);
+								intent.putExtra(Intent.EXTRA_STREAM, uri);
+							} else {
+								LOG.warn(log + " does not exist");
+							}
+						}
+						final List<ResolveInfo> resInfoList = activity.getPackageManager().queryIntentActivities(intent, 0);
+
+						ResolveInfo gmailResolveInfo = null;
+						for (ResolveInfo resolveInfo : resInfoList) {
+							if ("com.google.android.gm".equals(resolveInfo.activityInfo.packageName)) {
+								gmailResolveInfo = resolveInfo;
+								break;
+							}
+						}
+
+						if (gmailResolveInfo != null) {
+							intent.setClassName(gmailResolveInfo.activityInfo.packageName, gmailResolveInfo.activityInfo.name);
+							activity.startActivity(intent);
+						} else {
+							activity.startActivity(Intent.createChooser(intent, "Send Feedback:"));
+						}
+					} catch (Throwable e) {
+						LOG.error(e.getMessage(), e);
+					} finally {
+						showingEmailActivity = false;
+					}
+				}
+			});
 		}
 	}
 
@@ -1008,7 +1043,7 @@ public final class Utils {
 		setBooleanProperty(STR.couponInfo, true);
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-		builder.setTitle("Win Coupons").setMessage("You can get the Premium for a lower price or even for free if you help me advertise it a bit.");
+		builder.setTitle("Coupons available").setMessage("You can get the Premium for a lower price or even for free if you help advertise it a bit.");
 		builder.setNegativeButton("Later", new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
@@ -1016,7 +1051,7 @@ public final class Utils {
 				Mixpanel.track("CouponInfoLater");
 			}
 		});
-		builder.setPositiveButton("Get coupons now", new OnClickListener() {
+		builder.setPositiveButton("More info", new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				Mixpanel.track("CouponInfoOk");
@@ -1082,9 +1117,7 @@ public final class Utils {
 					if (result.isFailure()) {
 						if (result.getResponse() == IabHelper.IABHELPER_USER_CANCELLED) {
 							Mixpanel.track("PremiumCancelPayment");
-							if (nbDaysInstalled() > 2) {
-								showCouponInfoDialog(activity);
-							}
+							showCouponInfoDialog(activity);
 						} else {
 							Mixpanel.track("PremiumError", "type", result.getResponse());
 						}
@@ -1121,6 +1154,9 @@ public final class Utils {
 	public static String getPremiumSku() {
 		if (Config.isDebug()) {
 			return "android.test.purchased";
+		}
+		if (ToolString.isNotBlank(customSku)) {
+			return customSku;
 		}
 		return "premium.5";
 	}
@@ -1161,6 +1197,8 @@ public final class Utils {
 		}
 	}
 
+	static String customSku;
+
 	public static void checkPremium(final FlickrUploaderActivity activity) {
 		if (isPremium()) {
 			LOG.info("yeah! already premium");
@@ -1186,6 +1224,8 @@ public final class Utils {
 										if (appInstall.getPremium()) {
 											premium = true;
 											break;
+										} else if (ToolString.isNotBlank(appInstall.getCustomSku())) {
+											customSku = appInstall.getCustomSku();
 										}
 									}
 								}
@@ -1208,7 +1248,7 @@ public final class Utils {
 											Inventory queryInventory = IabHelper.get().queryInventory(true, Lists.newArrayList(Utils.getPremiumSku()));
 											LOG.debug("queryInventory : " + Utils.getPremiumSku() + " : " + queryInventory.hasPurchase(Utils.getPremiumSku()));
 											for (String sku : Arrays.asList("flickruploader.donation.1", "flickruploader.donation.2", "flickruploader.donation.3", "flickruploader.donation.5",
-													"flickruploader.donation.8", Utils.getPremiumSku())) {
+													"flickruploader.donation.8", "premium.5", "premium.2.5")) {
 												if (queryInventory.hasPurchase(sku)) {
 													Utils.setPremium(true);
 													activity.renderPremium();

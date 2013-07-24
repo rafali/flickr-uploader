@@ -40,6 +40,9 @@ public class AppInstall implements Serializable {
 	@Persistent
 	private Date dateCreation;
 
+	@Persistent
+	private String customSku;
+
 	public AppInstall(String deviceId, AndroidDevice androidDevice, Collection<String> emails) {
 		this.deviceId = deviceId;
 		this.androidDevice = androidDevice;
@@ -108,5 +111,13 @@ public class AppInstall implements Serializable {
 			return deviceId.equals(((AppInstall) obj).deviceId);
 		}
 		return false;
+	}
+
+	public String getCustomSku() {
+		return customSku;
+	}
+
+	public void setCustomSku(String customSku) {
+		this.customSku = customSku;
 	}
 }

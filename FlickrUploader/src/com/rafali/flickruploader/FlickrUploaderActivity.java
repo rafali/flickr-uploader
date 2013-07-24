@@ -235,7 +235,6 @@ public class FlickrUploaderActivity extends Activity {
 
 	@AfterViews
 	void afterViews() {
-		Utils.checkPremium(this);
 		renderPremium();
 	}
 
@@ -914,6 +913,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	@Override
 	protected void onResume() {
+		Utils.checkPremium(this);
 		paused = false;
 		super.onResume();
 		refresh(false);
@@ -1024,7 +1024,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	@UiThread
 	public void renderPremium() {
-		if (!destroyed) {
+		if (footer != null && !destroyed) {
 			if (Utils.isPremium()) {
 				footer.setVisibility(View.GONE);
 			} else {

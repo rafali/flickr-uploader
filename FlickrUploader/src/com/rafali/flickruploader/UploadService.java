@@ -55,7 +55,7 @@ public class UploadService extends Service {
 				int status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
 				boolean charging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL;
 				Utils.setCharging(charging);
-				LOG.debug("charging : " + charging + ", status : " + status);
+//				LOG.debug("charging : " + charging + ", status : " + status);
 				if (charging)
 					wake();
 			}
@@ -134,7 +134,7 @@ public class UploadService extends Service {
 						}
 
 						synchronized (mPauseLock) {
-							LOG.debug("waiting for work");
+//							LOG.debug("waiting for work");
 							if (queue.isEmpty()) {
 								mPauseLock.wait();
 							} else {
@@ -145,7 +145,7 @@ public class UploadService extends Service {
 						if (FlickrApi.isAuthentified()) {
 							Collections.sort(queue, Utils.MEDIA_COMPARATOR);
 							long start = System.currentTimeMillis();
-							final Media image = queue.get(0);
+							final Media image = queue.get(queue.size() - 1);
 							Folder folder = uploadFolders.get(image);
 							boolean success = folder == null && FlickrApi.isUploaded(image);
 							if (!success) {

@@ -241,7 +241,7 @@ public class FlickrApi {
 						}
 					}
 					if (!isOrdered) {
-						LOG.debug("reordering photoset : \n" + photosetId + "\n => \n" + photoIds);
+						LOG.debug("reordering photoset : \n" + photosetId);
 						FlickrApi.get().getPhotosetsInterface().reorderPhotos(photosetId, photoIds);
 						FlickrApi.get().getPhotosetsInterface().setPrimaryPhoto(photosetId, photoIds.get(0));
 					}

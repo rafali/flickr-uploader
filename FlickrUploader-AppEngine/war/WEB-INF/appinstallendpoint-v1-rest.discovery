@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"s1omim4x8ymp9_6H8kBMkfEDqpo/xtsisMNSpGULMee-EfFjvEgHtjk\"",
+ "etag": "\"s1omim4x8ymp9_6H8kBMkfEDqpo/xdi1IKjnYIagCKPgeIEmVOUWU7s\"",
  "discoveryVersion": "v1",
  "id": "appinstallendpoint:v1",
  "name": "appinstallendpoint",
@@ -112,6 +112,9 @@
    "properties": {
     "androidDevice": {
      "$ref": "AndroidDevice"
+    },
+    "customSku": {
+     "type": "string"
     },
     "dateCreation": {
      "type": "string",
