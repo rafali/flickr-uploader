@@ -78,7 +78,6 @@ import com.rafali.flickruploader.appinstallendpoint.model.AppInstall;
 import com.rafali.flickruploader.appinstallendpoint.model.CollectionResponseAppInstall;
 import com.rafali.flickruploader.billing.IabException;
 import com.rafali.flickruploader.billing.IabHelper;
-import com.rafali.flickruploader.billing.IabHelper.OnConsumeFinishedListener;
 import com.rafali.flickruploader.billing.IabHelper.OnIabPurchaseFinishedListener;
 import com.rafali.flickruploader.billing.IabResult;
 import com.rafali.flickruploader.billing.Inventory;
@@ -1128,7 +1127,11 @@ public final class Utils {
 					callback.onResult(true);
 					Mixpanel.track("PremiumSuccess");
 					thankYou(activity);
-					Utils.sendMail("[FlickrUploader] PremiumSuccess",
+
+					long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;
+					long timeSinceInstall = System.currentTimeMillis() - firstInstallTime;
+
+					Utils.sendMail("[FlickrUploader] PremiumSuccess " + ToolString.formatDuration(timeSinceInstall),
 							Utils.getDeviceId() + " - " + Utils.getEmail() + " - " + Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
 				} catch (Throwable e) {
 					LOG.error(e.getMessage(), e);
@@ -1162,6 +1165,7 @@ public final class Utils {
 	}
 
 	public static void setPremium(final boolean premium) {
+		LOG.debug("premium : " + premium);
 		setBooleanProperty(STR.premium, premium);
 		if (premium) {
 			BackgroundExecutor.execute(new Runnable() {
@@ -1200,8 +1204,9 @@ public final class Utils {
 	static String customSku;
 
 	public static void checkPremium(final FlickrUploaderActivity activity) {
-		if (isPremium()) {
-			LOG.info("yeah! already premium");
+		long lastPremiumCheck = getLongProperty(STR.lastPremiumCheck);
+		LOG.debug("isPremium() : " + isPremium() + ", lastPremiumCheck : " + lastPremiumCheck);
+		if (isPremium() && System.currentTimeMillis() - lastPremiumCheck < 24 * 60 * 60 * 1000L) {// check at least everyday Premium status from server
 			activity.renderPremium();
 		} else {
 			BackgroundExecutor.execute(new Runnable() {
@@ -1221,7 +1226,7 @@ public final class Utils {
 								if (collectionResponseAppInstall.getItems() != null) {
 									List<AppInstall> items = collectionResponseAppInstall.getItems();
 									for (AppInstall appInstall : items) {
-										if (appInstall.getPremium()) {
+										if (appInstall.getPremium() == Boolean.TRUE) {
 											premium = true;
 											break;
 										} else if (ToolString.isNotBlank(appInstall.getCustomSku())) {
@@ -1230,16 +1235,16 @@ public final class Utils {
 									}
 								}
 								LOG.debug("emails : " + getAccountEmails() + " : " + collectionResponseAppInstall.getItems());
+								setLongProperty(STR.lastPremiumCheck, System.currentTimeMillis());
+								setPremium(premium);
 							} catch (Throwable e) {
 								LOG.warn(e.getMessage(), e);
 							}
 						} catch (Throwable e) {
 							LOG.error(e.getMessage(), e);
 						}
-						if (premium) {
-							setPremium(true);
-							activity.renderPremium();
-						} else {
+						activity.renderPremium();
+						if (!premium) {
 							IabHelper.get().ensureSetup(new IabHelper.OnIabSetupFinishedListener() {
 								public void onIabSetupFinished(IabResult result) {
 									try {
@@ -1250,6 +1255,7 @@ public final class Utils {
 											for (String sku : Arrays.asList("flickruploader.donation.1", "flickruploader.donation.2", "flickruploader.donation.3", "flickruploader.donation.5",
 													"flickruploader.donation.8", "premium.5", "premium.2.5")) {
 												if (queryInventory.hasPurchase(sku)) {
+													LOG.debug("has purchased the app : " + sku);
 													Utils.setPremium(true);
 													activity.renderPremium();
 													break;
@@ -1270,29 +1276,29 @@ public final class Utils {
 		}
 	}
 
-	public static void consumePurchase(final Activity activity) {
-		IabHelper.get().ensureSetup(new IabHelper.OnIabSetupFinishedListener() {
-			public void onIabSetupFinished(IabResult result) {
-				try {
-					LOG.debug("Setup finished: " + result);
-					if (result.isSuccess()) {
-						Inventory queryInventory = IabHelper.get().queryInventory(true, Lists.newArrayList(Utils.getPremiumSku()));
-						LOG.debug("queryInventory : " + Utils.getPremiumSku() + " : " + queryInventory.hasPurchase(Utils.getPremiumSku()));
-						if (queryInventory.hasPurchase(Utils.getPremiumSku())) {
-							IabHelper.get().consumeAsync(queryInventory.getPurchase(Utils.getPremiumSku()), new OnConsumeFinishedListener() {
-								@Override
-								public void onConsumeFinished(Purchase purchase, IabResult result) {
-									LOG.info("purchase consumed : " + purchase);
-								}
-							});
-						}
-					}
-				} catch (IabException e) {
-					LOG.error(e.getMessage(), e);
-				}
-			}
-		});
-	}
+	// public static void consumePurchase(final Activity activity) {
+	// IabHelper.get().ensureSetup(new IabHelper.OnIabSetupFinishedListener() {
+	// public void onIabSetupFinished(IabResult result) {
+	// try {
+	// LOG.debug("Setup finished: " + result);
+	// if (result.isSuccess()) {
+	// Inventory queryInventory = IabHelper.get().queryInventory(true, Lists.newArrayList(Utils.getPremiumSku()));
+	// LOG.debug("queryInventory : " + Utils.getPremiumSku() + " : " + queryInventory.hasPurchase(Utils.getPremiumSku()));
+	// if (queryInventory.hasPurchase(Utils.getPremiumSku())) {
+	// IabHelper.get().consumeAsync(queryInventory.getPurchase(Utils.getPremiumSku()), new OnConsumeFinishedListener() {
+	// @Override
+	// public void onConsumeFinished(Purchase purchase, IabResult result) {
+	// LOG.info("purchase consumed : " + purchase);
+	// }
+	// });
+	// }
+	// }
+	// } catch (IabException e) {
+	// LOG.error(e.getMessage(), e);
+	// }
+	// }
+	// });
+	// }
 
 	public static boolean isPremium() {
 		return getBooleanProperty(STR.premium, false);

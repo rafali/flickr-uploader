@@ -93,7 +93,7 @@ public class AppInstall implements Serializable {
 	public boolean isPremium() {
 		if (premium == null)
 			return false;
-		return true;
+		return premium;
 	}
 
 	public void setPremium(boolean premium) {

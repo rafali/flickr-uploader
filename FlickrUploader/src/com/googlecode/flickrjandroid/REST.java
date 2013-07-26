@@ -265,7 +265,7 @@ public class REST extends Transport {
 				} else if (parameter instanceof ImageParameter && parameter.getValue() instanceof File) {
 					ImageParameter imageParam = (ImageParameter) parameter;
 					File file = (File) parameter.getValue();
-					if (file.length() > 10 * 1024 * 1024L) {
+					if (file.length() > 4 * 1024 * 1024L) {
 						shouldStream = true;
 					}
 					contentLength += String.format(Locale.US, "Content-Disposition: form-data; name=\"%s\"; filename=\"%s\";\r\n", parameter.getName(), imageParam.getImageName()).getBytes("UTF-8").length;

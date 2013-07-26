@@ -59,6 +59,35 @@ public class ToolString {
 		}
 	}
 
+	public static String formatDuration(long duration) {
+		StringBuffer strb = new StringBuffer("+");
+		long diffInSeconds = duration / 1000L;
+		long sec, min, hours, days = 0;
+		sec = (diffInSeconds >= 60 ? diffInSeconds % 60 : diffInSeconds);
+		min = (diffInSeconds = (diffInSeconds / 60)) >= 60 ? diffInSeconds % 60 : diffInSeconds;
+		hours = (diffInSeconds = (diffInSeconds / 60)) >= 24 ? diffInSeconds % 24 : diffInSeconds;
+		days = (diffInSeconds = (diffInSeconds / 24));
+		if (days > 0) {
+			strb.append(days + "d");
+			if (hours > 0) {
+				strb.append(" " + hours + "h");
+			}
+		} else if (hours > 0) {
+			strb.append(hours + "h");
+			if (min > 0) {
+				strb.append(" " + min + "m");
+			}
+		} else if (min > 0) {
+			strb.append(min + "m");
+			if (sec > 0) {
+				strb.append(" " + sec + "s");
+			}
+		} else {
+			strb.append(sec + "s");
+		}
+		return strb.toString();
+	}
+
 	public static String nullToEmpty(String str) {
 		if (str == null)
 			return "";

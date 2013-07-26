@@ -96,6 +96,7 @@ public class FlickrUploaderActivity extends Activity {
 		if (instance != null)
 			instance.finish();
 		instance = this;
+		Utils.checkPremium(this);
 	}
 
 	AbsListView[] views = new AbsListView[TAB.values().length];
@@ -913,11 +914,11 @@ public class FlickrUploaderActivity extends Activity {
 
 	@Override
 	protected void onResume() {
-		Utils.checkPremium(this);
 		paused = false;
 		super.onResume();
 		refresh(false);
 		UploadService.wake();
+		renderPremium();
 	}
 
 	@UiThread
