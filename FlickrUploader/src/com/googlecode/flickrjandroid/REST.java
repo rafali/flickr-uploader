@@ -35,6 +35,7 @@ import com.googlecode.flickrjandroid.util.Base64;
 import com.googlecode.flickrjandroid.util.IOUtilities;
 import com.googlecode.flickrjandroid.util.StringUtilities;
 import com.googlecode.flickrjandroid.util.UrlUtilities;
+import com.rafali.flickruploader.Config;
 import com.rafali.flickruploader.ProgressListener;
 
 /**
@@ -141,7 +142,7 @@ public class REST extends Transport {
 
 	private InputStream getInputStream(String path, List<Parameter> parameters) throws IOException {
 		URL url = UrlUtilities.buildUrl(getHost(), getPort(), path, parameters);
-		if (LOG.isDebugEnabled()) {
+		if (Config.isDebug()) {
 			LOG.debug("GET URL: {}", url.toString());
 		}
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -230,7 +231,7 @@ public class REST extends Transport {
 	 * @see com.gmail.yuyang226.flickr.Transport#sendUpload(java.lang.String, java.util.List)
 	 */
 	public Response sendUpload(String path, List<Parameter> parameters, final ProgressListener progressListener) throws IOException, FlickrException, SAXException {
-		if (LOG.isDebugEnabled()) {
+		if (Config.isDebug()) {
 			LOG.debug("Send Upload Input Params: path '{}'; parameters {}", path, parameters);
 		}
 		HttpURLConnection conn = null;
@@ -240,7 +241,7 @@ public class REST extends Transport {
 		reportProgress(progressListener, 0);
 		try {
 			URL url = UrlUtilities.buildPostUrl(getHost(), getPort(), path);
-			if (LOG.isDebugEnabled()) {
+			if (Config.isDebug()) {
 				LOG.debug("Post URL: {}", url.toString());
 			}
 			conn = (HttpURLConnection) url.openConnection();
@@ -357,7 +358,7 @@ public class REST extends Transport {
 		}
 	}
 	public String sendPost(String path, List<Parameter> parameters) throws IOException {
-		if (LOG.isDebugEnabled()) {
+		if (Config.isDebug()) {
 			LOG.trace("Send Post Input Params: path '{}'; parameters {}", path, parameters);
 		}
 		HttpURLConnection conn = null;
@@ -365,7 +366,7 @@ public class REST extends Transport {
 		String data = null;
 		try {
 			URL url = UrlUtilities.buildPostUrl(getHost(), getPort(), path);
-			if (LOG.isDebugEnabled()) {
+			if (Config.isDebug()) {
 				LOG.trace("Post URL: {}", url.toString());
 			}
 			conn = (HttpURLConnection) url.openConnection();
@@ -406,7 +407,7 @@ public class REST extends Transport {
 			IOUtilities.close(out);
 			if (conn != null)
 				conn.disconnect();
-			if (LOG.isDebugEnabled()) {
+			if (Config.isDebug()) {
 				LOG.trace("Send Post Result: {}", data);
 			}
 		}

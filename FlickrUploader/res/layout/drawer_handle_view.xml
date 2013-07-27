@@ -1,31 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <merge xmlns:android="http://schemas.android.com/apk/res/android" >
 
-    <com.rafali.flickruploader.CustomImageView
-        android:id="@+id/image"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:layout_alignParentLeft="true"
-        android:src="@drawable/icon_action_bar" />
+    <RelativeLayout
+        android:id="@+id/progressContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone" >
+
+        <com.rafali.flickruploader.CustomImageView
+            android:id="@+id/image"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentLeft="true" />
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="wrap_content"
+            android:layout_height="25dp"
+            android:layout_marginLeft="5dp"
+            android:layout_toRightOf="@id/image"
+            android:gravity="bottom"
+            android:text="@string/lorem_ipsum_small"
+            android:textColor="@android:color/white" />
+
+        <TextView
+            android:id="@+id/sub_title"
+            android:layout_width="wrap_content"
+            android:layout_height="25dp"
+            android:layout_below="@id/title"
+            android:layout_marginLeft="5dp"
+            android:layout_toRightOf="@id/image"
+            android:gravity="top"
+            android:text="@string/lorem_ipsum_small"
+            android:textColor="@android:color/darker_gray" />
+    </RelativeLayout>
 
     <TextView
-        android:id="@+id/title"
-        android:layout_width="wrap_content"
-        android:layout_height="25dp"
-        android:layout_alignTop="@id/image"
-        android:layout_toRightOf="@id/image"
-        android:gravity="bottom"
-        android:text="@string/lorem_ipsum_small"
-        android:textColor="@android:color/white" />
-
-    <TextView
-        android:id="@+id/sub_title"
-        android:layout_width="wrap_content"
-        android:layout_height="25dp"
-        android:layout_below="@id/title"
-        android:layout_toRightOf="@id/image"
-        android:gravity="top"
-        android:text="@string/lorem_ipsum_small"
-        android:textColor="@android:color/darker_gray" />
+        android:id="@+id/message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:minHeight="50dp"
+        android:text="@string/lorem_ipsum_small" />
 
 </merge>

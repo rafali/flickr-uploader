@@ -15,11 +15,15 @@
         <com.rafali.flickruploader.DrawerHandleView_
             android:id="@+id/drawer_handle"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:background="@color/transparentblack90"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bottom_bar"
             android:gravity="center_vertical" />
 
-        <include layout="@layout/drawer_content" />
+        <com.rafali.flickruploader.DrawerContentView_
+            android:id="@+id/drawer_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/drawer_content_bg" />
     </com.rafali.flickruploader.SlidingDrawer>
 
 </RelativeLayout>

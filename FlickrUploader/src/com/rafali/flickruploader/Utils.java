@@ -1276,30 +1276,6 @@ public final class Utils {
 		}
 	}
 
-	// public static void consumePurchase(final Activity activity) {
-	// IabHelper.get().ensureSetup(new IabHelper.OnIabSetupFinishedListener() {
-	// public void onIabSetupFinished(IabResult result) {
-	// try {
-	// LOG.debug("Setup finished: " + result);
-	// if (result.isSuccess()) {
-	// Inventory queryInventory = IabHelper.get().queryInventory(true, Lists.newArrayList(Utils.getPremiumSku()));
-	// LOG.debug("queryInventory : " + Utils.getPremiumSku() + " : " + queryInventory.hasPurchase(Utils.getPremiumSku()));
-	// if (queryInventory.hasPurchase(Utils.getPremiumSku())) {
-	// IabHelper.get().consumeAsync(queryInventory.getPurchase(Utils.getPremiumSku()), new OnConsumeFinishedListener() {
-	// @Override
-	// public void onConsumeFinished(Purchase purchase, IabResult result) {
-	// LOG.info("purchase consumed : " + purchase);
-	// }
-	// });
-	// }
-	// }
-	// } catch (IabException e) {
-	// LOG.error(e.getMessage(), e);
-	// }
-	// }
-	// });
-	// }
-
 	public static boolean isPremium() {
 		return getBooleanProperty(STR.premium, false);
 	}

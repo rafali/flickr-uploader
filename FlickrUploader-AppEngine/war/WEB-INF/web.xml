@@ -1,4 +1,8 @@
-<?xml version="1.0" encoding="utf-8" standalone="no"?><web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.5" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+	xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.5"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
 	<servlet>
 		<servlet-name>androidCrashReport</servlet-name>
 		<servlet-class>com.rafali.flickruploader.AndroidCrashReport</servlet-class>
@@ -20,4 +24,13 @@
 		<servlet-name>SystemServiceServlet</servlet-name>
 		<url-pattern>/_ah/spi/*</url-pattern>
 	</servlet-mapping>
+	<servlet>
+		<servlet-name>RemoteApiServlet</servlet-name>
+		<servlet-class>com.google.apphosting.utils.remoteapi.RemoteApiServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>RemoteApiServlet</servlet-name>
+		<url-pattern>/remote_api</url-pattern>
+	</servlet-mapping>
+
 </web-app>

@@ -72,7 +72,7 @@ public class AppInstall implements Serializable {
 
 	@Override
 	public String toString() {
-		return androidDevice + "-" + dateCreation + " : " + ownerIds + " : " + emails;
+		return androidDevice + "-" + dateCreation + " : " + ownerIds + " : " + emails + ", premium:" + premium;
 	}
 
 	public void setDateCreation(Date dateCreation) {

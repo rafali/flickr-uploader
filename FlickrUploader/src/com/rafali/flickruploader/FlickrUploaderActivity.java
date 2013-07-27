@@ -58,7 +58,7 @@ import com.rafali.flickruploader.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.Utils.MediaType;
 import com.rafali.flickruploader.billing.IabHelper;
 
-@EActivity(R.layout.flickr_uploader_activity)
+@EActivity(R.layout.flickr_uploader_slider_activity)
 public class FlickrUploaderActivity extends Activity {
 
 	private static final int MAX_LINK_SHARE = 5;

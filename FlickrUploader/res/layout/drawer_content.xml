@@ -1,16 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/drawer_content"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:background="@color/transparentblack60"
-    android:orientation="vertical"
-    tools:ignore="Overdraw" >
+<merge xmlns:android="http://schemas.android.com/apk/res/android" >
 
-    <TextView
+    <RelativeLayout
+        android:id="@+id/bottom_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Content!" />
+        android:layout_alignParentBottom="true"
+        android:background="@drawable/bottom_bar" >
 
-</LinearLayout>
+        <Button
+            android:id="@+id/pause_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pause" />
+
+        <Button
+            android:id="@+id/clear_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_gravity="right"
+            android:text="Clear" />
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@id/bottom_bar"
+        android:orientation="vertical" />
+
+</merge>
