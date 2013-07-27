@@ -11,12 +11,13 @@
 			<attribute name="optional" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="src" path="endpoint-libs/libappinstallendpoint-v1/appinstallendpoint/appinstallendpoint-v1-generated-source"/>
-	<classpathentry kind="src" path="endpoint-libs/librpcendpoint-v1/rpcendpoint/rpcendpoint-v1-generated-source"/>
-	<classpathentry kind="src" path="endpoint-libs/libmessageEndpoint-v1/messageEndpoint/messageendpoint-v1-generated-source"/>
-	<classpathentry kind="src" path="endpoint-libs/libdeviceinfoendpoint-v1/deviceinfoendpoint/deviceinfoendpoint-v1-generated-source"/>
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.DEPENDENCIES"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
+	<classpathentry kind="src" path="endpoint-libs/libappinstallendpoint-v1/appinstallendpoint/appinstallendpoint-v1-generated-source"/>
+	<classpathentry kind="src" path="endpoint-libs/libdeviceinfoendpoint-v1/deviceinfoendpoint/deviceinfoendpoint-v1-generated-source"/>
+	<classpathentry kind="src" path="endpoint-libs/libdonationendpoint-v1/donationendpoint/donationendpoint-v1-generated-source"/>
+	<classpathentry kind="src" path="endpoint-libs/libmessageEndpoint-v1/messageEndpoint/messageendpoint-v1-generated-source"/>
+	<classpathentry kind="src" path="endpoint-libs/librpcendpoint-v1/rpcendpoint/rpcendpoint-v1-generated-source"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

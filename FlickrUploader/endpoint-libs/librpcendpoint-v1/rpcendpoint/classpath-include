@@ -1,4 +1,4 @@
-	<classpathentry kind="lib" path="libs/google-api-services-rpcendpoint-v1-rev20130724032003-1.15.0-rc.jar" sourcepath="libs-sources/google-api-services-rpcendpoint-v1-rev20130724032003-1.15.0-rc-sources.jar"/>
+	<classpathentry kind="lib" path="libs/google-api-services-rpcendpoint-v1-rev20130727010026-1.15.0-rc.jar" sourcepath="libs-sources/google-api-services-rpcendpoint-v1-rev20130727010026-1.15.0-rc-sources.jar"/>
 	<classpathentry kind="lib" path="libs/google-api-client-1.15.0-rc.jar" sourcepath="libs-sources/google-api-client-1.15.0-rc-sources.jar"/>
 	<classpathentry kind="lib" path="libs/google-api-client-android-1.15.0-rc.jar" sourcepath="libs-sources/google-api-client-android-1.15.0-rc-sources.jar"/>
 	<classpathentry kind="lib" path="libs/google-api-client-appengine-1.15.0-rc.jar" sourcepath="libs-sources/google-api-client-appengine-1.15.0-rc-sources.jar"/>

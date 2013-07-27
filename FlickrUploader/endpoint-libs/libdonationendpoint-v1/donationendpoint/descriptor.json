@@ -1,11 +1,11 @@
 {
   "files": [
     {
-      "path": "ra-fa-li-donationendpoint-v1-20130724032011-java-1.15.0-rc-sources.jar", 
+      "path": "ra-fa-li-donationendpoint-v1-20130727010053-java-1.15.0-rc-sources.jar", 
       "type": "source"
     }, 
     {
-      "path": "ra-fa-li-donationendpoint-v1-20130724032011-java-1.15.0-rc.jar.properties", 
+      "path": "ra-fa-li-donationendpoint-v1-20130727010053-java-1.15.0-rc.jar.properties", 
       "type": "android.properties"
     }
   ], 
@@ -689,7 +689,7 @@
     }
   ], 
   "language_version": "1.15.0-rc", 
-  "revision": 20130724032011, 
+  "revision": 20130727010053, 
   "id": "donationendpoint:v1", 
   "modulePath": "com/rafali/flickruploader"
 }

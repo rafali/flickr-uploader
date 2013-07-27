@@ -47,21 +47,6 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "appinstallendpoint.updateAppInstall" : {
-      "path" : "appinstall",
-      "httpMethod" : "PUT",
-      "scopes" : [ ],
-      "audiences" : [ ],
-      "clientIds" : [ ],
-      "rosyMethod" : "com.rafali.flickruploader.AppInstallEndpoint.updateAppInstall",
-      "request" : {
-        "body" : "autoTemplate(backendRequest)",
-        "bodyName" : "resource"
-      },
-      "response" : {
-        "body" : "autoTemplate(backendResponse)"
-      }
-    },
     "appinstallendpoint.listAppInstall" : {
       "path" : "appinstall",
       "httpMethod" : "GET",
@@ -81,6 +66,21 @@
           }
         },
         "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "appinstallendpoint.updateAppInstall" : {
+      "path" : "appinstall",
+      "httpMethod" : "PUT",
+      "scopes" : [ ],
+      "audiences" : [ ],
+      "clientIds" : [ ],
+      "rosyMethod" : "com.rafali.flickruploader.AppInstallEndpoint.updateAppInstall",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
       },
       "response" : {
         "body" : "autoTemplate(backendResponse)"
@@ -240,17 +240,17 @@
           "$ref" : "CollectionResponse_AppInstall"
         }
       },
+      "com.rafali.flickruploader.AppInstallEndpoint.listAppInstall" : {
+        "response" : {
+          "$ref" : "CollectionResponse_AppInstall"
+        }
+      },
       "com.rafali.flickruploader.AppInstallEndpoint.updateAppInstall" : {
         "request" : {
           "$ref" : "AppInstall"
         },
         "response" : {
           "$ref" : "AppInstall"
-        }
-      },
-      "com.rafali.flickruploader.AppInstallEndpoint.listAppInstall" : {
-        "response" : {
-          "$ref" : "CollectionResponse_AppInstall"
         }
       },
       "com.rafali.flickruploader.AppInstallEndpoint.insertAppInstall" : {
