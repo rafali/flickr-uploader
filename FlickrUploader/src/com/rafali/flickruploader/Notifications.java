@@ -13,7 +13,6 @@ import android.support.v4.app.NotificationCompat.Builder;
 
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
-import com.rafali.flickruploader.Utils.CAN_UPLOAD;
 
 public class Notifications {
 
@@ -25,89 +24,23 @@ public class Notifications {
 
 	private static Builder builderUploading;
 	private static Builder builderUploaded;
-	private static Builder builderQueued;
-
-	public static void notify(int queued, CAN_UPLOAD canUpload) {
-		if (System.currentTimeMillis() - lastNotified > 30 * 60 * 1000L) {
-			if (canUpload == CAN_UPLOAD.ok || !Utils.getBooleanProperty("notification_paused", true)) {
-				manager.cancelAll();
-			} else {
-				if (builderQueued == null) {
-					builderQueued = new NotificationCompat.Builder(FlickrUploader.getAppContext());
-					builderQueued.setSmallIcon(R.drawable.ic_launcher);
-					builderQueued.setPriority(NotificationCompat.PRIORITY_MIN);
-					builderQueued.setContentIntent(resultPendingIntent);
-					builderQueued.setProgress(0, 1000, false);
-					builderQueued.setAutoCancel(true);
-				}
-				if (FlickrUploaderActivity.getInstance() != null && !FlickrUploaderActivity.getInstance().isPaused()) {
-					builderQueued.setTicker(queued + " media queued");
-				}
-				builderQueued.setContentTitle(queued + " media queued");
-				builderQueued.setContentText("Waiting for " + canUpload);
-				Notification notification = builderQueued.build();
-				notification.icon = android.R.drawable.stat_sys_upload_done;
-				// notification.iconLevel = progress / 10;
-				manager.notify(0, notification);
-				lastNotified = System.currentTimeMillis();
-			}
-		}
-	}
 
 	static long lastNotified = 0;
 
 	public static void notify(int progress, final Media image, int currentPosition, int total) {
 		try {
-			if (resultPendingIntent == null) {
-				Intent resultIntent = new Intent(FlickrUploader.getAppContext(), FlickrUploaderActivity_.class);
-				resultIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-				resultIntent.setAction(Intent.ACTION_MAIN);
-				resultPendingIntent = PendingIntent.getActivity(FlickrUploader.getAppContext(), 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-				cancelIntent = PendingIntent.getBroadcast(FlickrUploader.getAppContext(), 0, new Intent("com.rafali.intent.CANCEL_UPLOAD"), 0);
+			if (!Utils.getBooleanProperty("notification_progress", true)) {
+				return;
 			}
 
-			if (builderUploading == null) {
-				builderUploading = new NotificationCompat.Builder(FlickrUploader.getAppContext());
-				builderUploading.setContentIntent(resultPendingIntent);
-				builderUploading.setTicker("Uploading");
-				builderUploading.setContentTitle("Uploading to Flickr");
-				builderUploading.addAction(R.drawable.navigation_cancel, "Cancel", cancelIntent);
-				builderUploading.setOngoing(true);
-				builderUploading.setPriority(NotificationCompat.PRIORITY_MIN);
-				builderUploading.setSmallIcon(R.drawable.ic_launcher);
-
-				builderUploaded = new NotificationCompat.Builder(FlickrUploader.getAppContext());
-				builderUploaded.setSmallIcon(R.drawable.ic_launcher);
-				builderUploaded.setPriority(NotificationCompat.PRIORITY_MIN);
-				builderUploaded.setContentIntent(resultPendingIntent);
-				builderUploaded.setProgress(1000, 1000, false);
-				builderUploaded.setTicker("Upload finished");
-				builderUploaded.setContentTitle("Upload finished");
-				builderUploaded.setAutoCancel(true);
-
-			}
-			// Log.d("Notifications", "realProgress : " + realProgress + ", progress:" + progress + ", currentPosition:" + currentPosition + ", total:" + total);
+			ensureBuilders();
 
 			int realProgress = (int) (100 * (currentPosition - 1 + Double.valueOf(progress) / 100) / total);
-			boolean uploading = realProgress < 100;
 
-			Builder builder;
-			if (uploading) {
-				if (!Utils.getBooleanProperty("notification_progress", true)) {
-					return;
-				}
-				builder = builderUploading;
-				builder.setProgress(100, realProgress, false);
-				builder.setContentText(image.name);
-				builder.setContentInfo(currentPosition + " / " + total);
-			} else {
-				if (!Utils.getBooleanProperty("notification_finished", true)) {
-					manager.cancelAll();
-					return;
-				}
-				builder = builderUploaded;
-				builder.setContentText(total + " media sent to Flickr");
-			}
+			Builder builder = builderUploading;
+			builder.setProgress(100, realProgress, false);
+			builder.setContentText(image.name);
+			builder.setContentInfo(currentPosition + " / " + total);
 
 			CacheableBitmapDrawable bitmapDrawable = Utils.getCache().getFromMemoryCache(image.path + "_" + R.layout.photo_grid_thumb);
 			if (bitmapDrawable == null || bitmapDrawable.getBitmap().isRecycled()) {
@@ -123,6 +56,63 @@ public class Notifications {
 			} else {
 				builder.setLargeIcon(bitmapDrawable.getBitmap());
 			}
+
+			Notification notification = builder.build();
+			notification.icon = android.R.drawable.stat_sys_upload_done;
+			// notification.iconLevel = progress / 10;
+			manager.notify(0, notification);
+		} catch (Throwable e) {
+			LOG.error(e.getMessage(), e);
+		}
+
+	}
+
+	private static void ensureBuilders() {
+		if (resultPendingIntent == null) {
+			Intent resultIntent = new Intent(FlickrUploader.getAppContext(), FlickrUploaderActivity_.class);
+			resultIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+			resultIntent.setAction(Intent.ACTION_MAIN);
+			resultPendingIntent = PendingIntent.getActivity(FlickrUploader.getAppContext(), 0, resultIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+			cancelIntent = PendingIntent.getBroadcast(FlickrUploader.getAppContext(), 0, new Intent("com.rafali.intent.CANCEL_UPLOAD"), 0);
+		}
+
+		if (builderUploading == null) {
+			builderUploading = new NotificationCompat.Builder(FlickrUploader.getAppContext());
+			builderUploading.setContentIntent(resultPendingIntent);
+			builderUploading.setTicker("Uploading");
+			builderUploading.setContentTitle("Uploading to Flickr");
+			builderUploading.addAction(R.drawable.navigation_cancel, "Cancel", cancelIntent);
+			builderUploading.setOngoing(true);
+			builderUploading.setPriority(NotificationCompat.PRIORITY_MIN);
+			builderUploading.setSmallIcon(R.drawable.ic_launcher);
+
+			builderUploaded = new NotificationCompat.Builder(FlickrUploader.getAppContext());
+			builderUploaded.setSmallIcon(R.drawable.ic_launcher);
+			builderUploaded.setPriority(NotificationCompat.PRIORITY_MIN);
+			builderUploaded.setContentIntent(resultPendingIntent);
+			builderUploaded.setProgress(1000, 1000, false);
+			builderUploaded.setTicker("Upload finished");
+			builderUploaded.setContentTitle("Upload finished");
+			builderUploaded.setAutoCancel(true);
+
+		}
+	}
+
+	public static void notifyFinished(int nbUploaded, int nbError) {
+		try {
+			if (!Utils.getBooleanProperty("notification_finished", true)) {
+				manager.cancelAll();
+				return;
+			}
+
+			ensureBuilders();
+
+			Builder builder = builderUploaded;
+			String text = nbUploaded + " media sent to Flickr";
+			if (nbError > 0) {
+				text += ", " + nbError + " error" + (nbError > 1 ? "s" : "");
+			}
+			builder.setContentText(text);
 
 			Notification notification = builder.build();
 			notification.icon = android.R.drawable.stat_sys_upload_done;

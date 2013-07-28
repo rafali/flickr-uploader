@@ -60,7 +60,7 @@ public class ToolString {
 	}
 
 	public static String formatDuration(long duration) {
-		StringBuffer strb = new StringBuffer("+");
+		StringBuffer strb = new StringBuffer();
 		long diffInSeconds = duration / 1000L;
 		long sec, min, hours, days = 0;
 		sec = (diffInSeconds >= 60 ? diffInSeconds % 60 : diffInSeconds);

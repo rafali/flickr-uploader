@@ -207,10 +207,12 @@ public class FlickrUploaderActivity extends Activity {
 		if (instance == this)
 			instance = null;
 		destroyed = true;
+		UploadService.unregister(drawerHandleView);
+		UploadService.unregister(drawerContentView);
 	}
 
 	boolean destroyed = false;
-
+	
 	@UiThread
 	void init() {
 		if (mainTabView == null) {
@@ -234,8 +236,16 @@ public class FlickrUploaderActivity extends Activity {
 	@ViewById(R.id.footer)
 	TextView footer;
 
+	@ViewById(R.id.drawer_handle)
+	DrawerHandleView drawerHandleView;
+
+	@ViewById(R.id.drawer_content)
+	DrawerContentView drawerContentView;
+
 	@AfterViews
 	void afterViews() {
+		UploadService.register(drawerHandleView);
+		UploadService.register(drawerContentView);
 		renderPremium();
 	}
 

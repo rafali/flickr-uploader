@@ -27,9 +27,10 @@ import com.googlecode.androidannotations.annotations.EViewGroup;
 import com.googlecode.androidannotations.annotations.UiThread;
 import com.googlecode.androidannotations.annotations.ViewById;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
+import com.rafali.flickruploader.UploadService.UploadProgressListener;
 
 @EViewGroup(R.layout.drawer_content)
-public class DrawerContentView extends RelativeLayout {
+public class DrawerContentView extends RelativeLayout implements UploadProgressListener {
 
 	public DrawerContentView(Context context, AttributeSet attrs) {
 		super(context, attrs);
@@ -67,17 +68,9 @@ public class DrawerContentView extends RelativeLayout {
 
 	@Background
 	public void updateLists() {
-		List<Media> queuedMedias = new ArrayList<Media>();
-		List<Media> uploadedMedias = new ArrayList<Media>();
-		List<Media> failedMedias = new ArrayList<Media>();
-		List<Media> medias = Utils.loadImages(null);
-		for (Media media : medias) {
-			if (UploadService.isUploading(media)) {
-				queuedMedias.add(media);
-			} else if (FlickrApi.isUploaded(media)) {
-				uploadedMedias.add(media);
-			}
-		}
+		List<Media> queuedMedias = UploadService.getQueueSnapshot();
+		List<Media> uploadedMedias = UploadService.getRecentlyUploadedSnapshot();
+		List<Media> failedMedias = UploadService.getFailedSnapshot();
 		notifyDataSetChanged(queuedAdapter, queuedMedias);
 		notifyDataSetChanged(uploadedAdapter, uploadedMedias);
 		notifyDataSetChanged(failedAdapter, failedMedias);
@@ -227,5 +220,28 @@ public class DrawerContentView extends RelativeLayout {
 			}
 
 		}
+	}
+
+	@Override
+	public void onProgress(int progress, Media image) {
+	}
+
+	@Override
+	public void onQueued(int nbQueued, int nbAlreadyUploaded, int nbAlreadyQueued) {
+		updateLists();
+	}
+
+	@Override
+	public void onPaused() {
+	}
+
+	@Override
+	public void onFinished(int nbUploaded, int nbErrors) {
+		updateLists();
+	}
+
+	@Override
+	public void onProcessed(Media image, boolean success) {
+		updateLists();
 	}
 }

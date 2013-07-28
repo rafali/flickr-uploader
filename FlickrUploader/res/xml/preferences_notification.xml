@@ -8,9 +8,5 @@
         android:defaultValue="true"
         android:key="notification_finished"
         android:title="Upload Finished" />
-    <CheckBoxPreference
-        android:defaultValue="true"
-        android:key="notification_paused"
-        android:title="Upload Paused" />
 
 </PreferenceScreen>

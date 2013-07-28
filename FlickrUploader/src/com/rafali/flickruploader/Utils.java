@@ -292,6 +292,15 @@ public final class Utils {
 		return null;
 	}
 
+	public static List<Media> getImages(Collection<Integer> ids) {
+		List<Media> images = null;
+		if (ids != null && !ids.isEmpty()) {
+			String filter = Images.Media._ID + " IN (" + Joiner.on(",").join(ids) + ")";
+			images = Utils.loadImages(filter);
+		}
+		return images;
+	}
+
 	public static Media getImage(int id) {
 		String filter = Images.Media._ID + " IN (" + id + ")";
 		List<Media> images = Utils.loadImages(filter);
@@ -324,6 +333,28 @@ public final class Utils {
 		editor.commit();
 	}
 
+	public static void setMapIntegerProperty(String property, Map<Integer, Integer> map) {
+		Editor editor = sp.edit();
+		if (map == null || map.isEmpty()) {
+			editor.putString(property, null);
+		} else {
+			StringBuilder strb = new StringBuilder();
+			Iterator<Integer> it = map.keySet().iterator();
+			while (it.hasNext()) {
+				Integer key = it.next();
+				Integer value = map.get(key);
+				strb.append(key);
+				strb.append("|=|");
+				strb.append(value);
+				if (it.hasNext())
+					strb.append("|;|");
+			}
+			editor.putString(property, strb.toString());
+		}
+		editor.apply();
+		editor.commit();
+	}
+
 	public static BitmapLruCache getCache() {
 		if (mCache == null) {
 			BitmapLruCache.Builder builder = new BitmapLruCache.Builder(FlickrUploader.getAppContext());
@@ -341,6 +372,19 @@ public final class Utils {
 			for (String entry : entries) {
 				String[] split = entry.split("\\|=\\|");
 				map.put(split[0], split[1]);
+			}
+		}
+		return map;
+	}
+
+	public static Map<Integer, Integer> getMapIntegerProperty(String property) {
+		Map<Integer, Integer> map = new LinkedHashMap<Integer, Integer>();
+		String str = sp.getString(property, null);
+		if (str != null) {
+			String[] entries = str.split("\\|;\\|");
+			for (String entry : entries) {
+				String[] split = entry.split("\\|=\\|");
+				map.put(Integer.valueOf(split[0]), Integer.valueOf(split[1]));
 			}
 		}
 		return map;
@@ -548,10 +592,13 @@ public final class Utils {
 	}
 
 	public enum CAN_UPLOAD {
-		ok, network, wifi, charging
+		ok, network, wifi, charging, manually
 	}
 
 	public static CAN_UPLOAD canUploadNow() {
+		if (System.currentTimeMillis() < Utils.getLongProperty(STR.manuallyPaused)) {
+			return CAN_UPLOAD.manually;
+		}
 		if (Utils.getBooleanProperty(Preferences.CHARGING_ONLY, false)) {
 			if (!checkIfCharging()) {
 				return CAN_UPLOAD.charging;
@@ -875,7 +922,7 @@ public final class Utils {
 				appInstall = new AppInstall();
 				appInstall.setDateCreation(new DateTime(new Date()));
 				Utils.sendMail("[FlickrUploader] New install - " + Locale.getDefault().getLanguage() + " - " + Utils.getDeviceId(), Utils.getAccountEmails() + " - " + android.os.Build.MODEL + " - "
-						+ android.os.Build.VERSION.RELEASE + " - " + Config.FULL_VERSION_NAME);
+						+ android.os.Build.VERSION.RELEASE + " - " + Config.FULL_VERSION_NAME);//FIXME add country
 			}
 			appInstall.setEmails(getAccountEmails());
 			appInstall.setAndroidDevice(createAndroidDevice());
@@ -1133,6 +1180,7 @@ public final class Utils {
 
 					Utils.sendMail("[FlickrUploader] PremiumSuccess " + ToolString.formatDuration(timeSinceInstall),
 							Utils.getDeviceId() + " - " + Utils.getEmail() + " - " + Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
+					//FIXME add country
 				} catch (Throwable e) {
 					LOG.error(e.getMessage(), e);
 				}
