@@ -2,11 +2,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <item
-        android:id="@+id/cancel_uploads"
-        android:icon="@drawable/stop_upload"
-        android:showAsAction="never"
-        android:title="Cancel Uploads"/>
-    <item
         android:id="@+id/preferences"
         android:showAsAction="never"
         android:title="Preferences"/>
@@ -14,5 +9,9 @@
         android:id="@+id/faq"
         android:showAsAction="never"
         android:title="FAQ"/>
-    
+    <item
+        android:id="@+id/trial_info"
+        android:showAsAction="never"
+        android:title="Trial Info"/>
+
 </menu>

@@ -3,6 +3,7 @@ package com.rafali.flickruploader;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -295,7 +296,7 @@ public class FlickrApi {
 		return false;
 	}
 
-	public static boolean upload(Media image, String photosetId, String photoSetTitle, Folder folder, ProgressListener progressListener) {
+	public static boolean upload(Media image, String photosetId, String photoSetTitle, Folder folder) {
 		boolean success = false;
 		int retry = 0;
 		String photoId = null;
@@ -306,7 +307,7 @@ public class FlickrApi {
 		} else {
 			cm.setNetworkPreference(ConnectivityManager.DEFAULT_NETWORK_PREFERENCE);
 		}
-		while (retry < 3 && !success) {
+		while (retry < NB_RETRY && !success) {
 			if (photosetId == null) {
 				if (photoSetTitle != null && photosetId == null) {
 					photosetId = uploadedFolders.get("/newset/" + photoSetTitle);
@@ -349,6 +350,9 @@ public class FlickrApi {
 					} else {
 						LOG.debug("uploading : " + uri);
 						File file = new File(uri);
+						if (file.length() > 100 * 1024 * 1024L) {
+							throw new UploadException("File too big");
+						}
 						// InputStream inputStream = new FileInputStream(uri);
 						UploadMetaData metaData = new UploadMetaData();
 						PRIVACY privacy = Utils.getDefaultPrivacy();
@@ -357,7 +361,7 @@ public class FlickrApi {
 						metaData.setPublicFlag(privacy == PRIVACY.PUBLIC);
 						metaData.setTags(Arrays.asList(md5tag, sha1tag));
 						long start = System.currentTimeMillis();
-						photoId = FlickrApi.get().getUploader().upload(image.name, file, metaData, progressListener);
+						photoId = FlickrApi.get().getUploader().upload(image.name, file, metaData, image);
 						LOG.debug("photo uploaded in " + (System.currentTimeMillis() - start) + "ms : " + photoId);
 						uploadedPhotos.put(sha1tag, photoId);
 						photosPrivacy.put(photoId, privacy);
@@ -391,7 +395,9 @@ public class FlickrApi {
 					}
 				}
 				success = true;
+				exceptions.remove(image);
 			} catch (Throwable e) {
+				exceptions.put(image, e);
 				if (e instanceof FlickrException) {
 					FlickrException fe = (FlickrException) e;
 					LOG.warn("retry " + retry + " : " + fe.getErrorCode() + " : " + fe.getErrorMessage());
@@ -411,15 +417,18 @@ public class FlickrApi {
 					} else if ("98".equals(fe.getErrorCode())) {
 						auth = null;
 						authentified = false;
-						break;
 					}
 				}
 				LOG.error(e.getMessage(), e);
 				if (!success) {
-					LOG.error("retry " + retry + " : " + e.getClass().getSimpleName() + " : " + e.getMessage());
-					try {
-						Thread.sleep((long) (Math.pow(2, retry) * 1000));
-					} catch (InterruptedException ignore) {
+					if (isRetryable(e)) {
+						LOG.error("retry " + retry + " : " + e.getClass().getSimpleName() + " : " + e.getMessage());
+						try {
+							Thread.sleep((long) (Math.pow(2, retry) * 1000));
+						} catch (InterruptedException ignore) {
+						}
+					} else {
+						break;
 					}
 				}
 			} finally {
@@ -433,6 +442,29 @@ public class FlickrApi {
 		return success;
 	}
 
+	public static class UploadException extends Exception {
+		private static final long serialVersionUID = 1L;
+
+		public UploadException(String message) {
+			super(message);
+		}
+	}
+
+	public static Throwable getLastException(Media media) {
+		return exceptions.get(media);
+	}
+
+	static boolean isRetryable(Throwable e) {
+		if (e instanceof UploadException) {
+			return false;
+		} else if (e instanceof FlickrException) {
+			return false;
+		}
+		return true;
+	}
+
+	private static Map<Media, Throwable> exceptions = new HashMap<Media, Throwable>();
+
 	public static boolean isAuthentified() {
 		if (auth == null) {
 			updateOauth();
@@ -444,6 +476,8 @@ public class FlickrApi {
 	protected static char[] alphabet = alphabetString.toCharArray();
 	protected static int base_count = alphabet.length;
 	public static final String FLICKR_SHORT_URL_PREFIX = "http://flic.kr/p/";
+
+	public static final int NB_RETRY = 3;
 
 	public static String getShortUrl(String id) {
 		String suffix = encode(Long.parseLong(id));

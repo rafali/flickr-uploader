@@ -126,7 +126,11 @@ public abstract class TabView extends LinearLayout implements ViewPager.OnPageCh
 	public View getCurrentView() {
 		return pager != null ? gridViewsArray[pager.getCurrentItem()] : null;
 	}
-	
+
+	public int getCurrentItem() {
+		return pager != null ? pager.getCurrentItem() : 0;
+	}
+
 	public View getTabView(int position) {
 		return pager != null ? gridViewsArray[position] : null;
 	}

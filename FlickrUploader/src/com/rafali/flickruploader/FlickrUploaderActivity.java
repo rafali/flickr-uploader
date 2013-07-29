@@ -1,7 +1,5 @@
 package com.rafali.flickruploader;
 
-import java.sql.Date;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -49,7 +47,6 @@ import android.widget.Toast;
 import com.google.analytics.tracking.android.EasyTracker;
 import com.google.common.base.Joiner;
 import com.googlecode.androidannotations.annotations.AfterViews;
-import com.googlecode.androidannotations.annotations.Click;
 import com.googlecode.androidannotations.annotations.EActivity;
 import com.googlecode.androidannotations.annotations.UiThread;
 import com.googlecode.androidannotations.annotations.ViewById;
@@ -212,7 +209,7 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	boolean destroyed = false;
-	
+
 	@UiThread
 	void init() {
 		if (mainTabView == null) {
@@ -233,9 +230,6 @@ public class FlickrUploaderActivity extends Activity {
 		}
 	}
 
-	@ViewById(R.id.footer)
-	TextView footer;
-
 	@ViewById(R.id.drawer_handle)
 	DrawerHandleView drawerHandleView;
 
@@ -247,16 +241,6 @@ public class FlickrUploaderActivity extends Activity {
 		UploadService.register(drawerHandleView);
 		UploadService.register(drawerContentView);
 		renderPremium();
-	}
-
-	@Click(R.id.footer)
-	void onFooterClick() {
-		Utils.showPremiumDialog(this, new Utils.Callback<Boolean>() {
-			@Override
-			public void onResult(Boolean result) {
-				renderPremium();
-			}
-		});
 	}
 
 	OnItemClickListener onItemClickListener = new OnItemClickListener() {
@@ -371,9 +355,7 @@ public class FlickrUploaderActivity extends Activity {
 								privatePhotoIds.add(photoId);
 							}
 						}
-						int size = privatePhotoIds.size();
-						if (size > 0) {
-							toast(privatePhotoIds.size() + " photo" + (size > 1 ? "s" : "") + " will be public");
+						if (privatePhotoIds.size() > 0) {
 							FlickrApi.setPrivacy(PRIVACY.PUBLIC, privatePhotoIds);
 						}
 						Mixpanel.increment("photos_shared", photoIds.length);
@@ -461,14 +443,9 @@ public class FlickrUploaderActivity extends Activity {
 					BackgroundExecutor.execute(new Runnable() {
 						@Override
 						public void run() {
-							if (selection.isEmpty()) {
-								toast("Photos already on Flickr");
-							} else {
-								confirmUpload(selection);
-							}
+							confirmUpload(selection);
 						}
 					});
-					mMode.finish();
 				} else {
 					// Notifications.notify(40, selection.get(0), 1, 1);
 					Utils.confirmSignIn(FlickrUploaderActivity.this);
@@ -521,23 +498,20 @@ public class FlickrUploaderActivity extends Activity {
 					.setItems(new String[] { "Default set (" + Utils.getInstantAlbumTitle() + ")", "One set per folder", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
 						@Override
 						public void onClick(DialogInterface dialog, int which) {
-							int count = 0;
 							switch (which) {
 							case 0:
 								for (Media image : selection) {
 									Folder folder = foldersMap.get(image);
-									count += folder.images.size();
 									UploadService.enqueue(folder.images, Utils.getInstantAlbumId(), STR.instantUpload);
 								}
-								toast(count + " photos enqueued");
+								clearSelection();
 								break;
 							case 1:
 								for (Media image : selection) {
 									Folder folder = foldersMap.get(image);
-									count += folder.images.size();
 									UploadService.enqueue(folder.images, folder, null, null);
 								}
-								toast(count + " photos enqueued");
+								clearSelection();
 								break;
 							case 2:
 								showNewSetDialog(selection);
@@ -550,6 +524,7 @@ public class FlickrUploaderActivity extends Activity {
 							}
 							LOG.debug("which : " + which);
 						}
+
 					}).show();
 		} else {
 			new AlertDialog.Builder(this).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
@@ -559,6 +534,7 @@ public class FlickrUploaderActivity extends Activity {
 							switch (which) {
 							case 0:
 								UploadService.enqueue(selection, Utils.getInstantAlbumId(), STR.instantUpload);
+								clearSelection();
 								break;
 							case 1:
 								showNewSetDialog(selection);
@@ -574,8 +550,12 @@ public class FlickrUploaderActivity extends Activity {
 						}
 					}).show();
 		}
-		// Notifications.notify(40, selection.get(0), 1, 1);
-		// refresh(false);
+	}
+
+	@UiThread
+	void clearSelection() {
+		if (mMode != null)
+			mMode.finish();
 	}
 
 	@UiThread
@@ -605,18 +585,15 @@ public class FlickrUploaderActivity extends Activity {
 								public void onClick(DialogInterface dialog, int which) {
 									LOG.debug("selected : " + photosetIds.get(which) + " - " + photosetTitles.get(which));
 									String photoSetId = photosetIds.get(which);
-									int count = 0;
 									if (isFolderTab()) {
 										for (Media image : selection) {
 											Folder folder = foldersMap.get(image);
-											count += folder.images.size();
 											UploadService.enqueue(folder.images, photoSetId, null);
 										}
 									} else {
-										count += selection.size();
 										UploadService.enqueue(selection, photoSetId, null);
 									}
-									toast(count + " photos enqueued");
+									clearSelection();
 								}
 							});
 							builder.show();
@@ -644,18 +621,15 @@ public class FlickrUploaderActivity extends Activity {
 				if (ToolString.isBlank(value)) {
 					showNewSetDialog(selection);
 				} else {
-					int count = 0;
 					if (isFolderTab()) {
 						for (Media image : selection) {
 							Folder folder = foldersMap.get(image);
-							count += folder.images.size();
 							UploadService.enqueue(folder.images, null, value);
 						}
 					} else {
-						count += selection.size();
 						UploadService.enqueue(selection, null, value);
 					}
-					toast(count + " photos enqueued");
+					clearSelection();
 				}
 			}
 		});
@@ -675,11 +649,6 @@ public class FlickrUploaderActivity extends Activity {
 
 	private boolean isVideoTab() {
 		return mainTabView.getCurrentView().getTag() == TAB.video;
-	}
-
-	@UiThread
-	void toast(String message) {
-		Toast.makeText(getBaseContext(), message, Toast.LENGTH_LONG).show();
 	}
 
 	@UiThread
@@ -889,13 +858,18 @@ public class FlickrUploaderActivity extends Activity {
 		super.onCreateOptionsMenu(menu);
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.main_menu, menu);
-		renderMenu();
 		return true;
+	}
+
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		renderMenu();
+		return super.onPrepareOptionsMenu(menu);
 	}
 
 	private void renderMenu() {
 		if (menu != null) {
-			menu.findItem(R.id.cancel_uploads).setVisible(UploadService.getNbQueued() > 0);
+			menu.findItem(R.id.trial_info).setVisible(!Utils.isPremium());
 		}
 	}
 
@@ -903,10 +877,13 @@ public class FlickrUploaderActivity extends Activity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		Mixpanel.track("UI actionBar " + getResources().getResourceEntryName(item.getItemId()));
 		switch (item.getItemId()) {
-		case R.id.cancel_uploads:
-			int nbQueued = UploadService.getNbQueued();
-			if (nbQueued > 0)
-				Utils.confirmCancel(FlickrUploaderActivity.this, nbQueued);
+		case R.id.trial_info:
+			Utils.showPremiumDialog(this, new Utils.Callback<Boolean>() {
+				@Override
+				public void onResult(Boolean result) {
+					renderPremium();
+				}
+			});
 			break;
 		case R.id.preferences:
 			startActivity(new Intent(this, Preferences.class));
@@ -933,32 +910,24 @@ public class FlickrUploaderActivity extends Activity {
 
 	@UiThread
 	void confirmSync() {
-		final CharSequence[] modes = { "Sync current " + photos.size() + " photos and auto-upload new photos", "Auto-upload new photos", "Manually upload photos" };
+		final CharSequence[] modes = { "Auto-upload new photos", "Auto-upload new videos" };
 		AlertDialog.Builder alt_bld = new AlertDialog.Builder(this);
-		alt_bld.setTitle("Flickr Sync (" + Utils.getStringProperty(STR.userName) + ")");
-		alt_bld.setSingleChoiceItems(modes, 0, null);
+		alt_bld.setTitle("Auto-upload");
+		alt_bld.setMultiChoiceItems(modes, new boolean[] { true, true }, null);
 		alt_bld.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int id) {
 				ListView lw = ((AlertDialog) dialog).getListView();
-				switch (lw.getCheckedItemPosition()) {
-				case 0:
-					UploadService.enqueue(photos, Utils.getInstantAlbumId(), STR.instantUpload);
-					Utils.setBooleanProperty(Preferences.AUTOUPLOAD, true);
-					break;
-				case 1:
-					Utils.setBooleanProperty(Preferences.AUTOUPLOAD, true);
-					break;
-				case 2:
-					Utils.setBooleanProperty(Preferences.AUTOUPLOAD, false);
-				default:
-					break;
-				}
+				Utils.setBooleanProperty(Preferences.AUTOUPLOAD, lw.isItemChecked(0));
+				Utils.setBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, lw.isItemChecked(1));
 			}
 		});
-		alt_bld.setNegativeButton("Cancel", new OnClickListener() {
+		alt_bld.setNegativeButton("More options", new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-				Utils.setBooleanProperty(Preferences.AUTOUPLOAD, false);
+				ListView lw = ((AlertDialog) dialog).getListView();
+				Utils.setBooleanProperty(Preferences.AUTOUPLOAD, lw.isItemChecked(0));
+				Utils.setBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, lw.isItemChecked(1));
+				startActivity(new Intent(FlickrUploaderActivity.this, Preferences.class));
 			}
 		});
 		alt_bld.setCancelable(false);
@@ -1035,16 +1004,14 @@ public class FlickrUploaderActivity extends Activity {
 
 	@UiThread
 	public void renderPremium() {
-		if (footer != null && !destroyed) {
+		if (!destroyed) {
 			if (Utils.isPremium()) {
-				footer.setVisibility(View.GONE);
+				getActionBar().setTitle("Flickr Uploader");
 			} else {
-				footer.setVisibility(View.VISIBLE);
 				if (Utils.isTrial()) {
-					footer.setText("You are in the trial period. The premium Auto-Upload feature is available to you in trial until "
-							+ SimpleDateFormat.getDateInstance().format(new Date(Utils.trialUntil())) + ". Click here for more info.");
+					getActionBar().setTitle("Flickr Uploader (Trial)");
 				} else {
-					footer.setText("Your trial period has expired. Click here to continue to use the Auto-Upload feature.");
+					getActionBar().setTitle("Trial Expired");
 				}
 			}
 		}

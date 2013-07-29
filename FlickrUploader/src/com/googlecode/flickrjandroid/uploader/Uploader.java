@@ -24,7 +24,7 @@ import com.googlecode.flickrjandroid.Transport;
 import com.googlecode.flickrjandroid.oauth.OAuthInterface;
 import com.googlecode.flickrjandroid.oauth.OAuthUtils;
 import com.googlecode.flickrjandroid.util.StringUtilities;
-import com.rafali.flickruploader.ProgressListener;
+import com.rafali.flickruploader.Media;
 
 /**
  * Upload a photo.
@@ -139,7 +139,7 @@ public class Uploader {
 	 * @throws FlickrException
 	 * @throws SAXException
 	 */
-	public String upload(String imageName, File file, UploadMetaData metaData, ProgressListener progressListener) throws IOException, FlickrException, SAXException {
+	public String upload(String imageName, File file, UploadMetaData metaData, Media media) throws IOException, FlickrException, SAXException {
 		List<Parameter> parameters = new ArrayList<Parameter>();
 		parameters.add(new Parameter(OAuthInterface.PARAM_OAUTH_CONSUMER_KEY, this.apiKey));
 
@@ -170,7 +170,7 @@ public class Uploader {
 		parameters.add(new ImageParameter(imageName, file));
 		OAuthUtils.addOAuthToken(parameters);
 		OAuthUtils.addOAuthParams(sharedSecret, Uploader.URL_UPLOAD, parameters);
-		UploaderResponse response = (UploaderResponse) ((REST) transport).sendUpload(Uploader.UPLOAD_PATH, parameters, progressListener);
+		UploaderResponse response = (UploaderResponse) ((REST) transport).sendUpload(Uploader.UPLOAD_PATH, parameters, media);
 
 //		UploaderResponse response = (UploaderResponse) ((REST) transport).upload(sharedSecret, parameters, progressListener);
 		if (response.isError()) {

@@ -30,6 +30,9 @@ public class Media {
 
 	@Override
 	public boolean equals(Object o) {
+		if (o == this) {
+			return true;
+		}
 		if (o instanceof Media) {
 			return ((Media) o).path.equals(path);
 		}

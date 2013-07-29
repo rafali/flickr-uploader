@@ -36,7 +36,8 @@ import com.googlecode.flickrjandroid.util.IOUtilities;
 import com.googlecode.flickrjandroid.util.StringUtilities;
 import com.googlecode.flickrjandroid.util.UrlUtilities;
 import com.rafali.flickruploader.Config;
-import com.rafali.flickruploader.ProgressListener;
+import com.rafali.flickruploader.Media;
+import com.rafali.flickruploader.UploadService;
 
 /**
  * Transport implementation using the REST interface.
@@ -220,9 +221,8 @@ public class REST extends Transport {
 		return sendUpload(path, parameters, null);
 	}
 
-	void reportProgress(ProgressListener progressListener, int progress) {
-		if (progressListener != null)
-			progressListener.onProgress(progress);
+	void reportProgress(Media media, int progress) {
+		UploadService.onProgress(media, progress);
 	}
 
 	/*
@@ -230,7 +230,7 @@ public class REST extends Transport {
 	 * 
 	 * @see com.gmail.yuyang226.flickr.Transport#sendUpload(java.lang.String, java.util.List)
 	 */
-	public Response sendUpload(String path, List<Parameter> parameters, final ProgressListener progressListener) throws IOException, FlickrException, SAXException {
+	public Response sendUpload(String path, List<Parameter> parameters, final Media media) throws IOException, FlickrException, SAXException {
 		if (Config.isDebug()) {
 			LOG.debug("Send Upload Input Params: path '{}'; parameters {}", path, parameters);
 		}
@@ -238,7 +238,7 @@ public class REST extends Transport {
 		DataOutputStream out = null;
 		// String data = null;
 		int progress = 0;
-		reportProgress(progressListener, 0);
+		reportProgress(media, 0);
 		try {
 			URL url = UrlUtilities.buildPostUrl(getHost(), getPort(), path);
 			if (Config.isDebug()) {
@@ -290,14 +290,14 @@ public class REST extends Transport {
 			}
 			conn.connect();
 			progress = 1;
-			reportProgress(progressListener, progress);
+			reportProgress(media, progress);
 			out = new DataOutputStream(conn.getOutputStream());
 			out.writeBytes(boundary);
 			progress = 2;
-			reportProgress(progressListener, progress);
+			reportProgress(media, progress);
 
 			for (Parameter parameter : parameters) {
-				progress = writeParam(progress, parameter, out, boundary, progressListener);
+				progress = writeParam(progress, parameter, out, boundary, media);
 			}
 
 			out.writeBytes("--\r\n\r\n");
@@ -308,7 +308,7 @@ public class REST extends Transport {
 			out.close();
 
 			progress = 51;
-			reportProgress(progressListener, progress);
+			reportProgress(media, progress);
 			int responseCode = -1;
 			final int[] progressArray = new int[] { progress };
 			try {
@@ -318,7 +318,7 @@ public class REST extends Transport {
 						int progress = progressArray[0];
 						while (progressArray[0] <= 51 && progress < 98) {
 							progress = Math.min(98, progress + 1);
-							reportProgress(progressListener, progress);
+							reportProgress(media, progress);
 							try {
 								Thread.sleep(1000);
 							} catch (InterruptedException ignore) {
@@ -335,7 +335,7 @@ public class REST extends Transport {
 			} finally {
 				progress = 99;
 				progressArray[0] = progress;
-				reportProgress(progressListener, progress);
+				reportProgress(media, progress);
 			}
 			if (responseCode < 0) {
 				LOG.error("some error occured");
@@ -354,9 +354,10 @@ public class REST extends Transport {
 			if (conn != null)
 				conn.disconnect();
 			progress = 100;
-			reportProgress(progressListener, progress);
+			reportProgress(media, progress);
 		}
 	}
+
 	public String sendPost(String path, List<Parameter> parameters) throws IOException {
 		if (Config.isDebug()) {
 			LOG.trace("Send Post Input Params: path '{}'; parameters {}", path, parameters);
@@ -468,7 +469,7 @@ public class REST extends Transport {
 		return buf.toString();
 	}
 
-	private int writeParam(int progress, Parameter param, DataOutputStream out, String boundary, ProgressListener progressListener) throws IOException {
+	private int writeParam(int progress, Parameter param, DataOutputStream out, String boundary, Media media) throws IOException {
 		String name = param.getName();
 		out.writeBytes("\r\n");
 		if (param instanceof ImageParameter) {
@@ -492,7 +493,7 @@ public class REST extends Transport {
 							// if (currentProgress % 5 == 0)
 							// out.flush();
 							LOG.trace("out.size() : " + out.size() + ", " + file.length());
-							reportProgress(progressListener, currentProgress);
+							reportProgress(media, currentProgress);
 						}
 					}
 					LOG.debug("output in " + (System.currentTimeMillis() - start) + " ms");
@@ -513,7 +514,7 @@ public class REST extends Transport {
 		out.writeBytes("\r\n");
 		out.writeBytes(boundary);
 		progress = Math.min(50, progress + 1);
-		reportProgress(progressListener, progress);
+		reportProgress(media, progress);
 		return progress;
 	}
 }

@@ -57,7 +57,7 @@ public class DrawerHandleView extends RelativeLayout implements UploadProgressLi
 			progressContainer.setVisibility(View.VISIBLE);
 			message.setVisibility(View.GONE);
 			title.setText(image.name);
-			subTitle.setText(progress + "% - file " + currentPosition + " / " + total);
+			subTitle.setText(progress + "% - " + currentPosition + " / " + total);
 
 			CacheableBitmapDrawable bitmapDrawable = Utils.getCache().getFromMemoryCache(image.path + "_" + R.layout.photo_grid_thumb);
 			if (bitmapDrawable == null || bitmapDrawable.getBitmap().isRecycled()) {
@@ -111,8 +111,31 @@ public class DrawerHandleView extends RelativeLayout implements UploadProgressLi
 			if (activity != null && !activity.isPaused()) {
 				long canShow = System.currentTimeMillis() - messageUntil;
 				if (canShow > 4000) {
-					if (UploadService.getNbQueued() == 0) {
-						message.setText("No media queued");
+					if (!Utils.isPremium() && !Utils.isTrial()) {
+						message.setText("Click on the menu and select 'Trial Info'");
+					} else if (UploadService.getNbQueued() == 0) {
+						String text = "No media queued";
+						int nbUploaded = UploadService.getNbUploadedTotal();
+						if (nbUploaded > 0) {
+							text += ", " + nbUploaded + " recently uploaded";
+						}
+						int nbError = UploadService.getNbError();
+						if (nbError > 0) {
+							text += ", " + nbError + " error" + (nbError > 1 ? "s" : "");
+						}
+						if (nbError + nbUploaded <= 0) {
+							boolean photoAutoUpload = Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true);
+							boolean videoAutoUpload = Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true);
+							if (photoAutoUpload && videoAutoUpload) {
+								text += ", photos/videos auto-upload enabled";
+							} else if (photoAutoUpload) {
+								text += ", photos auto-upload enabled";
+							} else if (videoAutoUpload) {
+								text += ", videos auto-upload enabled";
+							}
+						}
+
+						message.setText(text);
 					} else {
 						if (UploadService.isPaused()) {
 							progressContainer.setVisibility(View.GONE);
@@ -146,6 +169,7 @@ public class DrawerHandleView extends RelativeLayout implements UploadProgressLi
 	}
 
 	@Override
+	@UiThread
 	public void onProgress(int progress, Media image) {
 		renderProgress(progress, image, UploadService.getNbUploaded() + 1, UploadService.getTotal());
 	}
@@ -157,25 +181,20 @@ public class DrawerHandleView extends RelativeLayout implements UploadProgressLi
 	}
 
 	@Override
+	@UiThread
 	public void onFinished(int nbUploaded, int nbError) {
-		if (nbUploaded + nbError > 0) {
-			String text = nbUploaded + " media uploaded";
-			if (nbError > 0) {
-				text += ", " + nbError + " error" + (nbError > 1 ? "s" : "");
-			}
-			setMessage(text, 5000);
+		String text = nbUploaded + " media uploaded";
+		if (nbError > 0) {
+			text += ", " + nbError + " error" + (nbError > 1 ? "s" : "");
 		}
+		setMessage(text, 5000);
 	}
 
 	@Override
+	@UiThread
 	public void onProcessed(Media image, boolean success) {
-		progressContainer.setVisibility(View.VISIBLE);
-		message.setVisibility(View.GONE);
-		title.setText(image.name);
-		if (success) {
-			subTitle.setText("--- Successfully uploaded ---");
-		} else {
-			subTitle.setText("------- Upload error --------");
+		if (!success) {
+			setMessage("Error uploading " + image.name, 5000);
 		}
 	}
 }

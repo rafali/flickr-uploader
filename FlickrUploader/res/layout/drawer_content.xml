@@ -8,19 +8,31 @@
         android:layout_alignParentBottom="true"
         android:background="@drawable/bottom_bar" >
 
-        <Button
+        <TextView
             android:id="@+id/pause_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pause" />
+            android:background="@drawable/default_selector"
+            android:paddingBottom="10dp"
+            android:paddingLeft="20dp"
+            android:paddingRight="20dp"
+            android:paddingTop="10dp"
+            android:text="Pause"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
 
-        <Button
+        <TextView
             android:id="@+id/clear_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
             android:layout_gravity="right"
-            android:text="Clear" />
+            android:background="@drawable/default_selector"
+            android:paddingBottom="10dp"
+            android:paddingLeft="20dp"
+            android:paddingRight="20dp"
+            android:paddingTop="10dp"
+            android:text="Clear"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
     </RelativeLayout>
 
     <LinearLayout

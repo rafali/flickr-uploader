@@ -57,6 +57,7 @@ import android.preference.PreferenceManager;
 import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Video;
 import android.provider.Settings.Secure;
+import android.telephony.TelephonyManager;
 import android.util.TypedValue;
 import android.view.WindowManager;
 
@@ -921,8 +922,8 @@ public final class Utils {
 			if (appInstall == null) {
 				appInstall = new AppInstall();
 				appInstall.setDateCreation(new DateTime(new Date()));
-				Utils.sendMail("[FlickrUploader] New install - " + Locale.getDefault().getLanguage() + " - " + Utils.getDeviceId(), Utils.getAccountEmails() + " - " + android.os.Build.MODEL + " - "
-						+ android.os.Build.VERSION.RELEASE + " - " + Config.FULL_VERSION_NAME);//FIXME add country
+				Utils.sendMail("[FlickrUploader] New install - " + getCountryCode() + " - " + Locale.getDefault().getLanguage() + " - " + Utils.getDeviceId(), Utils.getAccountEmails() + " - "
+						+ android.os.Build.MODEL + " - " + android.os.Build.VERSION.RELEASE + " - " + Config.FULL_VERSION_NAME);
 			}
 			appInstall.setEmails(getAccountEmails());
 			appInstall.setAndroidDevice(createAndroidDevice());
@@ -936,6 +937,24 @@ public final class Utils {
 			LOG.error(e.getMessage(), e);
 
 		}
+	}
+
+	static String countryCode;
+
+	public static String getCountryCode() {
+		try {
+			if (ToolString.isBlank(countryCode)) {
+				try {
+					TelephonyManager tm = (TelephonyManager) FlickrUploader.getAppContext().getSystemService(Context.TELEPHONY_SERVICE);
+					countryCode = tm.getSimCountryIso();
+				} catch (Throwable e) {
+					LOG.warn(e.getClass().getSimpleName() + " : " + e.getMessage());
+				}
+			}
+
+		} catch (Throwable e) {
+		}
+		return countryCode;
 	}
 
 	public static void setCharging(boolean charging) {
@@ -1178,9 +1197,8 @@ public final class Utils {
 					long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;
 					long timeSinceInstall = System.currentTimeMillis() - firstInstallTime;
 
-					Utils.sendMail("[FlickrUploader] PremiumSuccess " + ToolString.formatDuration(timeSinceInstall),
-							Utils.getDeviceId() + " - " + Utils.getEmail() + " - " + Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
-					//FIXME add country
+					Utils.sendMail("[FlickrUploader] PremiumSuccess " + ToolString.formatDuration(timeSinceInstall) + " - " + getCountryCode(), Utils.getDeviceId() + " - " + Utils.getEmail() + " - "
+							+ Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
 				} catch (Throwable e) {
 					LOG.error(e.getMessage(), e);
 				}
