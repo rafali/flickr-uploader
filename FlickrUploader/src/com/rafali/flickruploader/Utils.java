@@ -1019,7 +1019,7 @@ public final class Utils {
 			public void run() {
 				Mixpanel.track("ThankYou");
 				AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-				builder.setMessage("Thank you!\n\nThanks to users like you, I can continue on improving the app. If you have any suggestion, feel free to send me a mail!\n\nMaxime");
+				builder.setMessage("Thank you!\n\nThanks to users like you, I can work on improving the app. If you have any suggestion, feel free to send me an email!\n\nMaxime");
 				builder.setPositiveButton("Reply", new OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {

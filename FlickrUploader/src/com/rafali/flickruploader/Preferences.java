@@ -119,14 +119,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 			}
 		});
 
-//		findPreference("coupons").setOnPreferenceClickListener(new OnPreferenceClickListener() {
-//			@Override
-//			public boolean onPreferenceClick(Preference preference) {
-//				Utils.showCouponDialog(Preferences.this);
-//				return false;
-//			}
-//		});
-
 		findPreference("pictarine").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
@@ -254,7 +246,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		Preference premium = findPreference(STR.premium);
 		if (Utils.isPremium()) {
 			premium.setTitle("You are a Premium user");
-			premium.setSummary("Thank you for supporting the development of this app");
+			premium.setSummary("Thank you!");
 		} else {
 			if (Utils.isTrial()) {
 				premium.setTitle("Premium Trial");
