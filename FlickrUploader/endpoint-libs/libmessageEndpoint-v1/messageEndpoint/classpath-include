@@ -1,4 +1,4 @@
-	<classpathentry kind="lib" path="libs/google-api-services-messageEndpoint-v1-rev20130727010102-1.15.0-rc.jar" sourcepath="libs-sources/google-api-services-messageEndpoint-v1-rev20130727010102-1.15.0-rc-sources.jar"/>
+	<classpathentry kind="lib" path="libs/google-api-services-messageEndpoint-v1-rev20130731202224-1.15.0-rc.jar" sourcepath="libs-sources/google-api-services-messageEndpoint-v1-rev20130731202224-1.15.0-rc-sources.jar"/>
 	<classpathentry kind="lib" path="libs/google-api-client-1.15.0-rc.jar" sourcepath="libs-sources/google-api-client-1.15.0-rc-sources.jar"/>
 	<classpathentry kind="lib" path="libs/google-api-client-android-1.15.0-rc.jar" sourcepath="libs-sources/google-api-client-android-1.15.0-rc-sources.jar"/>
 	<classpathentry kind="lib" path="libs/google-api-client-appengine-1.15.0-rc.jar" sourcepath="libs-sources/google-api-client-appengine-1.15.0-rc-sources.jar"/>
