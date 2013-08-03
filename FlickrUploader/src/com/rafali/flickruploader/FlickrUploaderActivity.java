@@ -236,6 +236,9 @@ public class FlickrUploaderActivity extends Activity {
 	@ViewById(R.id.drawer_content)
 	DrawerContentView drawerContentView;
 
+	@ViewById(R.id.slidingDrawer)
+	SlidingDrawer slidingDrawer;
+
 	@AfterViews
 	void afterViews() {
 		UploadService.register(drawerHandleView);
@@ -722,7 +725,7 @@ public class FlickrUploaderActivity extends Activity {
 			if (convertView == null) {
 				convertView = getLayoutInflater().inflate(tab.thumbLayoutId, parent, false);
 				if (tab == TAB.feed) {
-					convertView.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Utils.getScreenWidthPx()));
+					convertView.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, 500));
 				} else if (tab == TAB.folder || tab == TAB.video) {
 					convertView.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Utils.getScreenWidthPx() / 2));
 				}
@@ -732,6 +735,8 @@ public class FlickrUploaderActivity extends Activity {
 					convertView.setTag(R.id.size, convertView.findViewById(R.id.size));
 					convertView.setTag(R.id.title, convertView.findViewById(R.id.title));
 					convertView.setTag(R.id.synced, convertView.findViewById(R.id.synced));
+				} else if (tab == TAB.feed) {
+					convertView.setTag(R.id.title, convertView.findViewById(R.id.title));
 				}
 				convertView.setTag(R.id.uploading, convertView.findViewById(R.id.uploading));
 				convertView.setTag(R.id.image_view, convertView.findViewById(R.id.image_view));
@@ -773,12 +778,21 @@ public class FlickrUploaderActivity extends Activity {
 				((TextView) convertView.getTag(R.id.size)).setText("" + folder.size);
 				((TextView) convertView.getTag(R.id.title)).setText(folder.name);
 				((View) convertView.getTag(R.id.synced)).setVisibility(Utils.isSynced(folder) ? View.VISIBLE : View.GONE);
+			} else if (tab == TAB.feed) {
+				((TextView) convertView.getTag(R.id.title)).setText(image.path);
 			}
 
 			final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(image.path + "_" + tab.thumbLayoutId);
 			if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
 				// The cache has it, so just display it
 				imageView.setImageDrawable(wrapper);
+				if (tab == TAB.feed) {
+					int width = wrapper.getBitmap().getWidth();
+					int height = wrapper.getBitmap().getHeight();
+					int reqWidth = Utils.getScreenWidthPx();
+					int reqHeight = height * reqWidth / width;
+					convertView.setLayoutParams(new AbsListView.LayoutParams(reqWidth, reqHeight));
+				}
 			} else {
 				imageView.setImageDrawable(null);
 			}
@@ -826,6 +840,13 @@ public class FlickrUploaderActivity extends Activity {
 									((View) convertView.getTag(R.id.uploading)).setVisibility(isUploading ? View.VISIBLE : View.GONE);
 									if (wrapper != bitmapDrawable) {
 										imageView.setImageDrawable(bitmapDrawable);
+										if (tab == TAB.feed) {
+											int width = bitmapDrawable.getBitmap().getWidth();
+											int height = bitmapDrawable.getBitmap().getHeight();
+											int reqWidth = Utils.getScreenWidthPx();
+											int reqHeight = height * reqWidth / width;
+											convertView.setLayoutParams(new AbsListView.LayoutParams(reqWidth, reqHeight));
+										}
 									}
 									if (privacyResource != 0) {
 										uploadedImageView.setImageResource(privacyResource);
@@ -849,7 +870,11 @@ public class FlickrUploaderActivity extends Activity {
 
 	@Override
 	public void onBackPressed() {
-		moveTaskToBack(true);
+		if (slidingDrawer != null && slidingDrawer.isOpened()) {
+			slidingDrawer.close();
+		} else {
+			moveTaskToBack(true);
+		}
 	}
 
 	@Override

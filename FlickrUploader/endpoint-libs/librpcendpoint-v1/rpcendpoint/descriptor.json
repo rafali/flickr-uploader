@@ -1,11 +1,13 @@
 {
   "files": [
     {
-      "path": "ra-fa-li-rpcendpoint-v1-20130731202217-java-1.15.0-rc-sources.jar", 
-      "type": "source"
+      "downloadUrl": "/downloads/rpcendpoint/v1/20130803143441/java/1.15.0-rc/ra-fa-li-rpcendpoint-v1-20130803143441-java-1.15.0-rc-sources.jar", 
+      "path": "ra-fa-li-rpcendpoint-v1-20130803143441-java-1.15.0-rc-sources.jar", 
+      "type": "source", 
+      "timestamp": "2013-08-03 14:34"
     }, 
     {
-      "path": "ra-fa-li-rpcendpoint-v1-20130731202217-java-1.15.0-rc.jar.properties", 
+      "path": "ra-fa-li-rpcendpoint-v1-20130803143441-java-1.15.0-rc.jar.properties", 
       "type": "android.properties"
     }
   ], 
@@ -689,7 +691,7 @@
     }
   ], 
   "language_version": "1.15.0-rc", 
-  "revision": 20130731202217, 
+  "revision": 20130803143441, 
   "id": "rpcendpoint:v1", 
   "modulePath": "com/rafali/flickruploader"
 }

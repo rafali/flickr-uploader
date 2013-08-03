@@ -1,11 +1,13 @@
 {
   "files": [
     {
-      "path": "ra-fa-li-deviceinfoendpoint-v1-20130731202221-java-1.15.0-rc-sources.jar", 
-      "type": "source"
+      "downloadUrl": "/downloads/deviceinfoendpoint/v1/20130803143453/java/1.15.0-rc/ra-fa-li-deviceinfoendpoint-v1-20130803143453-java-1.15.0-rc-sources.jar", 
+      "path": "ra-fa-li-deviceinfoendpoint-v1-20130803143453-java-1.15.0-rc-sources.jar", 
+      "type": "source", 
+      "timestamp": "2013-08-03 14:34"
     }, 
     {
-      "path": "ra-fa-li-deviceinfoendpoint-v1-20130731202221-java-1.15.0-rc.jar.properties", 
+      "path": "ra-fa-li-deviceinfoendpoint-v1-20130803143453-java-1.15.0-rc.jar.properties", 
       "type": "android.properties"
     }
   ], 
@@ -689,7 +691,7 @@
     }
   ], 
   "language_version": "1.15.0-rc", 
-  "revision": 20130731202221, 
+  "revision": 20130803143453, 
   "id": "deviceinfoendpoint:v1", 
   "modulePath": "com/rafali/flickruploader"
 }
