@@ -958,11 +958,11 @@ public class FlickrUploaderActivity extends Activity {
 				alt_bld.setTitle("Auto-upload folders");
 				List<String> foldersName = Utils.getAutoUploadFoldersName();
 				int size = foldersName.size();
-				String message = "Make sure all the folders you want auto-uploaded are selected. ";
+				String message = "Make sure all the folders you want auto-uploaded are selected (small sync icon on the top right). ";
 				if (size > 0) {
 					message += size + " folder" + (size > 1 ? "s" : "") + " have already been preselected for you.";
 				}
-				message += "\n\nIf you have any questions, please check if it is answered in the FAQ. If not, you can contact me at flickruploader@rafali.com.";
+				message += "\n\nIf you have any questions, please check the FAQ first then contact me at flickruploader@rafali.com.";
 				alt_bld.setMessage(message);
 				alt_bld.setPositiveButton("OK", null);
 				AlertDialog alert = alt_bld.create();
