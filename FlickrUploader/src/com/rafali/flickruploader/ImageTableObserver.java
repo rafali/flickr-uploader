@@ -7,10 +7,8 @@ import java.util.List;
 import org.slf4j.LoggerFactory;
 
 import android.database.ContentObserver;
-import android.graphics.Bitmap;
 import android.os.Handler;
 
-import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import com.rafali.flickruploader.Utils.MediaType;
 
 public class ImageTableObserver extends ContentObserver {
@@ -45,7 +43,7 @@ public class ImageTableObserver extends ContentObserver {
 			}
 
 			List<Media> not_uploaded = new ArrayList<Media>();
-			for (Media image : media) {
+			for (Media image : media.subList(0, Math.min(10, media.size()))) {
 				if (image.mediaType == MediaType.photo && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true)) {
 					LOG.debug("not uploading " + media + " because photo upload disabled");
 					continue;
@@ -57,7 +55,7 @@ public class ImageTableObserver extends ContentObserver {
 					LOG.debug("uploaded : " + uploaded + ", " + image);
 					if (!uploaded) {
 						File file = new File(image.path);
-						if (!Utils.isSynced(new Folder(file.getParent()))) {
+						if (!Utils.isAutoUpload(new Folder(file.getParent()))) {
 							LOG.debug("Ignored : " + file);
 						} else {
 							int sleep = 0;
@@ -66,10 +64,10 @@ public class ImageTableObserver extends ContentObserver {
 								sleep++;
 								Thread.sleep(1000);
 							}
-							not_uploaded.add(image);
-							final Bitmap bitmap = Utils.getBitmap(image, TAB.photo);
-							if (bitmap != null) {
-								Utils.getCache().put(image.path + "_" + R.layout.photo_grid_thumb, bitmap);
+							if (file.length() > Config.MAX_FILE_SIZE) {
+								LOG.debug("not auto queueing big file " + file);
+							} else {
+								not_uploaded.add(image);
 							}
 						}
 					}
@@ -77,7 +75,7 @@ public class ImageTableObserver extends ContentObserver {
 			}
 			if (!not_uploaded.isEmpty()) {
 				LOG.debug("enqueuing " + not_uploaded.size() + " media: " + not_uploaded);
-				UploadService.enqueue(not_uploaded, Utils.getInstantAlbumId(), STR.instantUpload);
+				UploadService.enqueue(true, not_uploaded, null, Utils.getInstantAlbumId(), STR.instantUpload);
 				FlickrUploaderActivity.staticRefresh(true);
 			}
 		} catch (Throwable e) {

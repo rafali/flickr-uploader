@@ -173,7 +173,7 @@ public class UploadService extends Service {
 	private static Map<Media, Long> retryDelay = new ConcurrentHashMap<Media, Long>();
 	private static Map<Integer, Integer> failedCount = new ConcurrentHashMap<Integer, Integer>();
 
-	public static void enqueue(Collection<Media> images, Folder folder, String photoSetId, String photoSetTitle) {
+	public static int enqueue(boolean auto, Collection<Media> images, Folder folder, String photoSetId, String photoSetTitle) {
 		int nbQueued = 0;
 		int nbAlreadyQueued = 0;
 		int nbAlreadyUploaded = 0;
@@ -182,6 +182,8 @@ public class UploadService extends Service {
 				nbAlreadyQueued++;
 			} else if (FlickrApi.isUploaded(image)) {
 				nbAlreadyUploaded++;
+			} else if (auto && getNbError(image) > 10) {
+				LOG.debug("not auto enqueueing file with too many retries : " + image);
 			} else {
 				nbQueued++;
 				LOG.debug("enqueueing " + image);
@@ -198,6 +200,7 @@ public class UploadService extends Service {
 		}
 		persistQueue();
 		wake();
+		return nbQueued;
 	}
 
 	public static void enqueueRetry(Collection<Media> medias) {
@@ -229,10 +232,6 @@ public class UploadService extends Service {
 	private static Map<Media, Folder> uploadFolders = new HashMap<Media, Folder>();
 	private static Map<Media, String> uploadPhotosetIds = new HashMap<Media, String>();
 	private static Map<Media, String> uploadPhotosetTitles = new HashMap<Media, String>();
-
-	public static void enqueue(Collection<Media> images, String photoSetId, String photoSetTitle) {
-		enqueue(images, null, photoSetId, photoSetTitle);
-	}
 
 	public static void persistQueue() {
 		Utils.setImages(STR.queueIds, queue);

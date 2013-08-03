@@ -682,20 +682,16 @@ public final class Utils {
 
 	static Set<String> syncedFolder;
 
-	static boolean isSynced(Folder folder) {
+	static boolean isAutoUpload(Folder folder) {
 		if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
 			return false;
 		}
-		if (syncedFolder == null) {
-			initSyncedFolder();
-		}
+		ensureSyncedFolder();
 		return syncedFolder.contains(folder.path);
 	}
 
-	static void setSynced(Folder folder, boolean synced) {
-		if (syncedFolder == null) {
-			initSyncedFolder();
-		}
+	static void setAutoUploaded(Folder folder, boolean synced) {
+		ensureSyncedFolder();
 		if (synced) {
 			syncedFolder.add(folder.path);
 		} else {
@@ -705,21 +701,32 @@ public final class Utils {
 		setStringList("syncedFolder", syncedFolder);
 	}
 
-	private static void initSyncedFolder() {
-		List<String> persisted = getStringList("syncedFolder", true);
-		if (persisted == null) {
-			persisted = new ArrayList<String>();
-			try {
-				addFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), persisted);
-				addFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), persisted);
-				addFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), persisted);
-				LOG.debug("default synced folders : " + persisted);
-				setStringList("syncedFolder", persisted);
-			} catch (Throwable e) {
-				LOG.error(e.getMessage(), e);
+	private static void ensureSyncedFolder() {
+		if (syncedFolder == null) {
+			List<String> persisted = getStringList("syncedFolder", true);
+			if (persisted == null) {
+				persisted = new ArrayList<String>();
+				try {
+					addFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), persisted);
+					addFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), persisted);
+					addFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), persisted);
+					LOG.debug("default synced folders : " + persisted);
+					setStringList("syncedFolder", persisted);
+				} catch (Throwable e) {
+					LOG.error(e.getMessage(), e);
+				}
 			}
+			syncedFolder = new HashSet<String>(persisted);
 		}
-		syncedFolder = new HashSet<String>(persisted);
+	}
+
+	public static List<String> getAutoUploadFoldersName() {
+		ensureSyncedFolder();
+		List<String> names = new ArrayList<String>();
+		for (String folderPath : syncedFolder) {
+			names.add(new File(folderPath).getName());
+		}
+		return names;
 	}
 
 	static void addFolder(File folder, List<String> persisted) {

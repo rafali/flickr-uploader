@@ -478,13 +478,13 @@ public class FlickrUploaderActivity extends Activity {
 
 			case R.id.menu_item_enable_auto_upload:
 				for (Media image : getImageSelected(SelectionType.all)) {
-					Utils.setSynced(foldersMap.get(image), true);
+					Utils.setAutoUploaded(foldersMap.get(image), true);
 				}
 				refresh(false);
 				break;
 			case R.id.menu_item_disable_auto_upload:
 				for (Media image : getImageSelected(SelectionType.all)) {
-					Utils.setSynced(foldersMap.get(image), false);
+					Utils.setAutoUploaded(foldersMap.get(image), false);
 				}
 				refresh(false);
 				break;
@@ -505,14 +505,14 @@ public class FlickrUploaderActivity extends Activity {
 							case 0:
 								for (Media image : selection) {
 									Folder folder = foldersMap.get(image);
-									UploadService.enqueue(folder.images, Utils.getInstantAlbumId(), STR.instantUpload);
+									enqueue(false, folder.images, Utils.getInstantAlbumId(), STR.instantUpload);
 								}
 								clearSelection();
 								break;
 							case 1:
 								for (Media image : selection) {
 									Folder folder = foldersMap.get(image);
-									UploadService.enqueue(folder.images, folder, null, null);
+									enqueue(false, folder.images, folder, null, null);
 								}
 								clearSelection();
 								break;
@@ -536,7 +536,7 @@ public class FlickrUploaderActivity extends Activity {
 						public void onClick(DialogInterface dialog, int which) {
 							switch (which) {
 							case 0:
-								UploadService.enqueue(selection, Utils.getInstantAlbumId(), STR.instantUpload);
+								enqueue(false, selection, Utils.getInstantAlbumId(), STR.instantUpload);
 								clearSelection();
 								break;
 							case 1:
@@ -591,10 +591,10 @@ public class FlickrUploaderActivity extends Activity {
 									if (isFolderTab()) {
 										for (Media image : selection) {
 											Folder folder = foldersMap.get(image);
-											UploadService.enqueue(folder.images, photoSetId, null);
+											enqueue(false, folder.images, photoSetId, null);
 										}
 									} else {
-										UploadService.enqueue(selection, photoSetId, null);
+										enqueue(false, selection, photoSetId, null);
 									}
 									clearSelection();
 								}
@@ -627,14 +627,15 @@ public class FlickrUploaderActivity extends Activity {
 					if (isFolderTab()) {
 						for (Media image : selection) {
 							Folder folder = foldersMap.get(image);
-							UploadService.enqueue(folder.images, null, value);
+							enqueue(false, folder.images, null, value);
 						}
 					} else {
-						UploadService.enqueue(selection, null, value);
+						enqueue(false, selection, null, value);
 					}
 					clearSelection();
 				}
 			}
+
 		});
 
 		alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -644,6 +645,18 @@ public class FlickrUploaderActivity extends Activity {
 		});
 
 		alert.show();
+	}
+
+	private void enqueue(boolean auto, Collection<Media> images, String photoSetId, String photoSetTitle) {
+		enqueue(auto, images, null, photoSetId, photoSetTitle);
+	}
+
+	private void enqueue(boolean auto, Collection<Media> images, Folder folder, String photoSetId, String photoSetTitle) {
+		int enqueued = UploadService.enqueue(auto, images, folder, photoSetId, photoSetTitle);
+		if (slidingDrawer != null && enqueued > 0) {
+			slidingDrawer.animateOpen();
+			drawerContentView.setCurrentTab(DrawerContentView.TAB_QUEUED_INDEX);
+		}
 	}
 
 	private boolean isFolderTab() {
@@ -777,7 +790,7 @@ public class FlickrUploaderActivity extends Activity {
 				Folder folder = foldersMap.get(image);
 				((TextView) convertView.getTag(R.id.size)).setText("" + folder.size);
 				((TextView) convertView.getTag(R.id.title)).setText(folder.name);
-				((View) convertView.getTag(R.id.synced)).setVisibility(Utils.isSynced(folder) ? View.VISIBLE : View.GONE);
+				((View) convertView.getTag(R.id.synced)).setVisibility(Utils.isAutoUpload(folder) ? View.VISIBLE : View.GONE);
 			} else if (tab == TAB.feed) {
 				((TextView) convertView.getTag(R.id.title)).setText(image.path);
 			}
@@ -871,7 +884,7 @@ public class FlickrUploaderActivity extends Activity {
 	@Override
 	public void onBackPressed() {
 		if (slidingDrawer != null && slidingDrawer.isOpened()) {
-			slidingDrawer.close();
+			slidingDrawer.animateClose();
 		} else {
 			moveTaskToBack(true);
 		}
@@ -933,8 +946,34 @@ public class FlickrUploaderActivity extends Activity {
 		renderPremium();
 	}
 
+	boolean showFolderAutoUploadDialog = false;
+
+	@UiThread
+	void showFolderAutoUploadDialog() {
+		if (showFolderAutoUploadDialog) {
+			showFolderAutoUploadDialog = false;
+			if (Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true) || Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
+				mainTabView.setCurrentItem(Arrays.asList(TAB.values()).indexOf(TAB.folder));
+				AlertDialog.Builder alt_bld = new AlertDialog.Builder(this);
+				alt_bld.setTitle("Auto-upload folders");
+				List<String> foldersName = Utils.getAutoUploadFoldersName();
+				int size = foldersName.size();
+				String message = "Make sure all the folders you want auto-uploaded are selected. ";
+				if (size > 0) {
+					message += size + " folder" + (size > 1 ? "s" : "") + " have already been preselected for you.";
+				}
+				message += "\n\nIf you have any questions, please check if it is answered in the FAQ. If not, you can contact me at flickruploader@rafali.com.";
+				alt_bld.setMessage(message);
+				alt_bld.setPositiveButton("OK", null);
+				AlertDialog alert = alt_bld.create();
+				alert.show();
+			}
+		}
+	}
+
 	@UiThread
 	void confirmSync() {
+		showFolderAutoUploadDialog = true;
 		final CharSequence[] modes = { "Auto-upload new photos", "Auto-upload new videos" };
 		AlertDialog.Builder alt_bld = new AlertDialog.Builder(this);
 		alt_bld.setTitle("Auto-upload");
@@ -944,7 +983,9 @@ public class FlickrUploaderActivity extends Activity {
 				ListView lw = ((AlertDialog) dialog).getListView();
 				Utils.setBooleanProperty(Preferences.AUTOUPLOAD, lw.isItemChecked(0));
 				Utils.setBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, lw.isItemChecked(1));
+				showFolderAutoUploadDialog();
 			}
+
 		});
 		alt_bld.setNegativeButton("More options", new OnClickListener() {
 			@Override
@@ -966,9 +1007,11 @@ public class FlickrUploaderActivity extends Activity {
 			return;
 		}
 		if (resultCode == WebAuth.RESULT_CODE_AUTH) {
-			if (FlickrApi.isAuthentified() && getImageSelected(SelectionType.all).isEmpty())
+			if (FlickrApi.isAuthentified()) {
 				confirmSync();
+			}
 		} else {
+			showFolderAutoUploadDialog();
 			super.onActivityResult(requestCode, resultCode, data);
 		}
 	}

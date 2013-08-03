@@ -81,6 +81,10 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 		return System.currentTimeMillis() < Utils.getLongProperty(STR.manuallyPaused);
 	}
 
+	public void setCurrentTab(int tabIndex) {
+		queueTabView.setCurrentItem(tabIndex);
+	}
+	
 	@Click(R.id.pause_btn)
 	void onPauseClick() {
 		if (queueTabView.getCurrentItem() == TAB_QUEUED_INDEX) {
@@ -123,9 +127,9 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 		}
 	}
 
-	private static final int TAB_UPLOADED_INDEX = 0;
-	private static final int TAB_QUEUED_INDEX = 1;
-	private static final int TAB_FAILED_INDEX = 2;
+	public static final int TAB_UPLOADED_INDEX = 0;
+	public static final int TAB_QUEUED_INDEX = 1;
+	public static final int TAB_FAILED_INDEX = 2;
 
 	@Click(R.id.clear_btn)
 	void onClearClick() {
