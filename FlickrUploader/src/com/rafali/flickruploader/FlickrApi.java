@@ -350,9 +350,6 @@ public class FlickrApi {
 					} else {
 						LOG.debug("uploading : " + uri);
 						File file = new File(uri);
-						if (file.length() > Config.MAX_FILE_SIZE) {
-							throw new UploadException("File too big: " + ToolString.readableFileSize(file.length()) + " > " + ToolString.readableFileSize(Config.MAX_FILE_SIZE));
-						}
 						// InputStream inputStream = new FileInputStream(uri);
 						UploadMetaData metaData = new UploadMetaData();
 						PRIVACY privacy = Utils.getDefaultPrivacy();

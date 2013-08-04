@@ -64,11 +64,7 @@ public class ImageTableObserver extends ContentObserver {
 								sleep++;
 								Thread.sleep(1000);
 							}
-							if (file.length() > Config.MAX_FILE_SIZE) {
-								LOG.debug("not auto queueing big file " + file);
-							} else {
-								not_uploaded.add(image);
-							}
+							not_uploaded.add(image);
 						}
 					}
 				}

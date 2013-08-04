@@ -27,13 +27,13 @@
   "ownerName" : "rafali.com",
   "packagePath" : "flickruploader",
   "methods" : {
-    "donationendpoint.updateDonation" : {
+    "donationendpoint.insertDonation" : {
       "path" : "donation",
-      "httpMethod" : "PUT",
+      "httpMethod" : "POST",
       "scopes" : [ ],
       "audiences" : [ ],
       "clientIds" : [ ],
-      "rosyMethod" : "com.rafali.flickruploader.DonationEndpoint.updateDonation",
+      "rosyMethod" : "com.rafali.flickruploader.DonationEndpoint.insertDonation",
       "request" : {
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
@@ -42,13 +42,13 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "donationendpoint.insertDonation" : {
+    "donationendpoint.updateDonation" : {
       "path" : "donation",
-      "httpMethod" : "POST",
+      "httpMethod" : "PUT",
       "scopes" : [ ],
       "audiences" : [ ],
       "clientIds" : [ ],
-      "rosyMethod" : "com.rafali.flickruploader.DonationEndpoint.insertDonation",
+      "rosyMethod" : "com.rafali.flickruploader.DonationEndpoint.updateDonation",
       "request" : {
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
@@ -167,7 +167,7 @@
       }
     },
     "methods" : {
-      "com.rafali.flickruploader.DonationEndpoint.updateDonation" : {
+      "com.rafali.flickruploader.DonationEndpoint.insertDonation" : {
         "request" : {
           "$ref" : "Donation"
         },
@@ -175,7 +175,7 @@
           "$ref" : "Donation"
         }
       },
-      "com.rafali.flickruploader.DonationEndpoint.insertDonation" : {
+      "com.rafali.flickruploader.DonationEndpoint.updateDonation" : {
         "request" : {
           "$ref" : "Donation"
         },
