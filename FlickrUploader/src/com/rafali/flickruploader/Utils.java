@@ -527,9 +527,15 @@ public final class Utils {
 			if (limit > 0) {
 				orderBy += " LIMIT " + limit;
 			}
-			Uri uri = mediaType == MediaType.photo ? Images.Media.EXTERNAL_CONTENT_URI : Video.Media.EXTERNAL_CONTENT_URI;
+			Uri uri;
 			String[] proj = mediaType == MediaType.photo ? projPhoto : projVideo;
-			cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, filter, null, orderBy);
+			if (filter != null && filter.startsWith("content://")) {
+				uri = Uri.parse(filter);
+				cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, null, null, orderBy);
+			} else {
+				uri = mediaType == MediaType.photo ? Images.Media.EXTERNAL_CONTENT_URI : Video.Media.EXTERNAL_CONTENT_URI;
+				cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, filter, null, orderBy);
+			}
 			int idColumn = cursor.getColumnIndex(Images.Media._ID);
 			int dataColumn = cursor.getColumnIndex(Images.Media.DATA);
 			int displayNameColumn = cursor.getColumnIndex(Images.Media.DISPLAY_NAME);

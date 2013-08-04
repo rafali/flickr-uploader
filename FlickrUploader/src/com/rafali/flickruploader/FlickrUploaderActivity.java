@@ -47,6 +47,7 @@ import android.widget.Toast;
 import com.google.analytics.tracking.android.EasyTracker;
 import com.google.common.base.Joiner;
 import com.googlecode.androidannotations.annotations.AfterViews;
+import com.googlecode.androidannotations.annotations.Background;
 import com.googlecode.androidannotations.annotations.EActivity;
 import com.googlecode.androidannotations.annotations.UiThread;
 import com.googlecode.androidannotations.annotations.ViewById;
@@ -94,6 +95,32 @@ public class FlickrUploaderActivity extends Activity {
 			instance.finish();
 		instance = this;
 		Utils.checkPremium(this);
+		handleIntent(getIntent());
+	}
+
+	@Background
+	void handleIntent(Intent intent) {
+		if (intent != null) {
+			String action = intent.getAction();
+			String type = intent.getType();
+			if (Intent.ACTION_SEND.equals(action) && type != null) {
+				if (type.startsWith("image/") || type.startsWith("video/")) {
+					Uri imageUri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
+					List<Media> loadImages = Utils.loadImages(imageUri.toString(), type.startsWith("image/") ? MediaType.photo : MediaType.video, 1);
+					LOG.debug("imageUri : " + imageUri + ", loadImages : " + loadImages);
+					if (!loadImages.isEmpty()) {
+						confirmUpload(loadImages, false);
+					} else {
+						toast("No media found for " + imageUri);
+					}
+				}
+			}
+		}
+	}
+
+	@UiThread
+	void toast(String message) {
+		Toast.makeText(this, message, Toast.LENGTH_LONG).show();
 	}
 
 	AbsListView[] views = new AbsListView[TAB.values().length];
@@ -446,7 +473,7 @@ public class FlickrUploaderActivity extends Activity {
 					BackgroundExecutor.execute(new Runnable() {
 						@Override
 						public void run() {
-							confirmUpload(selection);
+							confirmUpload(selection, isFolderTab());
 						}
 					});
 				} else {
@@ -495,8 +522,8 @@ public class FlickrUploaderActivity extends Activity {
 	};
 
 	@UiThread
-	void confirmUpload(final List<Media> selection) {
-		if (isFolderTab()) {
+	void confirmUpload(final List<Media> selection, boolean isFolderTab) {
+		if (isFolderTab) {
 			new AlertDialog.Builder(this).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
 					.setItems(new String[] { "Default set (" + Utils.getInstantAlbumTitle() + ")", "One set per folder", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
 						@Override
