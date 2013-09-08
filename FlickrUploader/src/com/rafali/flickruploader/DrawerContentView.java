@@ -133,6 +133,7 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 
 	@Click(R.id.clear_btn)
 	void onClearClick() {
+		Notifications.clear();
 		if (queueTabView.getCurrentItem() == TAB_UPLOADED_INDEX) {
 			UploadService.clearUploaded();
 		} else if (queueTabView.getCurrentItem() == TAB_QUEUED_INDEX) {

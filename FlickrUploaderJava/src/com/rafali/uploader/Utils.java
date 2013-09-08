@@ -14,8 +14,8 @@ import java.util.Map.Entry;
 import java.util.ResourceBundle;
 import java.util.prefs.Preferences;
 
-import com.rafali.flickruploader.FlickrApi.PRIVACY;
-import com.rafali.flickruploader.Image;
+import com.rafali.uploader.FlickrApi.PRIVACY;
+import com.rafali.flickruploader.Media;
 import com.rafali.flickruploader.STR;
 
 public class Utils {
@@ -94,11 +94,11 @@ public class Utils {
 		setMapProperty(property, map);
 	}
 	
-	private static String SHA1(Image image) {
+	private static String SHA1(Media image) {
 		return SHA1(image.path + "_" + new File(image.path).length());
 	}
 
-	public static String getSHA1tag(Image image) {
+	public static String getSHA1tag(Media image) {
 		return "file:sha1sig=" + SHA1(image).toLowerCase(Locale.US);
 	}
 
@@ -167,7 +167,7 @@ public class Utils {
 	
 	static final Map<String, String> md5Sums = new HashMap<String, String>();
 
-	public static final String getMD5Checksum(Image image) {
+	public static final String getMD5Checksum(Media image) {
 		String filename = image.path;
 		String md5sum = md5Sums.get(filename);
 		if (md5sum == null) {
@@ -212,7 +212,7 @@ public class Utils {
 		}
 	}
 
-	public static List<Image> loadImages(Object object) {
+	public static List<Media> loadImages(Object object) {
 		// TODO Auto-generated method stub
 		return null;
 	}

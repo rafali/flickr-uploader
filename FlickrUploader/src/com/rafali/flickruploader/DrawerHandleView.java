@@ -7,7 +7,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.util.AttributeSet;
 import android.view.View;
-import android.widget.RelativeLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.googlecode.androidannotations.annotations.AfterViews;
@@ -20,12 +20,13 @@ import com.rafali.flickruploader.UploadService.UploadProgressListener;
 import com.rafali.flickruploader.Utils.CAN_UPLOAD;
 
 @EViewGroup(R.layout.drawer_handle_view)
-public class DrawerHandleView extends RelativeLayout implements UploadProgressListener {
+public class DrawerHandleView extends LinearLayout implements UploadProgressListener {
 
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(DrawerHandleView.class);
 
 	public DrawerHandleView(Context context, AttributeSet attrs) {
 		super(context, attrs);
+		setOrientation(LinearLayout.VERTICAL);
 	}
 
 	@ViewById(R.id.image)

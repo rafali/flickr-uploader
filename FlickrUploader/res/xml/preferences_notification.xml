@@ -8,5 +8,9 @@
         android:defaultValue="true"
         android:key="notification_finished"
         android:title="Upload Finished" />
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="end_of_trial"
+        android:title="End of trial" />
 
 </PreferenceScreen>

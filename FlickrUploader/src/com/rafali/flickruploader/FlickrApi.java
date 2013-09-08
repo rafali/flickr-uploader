@@ -1,6 +1,7 @@
 package com.rafali.flickruploader;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -9,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.LoggerFactory;
 
@@ -337,6 +339,10 @@ public class FlickrApi {
 					}
 				}
 				if (photoId == null) {
+					String extension = getExtension(image);
+					if (getUnsupportedExtensions().contains(extension)) {
+						throw new UploadException("Unsupported extension: " + extension);
+					}
 					String uri = image.path;
 					String md5tag = "file:md5sum=" + Utils.getMD5Checksum(image);
 					SearchParameters params = new SearchParameters();
@@ -414,6 +420,8 @@ public class FlickrApi {
 					} else if ("98".equals(fe.getErrorCode())) {
 						auth = null;
 						authentified = false;
+					} else if ("5".equals(fe.getErrorCode())) {
+						addUnsupportedExtension(getExtension(image));
 					}
 				}
 				LOG.error(e.getMessage(), e);
@@ -439,6 +447,36 @@ public class FlickrApi {
 		return success;
 	}
 
+	static String getExtension(Media media) {
+		try {
+			File file = new File(media.path);
+			int lastIndexOf = file.getName().lastIndexOf('.');
+			if (lastIndexOf > 0) {
+				return file.getName().substring(lastIndexOf + 1).trim().toLowerCase(Locale.US);
+			}
+		} catch (Exception e1) {
+			LOG.error(e1.getClass().getSimpleName() + " : " + e1.getMessage());
+		}
+		return null;
+	}
+
+	static Set<String> unsupportedExtensions;
+
+	static Set<String> getUnsupportedExtensions() {
+		if (unsupportedExtensions == null) {
+			unsupportedExtensions = new HashSet<String>(Utils.getStringList(STR.unsupportedExtensions));
+			unsupportedExtensions.add("skm");
+		}
+		return unsupportedExtensions;
+	}
+
+	static void addUnsupportedExtension(String extension) {
+		if (extension != null && !getUnsupportedExtensions().contains(extension)) {
+			unsupportedExtensions.add(extension);
+			Utils.setStringList(STR.unsupportedExtensions, unsupportedExtensions);
+		}
+	}
+
 	public static class UploadException extends Exception {
 		private static final long serialVersionUID = 1L;
 
@@ -455,6 +493,8 @@ public class FlickrApi {
 		if (e instanceof UploadException) {
 			return false;
 		} else if (e instanceof FlickrException) {
+			return false;
+		} else if (e instanceof FileNotFoundException) {
 			return false;
 		}
 		return true;

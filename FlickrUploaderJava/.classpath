@@ -7,7 +7,6 @@
 	<classpathentry kind="lib" path="lib/metadata-extractor-2.6.4.jar"/>
 	<classpathentry kind="lib" path="lib/xmpcore.jar"/>
 	<classpathentry kind="lib" path="lib/google-collections-1.0.jar"/>
-	<classpathentry kind="lib" path="lib/flickrj-android-2.0.6.jar"/>
 	<classpathentry kind="lib" path="lib/LIB-json-20070829.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

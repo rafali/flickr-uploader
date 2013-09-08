@@ -22,4 +22,7 @@ public class STR {
 	public static final String manuallyPaused = "manuallyPaused";
 	public static final String queueIds = "queueIds";
 	public static final String failedCount = "failedCount";
+	public static final String lastTrialEndedNotifications = "lastTrialEndedNotifications";
+	public static final String end_of_trial = "end_of_trial";
+	public static final String unsupportedExtensions = "unsupportedExtensions";
 }

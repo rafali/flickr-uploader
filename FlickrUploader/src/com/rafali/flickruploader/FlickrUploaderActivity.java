@@ -44,6 +44,9 @@ import android.widget.ShareActionProvider;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.ads.AdRequest;
+import com.google.ads.AdSize;
+import com.google.ads.AdView;
 import com.google.analytics.tracking.android.EasyTracker;
 import com.google.common.base.Joiner;
 import com.googlecode.androidannotations.annotations.AfterViews;
@@ -81,6 +84,9 @@ public class FlickrUploaderActivity extends Activity {
 	ActionMode mMode;
 
 	private static FlickrUploaderActivity instance;
+
+	private AdView adView;
+	private static final String ADMOD_UNIT_ID = Utils.getString(R.string.admob_unit_id);
 
 	@Override
 	public void onCreate(Bundle bundle) {
@@ -1100,6 +1106,7 @@ public class FlickrUploaderActivity extends Activity {
 	@UiThread
 	public void renderPremium() {
 		if (!destroyed) {
+			boolean showAds = false;
 			if (Utils.isPremium()) {
 				getActionBar().setTitle("Flickr Uploader");
 			} else {
@@ -1107,7 +1114,20 @@ public class FlickrUploaderActivity extends Activity {
 					getActionBar().setTitle("Flickr Uploader (Trial)");
 				} else {
 					getActionBar().setTitle("Trial Expired");
+					showAds = true;
 				}
+			}
+			if (showAds) {
+				if (adView == null) {
+					findViewById(R.id.ad_container).setVisibility(View.VISIBLE);
+					adView = new AdView(this, AdSize.BANNER, ADMOD_UNIT_ID);
+					((ViewGroup) findViewById(R.id.ad_container)).addView(adView);
+					AdRequest adRequest = new AdRequest();
+					adRequest.addTestDevice("DE46A4A314F9E6F59597CD32A63D68C4");
+					adView.loadAd(adRequest);
+				}
+			} else {
+				findViewById(R.id.ad_container).setVisibility(View.GONE);
 			}
 		}
 	}

@@ -28,6 +28,7 @@ public class ImageTableObserver extends ContentObserver {
 			}
 			if (!Utils.isPremium() && !Utils.isTrial()) {
 				LOG.debug("no autoupload, trial has ended");
+				Notifications.notifyTrialEnded();
 				return;
 			}
 

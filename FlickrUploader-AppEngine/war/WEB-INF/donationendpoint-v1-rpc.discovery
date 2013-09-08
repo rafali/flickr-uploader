@@ -1,6 +1,6 @@
 {
  "kind": "discovery#rpcDescription",
- "etag": "\"nPbVolg1F8jpPe9kkErPtt8mpZE/3GdFOdAuDF72X8HxTUdbtFTw6oY\"",
+ "etag": "\"VkkzLg1qSf2dHM9_JADuPMcBnRo/3GdFOdAuDF72X8HxTUdbtFTw6oY\"",
  "discoveryVersion": "v1",
  "id": "donationendpoint:v1",
  "name": "donationendpoint",

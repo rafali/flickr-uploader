@@ -3,6 +3,7 @@ package com.rafali.flickruploader;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
+import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.view.MenuItem;
 
@@ -14,6 +15,10 @@ public class PreferencesNotification extends PreferenceActivity implements OnSha
 		super.onCreate(savedInstanceState);
 		getActionBar().setDisplayHomeAsUpEnabled(true);
 		addPreferencesFromResource(R.xml.preferences_notification);
+		if (Utils.isPremium()) {
+			Preference end_of_trial = findPreference(STR.end_of_trial);
+			getPreferenceScreen().removePreference(end_of_trial);
+		}
 	}
 
 	@Override
