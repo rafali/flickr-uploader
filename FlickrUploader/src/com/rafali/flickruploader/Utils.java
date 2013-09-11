@@ -620,7 +620,7 @@ public final class Utils {
 		}
 
 		// if wifi is disabled and the user preference only allows wifi abort
-		if (sp.getString(Preferences.UPLOAD_NETWORK, "").equals("wifionly") && activeNetwork.getType() != ConnectivityManager.TYPE_WIFI) {
+		if (sp.getString(Preferences.UPLOAD_NETWORK, "").equals(STR.wifionly) && activeNetwork.getType() != ConnectivityManager.TYPE_WIFI) {
 			return CAN_UPLOAD.wifi;
 		}
 
@@ -1141,47 +1141,26 @@ public final class Utils {
 		});
 	}
 
-	// public static void showCouponDialog(final Activity activity) {
-	// Mixpanel.track("CouponInfoShow");
-	// setBooleanProperty(STR.couponInfo, true);
-	//
-	// AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-	// EditText editText = new EditText(activity);
-	// builder.setView(editText);
-	// builder.setTitle("Enter your coupon");
-	// builder.setNegativeButton("Cancel", new OnClickListener() {
-	// @Override
-	// public void onClick(DialogInterface dialog, int which) {
-	// LOG.debug("coupon cancel");
-	// Mixpanel.track("CouponCanel");
-	// }
-	// });
-	// builder.setPositiveButton("OK", new OnClickListener() {
-	// @Override
-	// public void onClick(DialogInterface dialog, int which) {
-	// Mixpanel.track("CouponOk");
-	//
-	// }
-	// });
-	// builder.create().show();
-	// }
 	public static void showPremiumDialog(final Activity activity, final Callback<Boolean> callback) {
 		Mixpanel.track("PremiumShow");
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-		builder.setTitle("Premium features").setMessage("Get the premium today and enjoy the automatic uploads and the next app improvements for life.")
-				.setNegativeButton("Later", new OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						LOG.debug("premium for later then");
-						Mixpanel.track("PremiumLater");
-					}
-				}).setPositiveButton("Get Premium Now", new OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						startPayment(activity, callback);
-					}
-				});
+		String message = "Get the premium today and enjoy the automatic uploads and the next app improvements for life.";
+		if (!isTrial()) {
+			message += " And no more ads.";
+		}
+		builder.setTitle("Premium features").setMessage(message).setNegativeButton("Later", new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				LOG.debug("premium for later then");
+				Mixpanel.track("PremiumLater");
+			}
+		}).setPositiveButton("Get Premium Now", new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				startPayment(activity, callback);
+			}
+		});
 
 		builder.create().show();
 	}

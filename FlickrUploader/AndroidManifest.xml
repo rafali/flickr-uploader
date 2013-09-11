@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.rafali.flickruploader"
     android:installLocation="internalOnly"
-    android:versionCode="26"
-    android:versionName="1.7.2" >
+    android:versionCode="27"
+    android:versionName="1.7.3" >
 
     <uses-sdk
         android:minSdkVersion="14"
@@ -91,7 +91,15 @@
             android:name=".Preferences"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:icon="@drawable/empty_shape"
-            android:label="Preferences" />
+            android:label="Preferences" >
+            <intent-filter>
+                <action android:name="android.intent.action.MANAGE_NETWORK_USAGE" >
+                </action>
+
+                <category android:name="android.intent.category.DEFAULT" >
+                </category>
+            </intent-filter>
+        </activity>
         <activity
             android:name=".PreferencesNotification"
             android:configChanges="orientation|screenSize|keyboardHidden"

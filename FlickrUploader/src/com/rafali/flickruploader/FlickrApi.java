@@ -31,6 +31,7 @@ import com.googlecode.flickrjandroid.photos.SearchParameters;
 import com.googlecode.flickrjandroid.photosets.Photoset;
 import com.googlecode.flickrjandroid.photosets.Photosets;
 import com.googlecode.flickrjandroid.uploader.UploadMetaData;
+import com.rafali.flickruploader.Utils.CAN_UPLOAD;
 
 public class FlickrApi {
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrApi.class);
@@ -304,7 +305,7 @@ public class FlickrApi {
 		String photoId = null;
 		String sha1tag = Utils.getSHA1tag(image);
 		ConnectivityManager cm = (ConnectivityManager) FlickrUploader.getAppContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-		if ("wifionly".equals(Utils.getStringProperty(Preferences.UPLOAD_NETWORK))) {
+		if (STR.wifionly.equals(Utils.getStringProperty(Preferences.UPLOAD_NETWORK))) {
 			cm.setNetworkPreference(ConnectivityManager.TYPE_WIFI);
 		} else {
 			cm.setNetworkPreference(ConnectivityManager.DEFAULT_NETWORK_PREFERENCE);
@@ -354,6 +355,8 @@ public class FlickrApi {
 						photoId = photoList.get(0).getId();
 						uploadedPhotos.put(sha1tag, photoId);
 					} else {
+						if (Utils.canUploadNow() != CAN_UPLOAD.ok)
+							break;
 						LOG.debug("uploading : " + uri);
 						File file = new File(uri);
 						// InputStream inputStream = new FileInputStream(uri);
@@ -422,6 +425,7 @@ public class FlickrApi {
 						authentified = false;
 					} else if ("5".equals(fe.getErrorCode())) {
 						addUnsupportedExtension(getExtension(image));
+						Mixpanel.track("UnsupportedFileType", "extension", getExtension(image));
 					}
 				}
 				LOG.error(e.getMessage(), e);
@@ -464,16 +468,27 @@ public class FlickrApi {
 
 	static Set<String> getUnsupportedExtensions() {
 		if (unsupportedExtensions == null) {
-			unsupportedExtensions = new HashSet<String>(Utils.getStringList(STR.unsupportedExtensions));
+			unsupportedExtensions = new HashSet<String>();
 			unsupportedExtensions.add("skm");
 		}
 		return unsupportedExtensions;
 	}
 
+	static Map<String, Integer> nbUnsupportedExtensions;
+
 	static void addUnsupportedExtension(String extension) {
 		if (extension != null && !getUnsupportedExtensions().contains(extension)) {
-			unsupportedExtensions.add(extension);
-			Utils.setStringList(STR.unsupportedExtensions, unsupportedExtensions);
+			if (nbUnsupportedExtensions == null) {
+				nbUnsupportedExtensions = new HashMap<String, Integer>();
+			}
+			Integer nb = nbUnsupportedExtensions.get(extension);
+			if (nb == null) {
+				nb = 0;
+			}
+			if (nb > 1) {
+				unsupportedExtensions.add(extension);
+			}
+			nbUnsupportedExtensions.put(extension, nb + 1);
 		}
 	}
 

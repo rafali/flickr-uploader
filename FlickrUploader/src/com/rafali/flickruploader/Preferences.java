@@ -192,6 +192,29 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 			}
 		});
 
+		findPreference(UPLOAD_NETWORK).setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
+			@Override
+			public boolean onPreferenceChange(Preference arg0, Object arg1) {
+				if (STR.wifionly.equals(arg1)) {
+					AlertDialog.Builder builder = new AlertDialog.Builder(Preferences.this);
+					builder.setTitle("WARNING")
+							.setMessage("This feature is not guaranteed. If you want to really make sure this app does not use your data plan, enforce it at the OS level as explained in the FAQ.")
+							.setNegativeButton("Later", null).setPositiveButton("See the FAQ", new OnClickListener() {
+								@Override
+								public void onClick(DialogInterface dialog, int which) {
+									String url = "https://github.com/rafali/flickr-uploader/wiki/FAQ#how-to-make-sure-it-wont-use-my-precious-data-plan";
+									Intent i = new Intent(Intent.ACTION_VIEW);
+									i.setData(Uri.parse(url));
+									startActivity(i);
+								}
+							});
+
+					builder.create().show();
+				}
+				return true;
+			}
+		});
+
 		render();
 	}
 
