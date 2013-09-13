@@ -85,7 +85,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	private static FlickrUploaderActivity instance;
 
-	private AdView adView;
+	private AdView bannerAdView;
 	private static final String ADMOD_UNIT_ID = Utils.getString(R.string.admob_unit_id);
 
 	@Override
@@ -161,12 +161,29 @@ public class FlickrUploaderActivity extends Activity {
 
 	}
 
+	private static final int AD_FREQ = 5;
+
 	private void load() {
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
 				photos = Utils.loadImages(null, MediaType.photo);
 				videos = Utils.loadImages(null, MediaType.video);
+				if (Utils.isPremium() || Utils.isTrial()) {
+					feedPhotos = new ArrayList<Object>(photos);
+				} else {
+					feedPhotos = new ArrayList<Object>();
+					int count = 0;
+					int nbAds = 0;
+					for (Media media : photos) {
+						if (count % AD_FREQ == 1) {
+							feedPhotos.add(nbAds % 2 == 0 ? AdSize.BANNER : AdSize.IAB_MRECT);
+							nbAds++;
+						}
+						feedPhotos.add(media);
+						count++;
+					}
+				}
 
 				List<Media> all = new ArrayList<Media>(photos);
 				all.addAll(videos);
@@ -727,6 +744,7 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	List<Media> photos;
+	List<Object> feedPhotos;
 	List<Media> videos;
 	List<Folder> folders;
 	Map<Media, Folder> foldersMap = new HashMap<Media, Folder>();
@@ -746,7 +764,11 @@ public class FlickrUploaderActivity extends Activity {
 			} else if (tab == TAB.folder) {
 				return folders.size();
 			} else {
-				return photos.size();
+				if (tab == TAB.feed) {
+					return feedPhotos.size();
+				} else {
+					return photos.size();
+				}
 			}
 		}
 
@@ -756,6 +778,8 @@ public class FlickrUploaderActivity extends Activity {
 				return videos.get(position);
 			} else if (tab == TAB.folder) {
 				return folders.get(position).images.get(0);
+			} else if (tab == TAB.feed) {
+				return feedPhotos.get(position);
 			} else {
 				return photos.get(position);
 			}
@@ -766,36 +790,53 @@ public class FlickrUploaderActivity extends Activity {
 			return arg0;
 		}
 
+		View createAd(AdSize adSize) {
+			if (adSize == null) {
+				adSize = AdSize.BANNER;
+			}
+			AdView adView = new AdView(FlickrUploaderActivity.this, adSize, ADMOD_UNIT_ID);
+			AdRequest adRequest = new AdRequest();
+			adRequest.addTestDevice("DE46A4A314F9E6F59597CD32A63D68C4");
+			adView.loadAd(adRequest);
+			adView.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, AbsListView.LayoutParams.WRAP_CONTENT));
+			adView.setTag(adSize);
+			return adView;
+		}
+
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
+			Object item = getItem(position);
+			boolean isAd = (item instanceof AdSize);
 			if (convertView == null) {
-				convertView = getLayoutInflater().inflate(tab.thumbLayoutId, parent, false);
-				if (tab == TAB.feed) {
-					convertView.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, 500));
-				} else if (tab == TAB.folder || tab == TAB.video) {
-					convertView.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Utils.getScreenWidthPx() / 2));
+				if (isAd) {
+					convertView = createAd((AdSize) item);
+				} else {
+					convertView = getLayoutInflater().inflate(tab.thumbLayoutId, parent, false);
+					if (tab == TAB.feed) {
+						convertView.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, 500));
+					} else if (tab == TAB.folder || tab == TAB.video) {
+						convertView.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Utils.getScreenWidthPx() / 2));
+					}
+					convertView.setTag(TAG_KEY_TAB, tab);
+					convertView.setTag(R.id.check_image, convertView.findViewById(R.id.check_image));
+					if (tab == TAB.folder) {
+						convertView.setTag(R.id.size, convertView.findViewById(R.id.size));
+						convertView.setTag(R.id.title, convertView.findViewById(R.id.title));
+						convertView.setTag(R.id.synced, convertView.findViewById(R.id.synced));
+					} else if (tab == TAB.feed) {
+						convertView.setTag(R.id.title, convertView.findViewById(R.id.title));
+					}
+					convertView.setTag(R.id.uploading, convertView.findViewById(R.id.uploading));
+					convertView.setTag(R.id.image_view, convertView.findViewById(R.id.image_view));
+					convertView.setTag(R.id.uploaded, convertView.findViewById(R.id.uploaded));
 				}
-				convertView.setTag(TAG_KEY_TAB, tab);
-				convertView.setTag(R.id.check_image, convertView.findViewById(R.id.check_image));
-				if (tab == TAB.folder) {
-					convertView.setTag(R.id.size, convertView.findViewById(R.id.size));
-					convertView.setTag(R.id.title, convertView.findViewById(R.id.title));
-					convertView.setTag(R.id.synced, convertView.findViewById(R.id.synced));
-				} else if (tab == TAB.feed) {
-					convertView.setTag(R.id.title, convertView.findViewById(R.id.title));
-				}
-				convertView.setTag(R.id.uploading, convertView.findViewById(R.id.uploading));
-				convertView.setTag(R.id.image_view, convertView.findViewById(R.id.image_view));
-				convertView.setTag(R.id.uploaded, convertView.findViewById(R.id.uploaded));
 			}
-			final Media image;
-			if (tab == TAB.video) {
-				image = videos.get(position);
-			} else if (tab == TAB.folder) {
-				image = folders.get(position).images.get(0);
-			} else {
-				image = photos.get(position);
+			if (isAd) {
+				if (item != convertView.getTag())
+					return createAd((AdSize) item);
+				return convertView;
 			}
+			final Media image = (Media) item;
 			if (convertView.getTag() != image) {
 				convertView.setTag(image);
 				renderImageView(convertView);
@@ -803,6 +844,21 @@ public class FlickrUploaderActivity extends Activity {
 			return convertView;
 		}
 
+		int TYPE_THUMB = 0;
+		int TYPE_AD = 1;
+
+		@Override
+		public int getItemViewType(int position) {
+			if (tab == TAB.feed && !(feedPhotos.get(position) instanceof Media)) {
+				return TYPE_AD;
+			}
+			return TYPE_THUMB;
+		}
+
+		@Override
+		public int getViewTypeCount() {
+			return 2;
+		}
 	}
 
 	static final int TAG_KEY_TAB = TAB.class.hashCode();
@@ -811,8 +867,8 @@ public class FlickrUploaderActivity extends Activity {
 
 	private void renderImageView(final View convertView) {
 		final TAB tab = (TAB) convertView.getTag(TAG_KEY_TAB);
-		final Media image = (Media) convertView.getTag();
-		if (image != null) {
+		if (convertView.getTag() instanceof Media) {
+			final Media image = (Media) convertView.getTag();
 			final CacheableImageView imageView = (CacheableImageView) convertView.getTag(R.id.image_view);
 			imageView.setTag(image);
 			final View check_image = (View) convertView.getTag(R.id.check_image);
@@ -1118,13 +1174,15 @@ public class FlickrUploaderActivity extends Activity {
 				}
 			}
 			if (showAds) {
-				if (adView == null) {
-					findViewById(R.id.ad_container).setVisibility(View.VISIBLE);
-					adView = new AdView(this, AdSize.BANNER, ADMOD_UNIT_ID);
-					((ViewGroup) findViewById(R.id.ad_container)).addView(adView);
+				if (bannerAdView == null) {
+					ViewGroup adContainer = (ViewGroup) findViewById(R.id.ad_container);
+					adContainer.setVisibility(View.VISIBLE);
+					bannerAdView = new AdView(this, AdSize.BANNER, ADMOD_UNIT_ID);
 					AdRequest adRequest = new AdRequest();
 					adRequest.addTestDevice("DE46A4A314F9E6F59597CD32A63D68C4");
-					adView.loadAd(adRequest);
+					bannerAdView.loadAd(adRequest);
+					// bannerAdView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+					adContainer.addView(bannerAdView);
 				}
 			} else {
 				findViewById(R.id.ad_container).setVisibility(View.GONE);

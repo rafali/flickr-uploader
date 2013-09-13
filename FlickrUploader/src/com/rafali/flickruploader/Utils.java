@@ -544,35 +544,45 @@ public final class Utils {
 			int sizeColumn = cursor.getColumnIndex(Images.Media.SIZE);
 			cursor.moveToFirst();
 			LOG.debug("filter = " + filter + ", count = " + cursor.getCount());
+			int nbErrorConsecutive = 0;
 			while (cursor.isAfterLast() == false) {
-				Long date;
-				String timestampDateTaken = cursor.getString(dateTakenColumn);
-				if (ToolString.isBlank(timestampDateTaken)) {
-					String timestampDateAdded = cursor.getString(dateAddedColumn);
-					if (ToolString.isBlank(timestampDateAdded)) {
-						String data = cursor.getString(dataColumn);
-						File file = new File(data);
-						date = file.lastModified();
-					} else {
-						if (timestampDateAdded.trim().length() <= 10) {
-							date = Long.valueOf(timestampDateAdded) * 1000L;
+				try {
+					Long date;
+					String timestampDateTaken = cursor.getString(dateTakenColumn);
+					if (ToolString.isBlank(timestampDateTaken)) {
+						String timestampDateAdded = cursor.getString(dateAddedColumn);
+						if (ToolString.isBlank(timestampDateAdded)) {
+							String data = cursor.getString(dataColumn);
+							File file = new File(data);
+							date = file.lastModified();
 						} else {
-							date = Long.valueOf(timestampDateAdded);
+							if (timestampDateAdded.trim().length() <= 10) {
+								date = Long.valueOf(timestampDateAdded) * 1000L;
+							} else {
+								date = Long.valueOf(timestampDateAdded);
+							}
 						}
+					} else {
+						date = Long.valueOf(timestampDateTaken);
 					}
-				} else {
-					date = Long.valueOf(timestampDateTaken);
-				}
 
-				Media item = new Media();
-				item.id = cursor.getInt(idColumn);
-				item.mediaType = mediaType;
-				item.path = cursor.getString(dataColumn);
-				item.name = cursor.getString(displayNameColumn);
-				item.size = cursor.getInt(sizeColumn);
-				item.date = date;
-				images.add(item);
-				cursor.moveToNext();
+					Media item = new Media();
+					item.id = cursor.getInt(idColumn);
+					item.mediaType = mediaType;
+					item.path = cursor.getString(dataColumn);
+					item.name = cursor.getString(displayNameColumn);
+					item.size = cursor.getInt(sizeColumn);
+					item.date = date;
+					images.add(item);
+					cursor.moveToNext();
+					nbErrorConsecutive = 0;
+				} catch (Throwable e) {
+					nbErrorConsecutive++;
+					LOG.error(e.getMessage() + ", nbErrorConsecutive=" + nbErrorConsecutive, e);
+					if (nbErrorConsecutive > 5) {
+						break;
+					}
+				}
 			}
 		} catch (Throwable e) {
 			LOG.error(e.getMessage(), e);
