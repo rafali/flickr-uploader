@@ -27,13 +27,13 @@
   "ownerName" : "rafali.com",
   "packagePath" : "flickruploader",
   "methods" : {
-    "donationendpoint.updateDonation" : {
+    "donationendpoint.insertDonation" : {
       "path" : "donation",
-      "httpMethod" : "PUT",
-      "scopes" : [ ],
+      "httpMethod" : "POST",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
-      "clientIds" : [ ],
-      "rosyMethod" : "com.rafali.flickruploader.DonationEndpoint.updateDonation",
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.rafali.flickruploader.DonationEndpoint.insertDonation",
       "request" : {
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
@@ -42,13 +42,13 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "donationendpoint.insertDonation" : {
+    "donationendpoint.updateDonation" : {
       "path" : "donation",
-      "httpMethod" : "POST",
-      "scopes" : [ ],
+      "httpMethod" : "PUT",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
-      "clientIds" : [ ],
-      "rosyMethod" : "com.rafali.flickruploader.DonationEndpoint.insertDonation",
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.rafali.flickruploader.DonationEndpoint.updateDonation",
       "request" : {
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
@@ -60,9 +60,9 @@
     "donationendpoint.listDonation" : {
       "path" : "donation",
       "httpMethod" : "GET",
-      "scopes" : [ ],
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
-      "clientIds" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
       "rosyMethod" : "com.rafali.flickruploader.DonationEndpoint.listDonation",
       "request" : {
         "parameters" : {
@@ -84,9 +84,9 @@
     "donationendpoint.getDonation" : {
       "path" : "donation/{id}",
       "httpMethod" : "GET",
-      "scopes" : [ ],
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
-      "clientIds" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
       "rosyMethod" : "com.rafali.flickruploader.DonationEndpoint.getDonation",
       "request" : {
         "parameters" : {
@@ -104,9 +104,9 @@
     "donationendpoint.removeDonation" : {
       "path" : "donation/{id}",
       "httpMethod" : "DELETE",
-      "scopes" : [ ],
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
-      "clientIds" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
       "rosyMethod" : "com.rafali.flickruploader.DonationEndpoint.removeDonation",
       "request" : {
         "parameters" : {
@@ -167,7 +167,7 @@
       }
     },
     "methods" : {
-      "com.rafali.flickruploader.DonationEndpoint.updateDonation" : {
+      "com.rafali.flickruploader.DonationEndpoint.insertDonation" : {
         "request" : {
           "$ref" : "Donation"
         },
@@ -175,7 +175,7 @@
           "$ref" : "Donation"
         }
       },
-      "com.rafali.flickruploader.DonationEndpoint.insertDonation" : {
+      "com.rafali.flickruploader.DonationEndpoint.updateDonation" : {
         "request" : {
           "$ref" : "Donation"
         },

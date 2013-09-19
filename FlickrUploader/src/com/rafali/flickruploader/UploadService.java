@@ -367,7 +367,7 @@ public class UploadService extends Service {
 						}
 					}
 
-					FlickrUploader.deleteOldLogs();
+					FlickrUploader.cleanLogs();
 
 				} catch (InterruptedException e) {
 					LOG.warn("Thread interrupted");

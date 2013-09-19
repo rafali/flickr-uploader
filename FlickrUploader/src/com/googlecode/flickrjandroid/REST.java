@@ -154,6 +154,9 @@ public class REST extends Transport {
 			conn.setRequestProperty("Proxy-Authorization", "Basic " + getProxyCredentials());
 		}
 		conn.connect();
+		if (Config.isDebug()) {
+			LOG.debug("response code : " + conn.getResponseCode());
+		}
 		return conn.getInputStream();
 	}
 
@@ -178,6 +181,9 @@ public class REST extends Transport {
 			}
 
 			return buf.toString();
+		} catch (IOException e) {
+			LOG.error(e.getClass().getSimpleName(), e);
+			throw e;
 		} finally {
 			IOUtilities.close(in);
 			IOUtilities.close(rd);

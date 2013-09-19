@@ -30,9 +30,9 @@
     "deviceinfoendpoint.updateDeviceInfo" : {
       "path" : "deviceinfo",
       "httpMethod" : "PUT",
-      "scopes" : [ ],
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
-      "clientIds" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
       "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.updateDeviceInfo",
       "request" : {
         "body" : "autoTemplate(backendRequest)",
@@ -42,13 +42,13 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "deviceinfoendpoint.getDeviceInfo" : {
+    "deviceinfoendpoint.removeDeviceInfo" : {
       "path" : "deviceinfo/{id}",
-      "httpMethod" : "GET",
-      "scopes" : [ ],
+      "httpMethod" : "DELETE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
-      "clientIds" : [ ],
-      "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.getDeviceInfo",
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.removeDeviceInfo",
       "request" : {
         "parameters" : {
           "id" : {
@@ -62,13 +62,13 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "deviceinfoendpoint.removeDeviceInfo" : {
+    "deviceinfoendpoint.getDeviceInfo" : {
       "path" : "deviceinfo/{id}",
-      "httpMethod" : "DELETE",
-      "scopes" : [ ],
+      "httpMethod" : "GET",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
-      "clientIds" : [ ],
-      "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.removeDeviceInfo",
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.getDeviceInfo",
       "request" : {
         "parameters" : {
           "id" : {
@@ -85,9 +85,9 @@
     "deviceinfoendpoint.listDeviceInfo" : {
       "path" : "deviceinfo",
       "httpMethod" : "GET",
-      "scopes" : [ ],
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
-      "clientIds" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
       "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.listDeviceInfo",
       "request" : {
         "parameters" : {
@@ -109,9 +109,9 @@
     "deviceinfoendpoint.insertDeviceInfo" : {
       "path" : "deviceinfo",
       "httpMethod" : "POST",
-      "scopes" : [ ],
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
-      "clientIds" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
       "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.insertDeviceInfo",
       "request" : {
         "body" : "autoTemplate(backendRequest)",
@@ -165,12 +165,12 @@
           "$ref" : "DeviceInfo"
         }
       },
-      "com.rafali.flickruploader.DeviceInfoEndpoint.getDeviceInfo" : {
+      "com.rafali.flickruploader.DeviceInfoEndpoint.removeDeviceInfo" : {
         "response" : {
           "$ref" : "DeviceInfo"
         }
       },
-      "com.rafali.flickruploader.DeviceInfoEndpoint.removeDeviceInfo" : {
+      "com.rafali.flickruploader.DeviceInfoEndpoint.getDeviceInfo" : {
         "response" : {
           "$ref" : "DeviceInfo"
         }

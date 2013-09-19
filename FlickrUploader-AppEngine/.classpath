@@ -5,5 +5,6 @@
 	<classpathentry kind="lib" path="war/WEB-INF/lib/gcm-server.jar"/>
 	<classpathentry kind="con" path="com.google.appengine.eclipse.core.GAE_CONTAINER"/>
 	<classpathentry kind="var" path="REMOTE_API_JAR"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/LIB-google-collect-1.0.jar"/>
 	<classpathentry kind="output" path="war/WEB-INF/classes"/>
 </classpath>

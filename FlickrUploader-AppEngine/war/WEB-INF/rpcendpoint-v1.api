@@ -30,9 +30,9 @@
     "rpcendpoint.sendMail" : {
       "path" : "sendMail/{recipient}/{subject}/{bodyHtml}/{fromAddress}",
       "httpMethod" : "POST",
-      "scopes" : [ ],
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
-      "clientIds" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
       "rosyMethod" : "com.rafali.flickruploader.RpcEndpoint.sendMail",
       "request" : {
         "parameters" : {

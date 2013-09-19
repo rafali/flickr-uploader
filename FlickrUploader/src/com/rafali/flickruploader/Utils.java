@@ -1032,10 +1032,6 @@ public final class Utils {
 		return result;
 	}
 
-	public static File getLogFile() {
-		return new File(FlickrUploader.getAppContext().getFilesDir(), "flickruploader.log");
-	}
-
 	static void thankYou(final Activity activity) {
 		activity.runOnUiThread(new Runnable() {
 			@Override
@@ -1073,7 +1069,7 @@ public final class Utils {
 						intent.putExtra(Intent.EXTRA_TEXT, message);
 
 						if (attachLogs) {
-							File log = Utils.getLogFile();
+							File log = new File(FlickrUploader.getLogFilePath());
 							if (log.exists()) {
 								File publicDownloadDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
 								File publicLog = new File(publicDownloadDirectory, "flickruploader_log.txt");

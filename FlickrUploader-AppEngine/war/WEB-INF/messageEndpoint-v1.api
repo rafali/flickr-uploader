@@ -30,9 +30,9 @@
     "messageEndpoint.listMessages" : {
       "path" : "messagedata",
       "httpMethod" : "GET",
-      "scopes" : [ ],
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
-      "clientIds" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
       "rosyMethod" : "com.rafali.flickruploader.MessageEndpoint.listMessages",
       "request" : {
         "parameters" : {
@@ -54,9 +54,9 @@
     "messageEndpoint.sendMessage" : {
       "path" : "sendMessage/{message}",
       "httpMethod" : "POST",
-      "scopes" : [ ],
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
-      "clientIds" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
       "rosyMethod" : "com.rafali.flickruploader.MessageEndpoint.sendMessage",
       "request" : {
         "parameters" : {
