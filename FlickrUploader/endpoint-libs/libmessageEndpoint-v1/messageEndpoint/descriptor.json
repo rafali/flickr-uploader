@@ -1,13 +1,13 @@
 {
   "files": [
     {
-      "downloadUrl": "/downloads/messageEndpoint/v1/20130926200233/java/1.16.0-rc/rafali.com-messageEndpoint-v1-20130926200233-java-1.16.0-rc-sources.jar", 
-      "path": "rafali.com-messageEndpoint-v1-20130926200233-java-1.16.0-rc-sources.jar", 
+      "downloadUrl": "/downloads/messageEndpoint/v1/20130927205407/java/1.16.0-rc/rafali.com-messageEndpoint-v1-20130927205407-java-1.16.0-rc-sources.jar", 
+      "path": "rafali.com-messageEndpoint-v1-20130927205407-java-1.16.0-rc-sources.jar", 
       "type": "source", 
-      "timestamp": "2013-09-26 20:02"
+      "timestamp": "2013-09-27 20:54"
     }, 
     {
-      "path": "rafali.com-messageEndpoint-v1-20130926200233-java-1.16.0-rc.jar.properties", 
+      "path": "rafali.com-messageEndpoint-v1-20130927205407-java-1.16.0-rc.jar.properties", 
       "type": "android.properties"
     }
   ], 
@@ -702,5 +702,5 @@
   "packagePath": "flickruploader", 
   "language_version": "1.16.0-rc", 
   "id": "messageEndpoint:v1", 
-  "revision": 20130926200233
+  "revision": 20130927205407
 }

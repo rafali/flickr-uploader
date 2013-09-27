@@ -127,6 +127,14 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 				return false;
 			}
 		});
+		findPreference("faq").setOnPreferenceClickListener(new OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				Mixpanel.track("FAQ");
+				Preferences.this.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/rafali/flickr-uploader/wiki/FAQ")));
+				return false;
+			}
+		});
 
 		findPreference("feedback").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override

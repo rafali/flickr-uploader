@@ -1166,9 +1166,9 @@ public final class Utils {
 		Mixpanel.track("PremiumShow");
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-		String message = "Get the premium today and enjoy the automatic uploads and the next app improvements for life.";
+		String message = "Support this open-source app. Get the premium today and enjoy the automatic uploads and the next app improvements for life.";
 		if (!isTrial()) {
-			message += " And no more ads.";
+			message += " And no ads.";
 		}
 		builder.setTitle("Premium features").setMessage(message).setNegativeButton("Later", new OnClickListener() {
 			@Override
