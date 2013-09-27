@@ -547,29 +547,35 @@ public final class Utils {
 			int nbErrorConsecutive = 0;
 			while (cursor.isAfterLast() == false) {
 				try {
-					Long date;
-					String timestampDateTaken = cursor.getString(dateTakenColumn);
-					if (ToolString.isBlank(timestampDateTaken)) {
-						String timestampDateAdded = cursor.getString(dateAddedColumn);
-						if (ToolString.isBlank(timestampDateAdded)) {
-							String data = cursor.getString(dataColumn);
-							File file = new File(data);
-							date = file.lastModified();
-						} else {
-							if (timestampDateAdded.trim().length() <= 10) {
-								date = Long.valueOf(timestampDateAdded) * 1000L;
-							} else {
-								date = Long.valueOf(timestampDateAdded);
+					Long date = null;
+					String dateStr = null;
+					try {
+						dateStr = cursor.getString(dateTakenColumn);
+						if (ToolString.isBlank(dateStr)) {
+							dateStr = cursor.getString(dateAddedColumn);
+							if (ToolString.isNotBlank(dateStr)) {
+								if (dateStr.trim().length() <= 10) {
+									date = Long.valueOf(dateStr) * 1000L;
+								} else {
+									date = Long.valueOf(dateStr);
+								}
 							}
+						} else {
+							date = Long.valueOf(dateStr);
 						}
-					} else {
-						date = Long.valueOf(timestampDateTaken);
+					} catch (Throwable e) {
+						LOG.warn(e.getClass().getSimpleName() + " : " + dateStr);
+					}
+					String data = cursor.getString(dataColumn);
+					if (date == null) {
+						File file = new File(data);
+						date = file.lastModified();
 					}
 
 					Media item = new Media();
 					item.id = cursor.getInt(idColumn);
 					item.mediaType = mediaType;
-					item.path = cursor.getString(dataColumn);
+					item.path = data;
 					item.name = cursor.getString(displayNameColumn);
 					item.size = cursor.getInt(sizeColumn);
 					item.date = date;
@@ -630,8 +636,17 @@ public final class Utils {
 		}
 
 		// if wifi is disabled and the user preference only allows wifi abort
-		if (sp.getString(Preferences.UPLOAD_NETWORK, "").equals(STR.wifionly) && activeNetwork.getType() != ConnectivityManager.TYPE_WIFI) {
-			return CAN_UPLOAD.wifi;
+		if (sp.getString(Preferences.UPLOAD_NETWORK, "").equals(STR.wifionly)) {
+			switch (activeNetwork.getType()) {
+			case ConnectivityManager.TYPE_MOBILE:
+			case ConnectivityManager.TYPE_MOBILE_DUN:
+			case ConnectivityManager.TYPE_MOBILE_HIPRI:
+			case ConnectivityManager.TYPE_MOBILE_MMS:
+			case ConnectivityManager.TYPE_MOBILE_SUPL:
+				return CAN_UPLOAD.wifi;
+			default:
+				break;
+			}
 		}
 
 		return CAN_UPLOAD.ok;

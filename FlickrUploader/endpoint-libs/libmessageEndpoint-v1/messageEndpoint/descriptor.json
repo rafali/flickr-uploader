@@ -1,29 +1,30 @@
 {
   "files": [
     {
-      "downloadUrl": "/downloads/messageEndpoint/v1/20130908183257/java/1.16.0-rc/rafali.com-messageEndpoint-v1-20130908183257-java-1.16.0-rc-sources.jar", 
-      "path": "rafali.com-messageEndpoint-v1-20130908183257-java-1.16.0-rc-sources.jar", 
+      "downloadUrl": "/downloads/messageEndpoint/v1/20130926200233/java/1.16.0-rc/rafali.com-messageEndpoint-v1-20130926200233-java-1.16.0-rc-sources.jar", 
+      "path": "rafali.com-messageEndpoint-v1-20130926200233-java-1.16.0-rc-sources.jar", 
       "type": "source", 
-      "timestamp": "2013-09-08 18:32"
+      "timestamp": "2013-09-26 20:02"
     }, 
     {
-      "path": "rafali.com-messageEndpoint-v1-20130908183257-java-1.16.0-rc.jar.properties", 
+      "path": "rafali.com-messageEndpoint-v1-20130926200233-java-1.16.0-rc.jar.properties", 
       "type": "android.properties"
     }
   ], 
   "proguard-config": "proguard-google-api-client.txt", 
-  "kind": "discovery#directoryItem", 
+  "ownerDomain": "rafali.com", 
   "moduleName": "com.rafali.flickruploader", 
   "name": "messageEndpoint", 
   "language": "java", 
-  "ownerDomain": "rafali.com", 
+  "title": "messageEndpoint", 
+  "version": "v1", 
+  "kind": "discovery#directoryItem", 
+  "modulePath": "com/rafali/flickruploader", 
   "maven": {
     "group_id": "com.rafali", 
     "artifact_id": "flickruploader-messageEndpoint", 
     "version": "v1-1.16.0-rc-SNAPSHOT"
   }, 
-  "version": "v1", 
-  "ownerName": "rafali.com", 
   "dependencies": [
     {
       "files": [
@@ -697,8 +698,9 @@
       ]
     }
   ], 
+  "ownerName": "rafali.com", 
+  "packagePath": "flickruploader", 
   "language_version": "1.16.0-rc", 
-  "revision": 20130908183257, 
   "id": "messageEndpoint:v1", 
-  "modulePath": "com/rafali/flickruploader"
+  "revision": 20130926200233
 }

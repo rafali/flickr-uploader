@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"VkkzLg1qSf2dHM9_JADuPMcBnRo/xdi1IKjnYIagCKPgeIEmVOUWU7s\"",
+ "etag": "\"_SAkL5LfohOjTvNX8memTU9s4HI/F_EfJYFG5X9zPuqg9dy6xUMZVOA\"",
  "discoveryVersion": "v1",
  "id": "appinstallendpoint:v1",
  "name": "appinstallendpoint",
@@ -62,6 +62,15 @@
    "type": "string",
    "description": "IP address of the site where the request originates. Use this if you want to enforce per-user limits.",
    "location": "query"
+  }
+ },
+ "auth": {
+  "oauth2": {
+   "scopes": {
+    "https://www.googleapis.com/auth/userinfo.email": {
+     "description": "View your email address"
+    }
+   }
   }
  },
  "schemas": {
@@ -173,7 +182,10 @@
    ],
    "response": {
     "$ref": "AppInstall"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "getAppInstallsByEmails": {
    "id": "appinstallendpoint.getAppInstallsByEmails",
@@ -191,7 +203,10 @@
    ],
    "response": {
     "$ref": "CollectionResponse_AppInstall"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "insertAppInstall": {
    "id": "appinstallendpoint.insertAppInstall",
@@ -203,7 +218,10 @@
    },
    "response": {
     "$ref": "AppInstall"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "listAppInstall": {
    "id": "appinstallendpoint.listAppInstall",
@@ -222,7 +240,10 @@
    },
    "response": {
     "$ref": "CollectionResponse_AppInstall"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "removeAppInstall": {
    "id": "appinstallendpoint.removeAppInstall",
@@ -240,7 +261,10 @@
    ],
    "response": {
     "$ref": "AppInstall"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "updateAppInstall": {
    "id": "appinstallendpoint.updateAppInstall",
@@ -252,7 +276,10 @@
    },
    "response": {
     "$ref": "AppInstall"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   }
  }
 }

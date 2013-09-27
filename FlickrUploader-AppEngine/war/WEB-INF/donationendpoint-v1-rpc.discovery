@@ -1,6 +1,6 @@
 {
  "kind": "discovery#rpcDescription",
- "etag": "\"VkkzLg1qSf2dHM9_JADuPMcBnRo/3GdFOdAuDF72X8HxTUdbtFTw6oY\"",
+ "etag": "\"_SAkL5LfohOjTvNX8memTU9s4HI/qtL8XZWYZmhWd2J_fHXFb7LxUeQ\"",
  "discoveryVersion": "v1",
  "id": "donationendpoint:v1",
  "name": "donationendpoint",
@@ -60,6 +60,15 @@
    "type": "string",
    "description": "IP address of the site where the request originates. Use this if you want to enforce per-user limits.",
    "location": "query"
+  }
+ },
+ "auth": {
+  "oauth2": {
+   "scopes": {
+    "https://www.googleapis.com/auth/userinfo.email": {
+     "description": "View your email address"
+    }
+   }
   }
  },
  "schemas": {
@@ -122,7 +131,10 @@
    ],
    "returns": {
     "$ref": "Donation"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "donationendpoint.insertDonation": {
    "id": "donationendpoint.insertDonation",
@@ -136,7 +148,10 @@
    ],
    "returns": {
     "$ref": "Donation"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "donationendpoint.listDonation": {
    "id": "donationendpoint.listDonation",
@@ -152,7 +167,10 @@
    },
    "returns": {
     "$ref": "CollectionResponse_Donation"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "donationendpoint.removeDonation": {
    "id": "donationendpoint.removeDonation",
@@ -168,7 +186,10 @@
    ],
    "returns": {
     "$ref": "Donation"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "donationendpoint.updateDonation": {
    "id": "donationendpoint.updateDonation",
@@ -182,7 +203,10 @@
    ],
    "returns": {
     "$ref": "Donation"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   }
  }
 }

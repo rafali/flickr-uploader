@@ -30,6 +30,7 @@
     "deviceinfoendpoint.updateDeviceInfo" : {
       "path" : "deviceinfo",
       "httpMethod" : "PUT",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
@@ -45,6 +46,7 @@
     "deviceinfoendpoint.removeDeviceInfo" : {
       "path" : "deviceinfo/{id}",
       "httpMethod" : "DELETE",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
@@ -65,6 +67,7 @@
     "deviceinfoendpoint.getDeviceInfo" : {
       "path" : "deviceinfo/{id}",
       "httpMethod" : "GET",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
@@ -85,6 +88,7 @@
     "deviceinfoendpoint.listDeviceInfo" : {
       "path" : "deviceinfo",
       "httpMethod" : "GET",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
@@ -109,6 +113,7 @@
     "deviceinfoendpoint.insertDeviceInfo" : {
       "path" : "deviceinfo",
       "httpMethod" : "POST",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],

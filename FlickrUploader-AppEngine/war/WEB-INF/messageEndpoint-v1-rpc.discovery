@@ -1,6 +1,6 @@
 {
  "kind": "discovery#rpcDescription",
- "etag": "\"VkkzLg1qSf2dHM9_JADuPMcBnRo/8tn-IQvoZtvaNAMiJK46ogcrwPc\"",
+ "etag": "\"_SAkL5LfohOjTvNX8memTU9s4HI/wEBTP9cvOGwKSC6KAkOZxKjTfE4\"",
  "discoveryVersion": "v1",
  "id": "messageEndpoint:v1",
  "name": "messageEndpoint",
@@ -60,6 +60,15 @@
    "type": "string",
    "description": "IP address of the site where the request originates. Use this if you want to enforce per-user limits.",
    "location": "query"
+  }
+ },
+ "auth": {
+  "oauth2": {
+   "scopes": {
+    "https://www.googleapis.com/auth/userinfo.email": {
+     "description": "View your email address"
+    }
+   }
   }
  },
  "schemas": {
@@ -138,7 +147,10 @@
    },
    "returns": {
     "$ref": "CollectionResponse_MessageData"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "messageEndpoint.sendMessage": {
    "id": "messageEndpoint.sendMessage",
@@ -150,6 +162,9 @@
    },
    "parameterOrder": [
     "message"
+   ],
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
    ]
   }
  }

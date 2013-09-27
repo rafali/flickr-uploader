@@ -24,11 +24,11 @@
         android:title="Instant Upload Photoset" />
     <ListPreference
         android:defaultValue="wifior3G"
-        android:dialogTitle="When to upload"
+        android:dialogTitle="Upload when connected to"
         android:entries="@array/network_entries"
         android:entryValues="@array/network_values"
         android:key="upload_network"
-        android:title="When to upload" />
+        android:title="Upload when connected to" />
 
     <CheckBoxPreference
         android:defaultValue="false"

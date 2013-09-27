@@ -341,7 +341,7 @@ public class FlickrApi {
 				}
 				if (photoId == null) {
 					String extension = getExtension(image);
-					if (getUnsupportedExtensions().contains(extension)) {
+					if (unsupportedExtensions.contains(extension)) {
 						throw new UploadException("Unsupported extension: " + extension);
 					}
 					String uri = image.path;
@@ -359,6 +359,12 @@ public class FlickrApi {
 							break;
 						LOG.debug("uploading : " + uri);
 						File file = new File(uri);
+						if (!file.exists()) {
+							throw new UploadException("File no longer exists: " + file.getAbsolutePath());
+						}
+						if (file.length() <= 10) {
+							throw new UploadException("File is empty: " + file.getAbsolutePath());
+						}
 						// InputStream inputStream = new FileInputStream(uri);
 						UploadMetaData metaData = new UploadMetaData();
 						PRIVACY privacy = Utils.getDefaultPrivacy();
@@ -464,20 +470,13 @@ public class FlickrApi {
 		return null;
 	}
 
-	static Set<String> unsupportedExtensions;
-
-	static Set<String> getUnsupportedExtensions() {
-		if (unsupportedExtensions == null) {
-			unsupportedExtensions = new HashSet<String>();
-			unsupportedExtensions.add("skm");
-		}
-		return unsupportedExtensions;
-	}
+	static Set<String> unsupportedExtensions = Sets.newHashSet("skm", "mkv");
+	static Set<String> whitelistedExtensions = Sets.newHashSet("jpg", "png", "jpeg", "gif", "tiff", "avi", "wmv", "mov", "mpeg", "3gp", "m2ts", "ogg", "ogv");
 
 	static Map<String, Integer> nbUnsupportedExtensions;
 
 	static void addUnsupportedExtension(String extension) {
-		if (extension != null && !getUnsupportedExtensions().contains(extension)) {
+		if (extension != null && !whitelistedExtensions.contains(extension) && !unsupportedExtensions.contains(extension)) {
 			if (nbUnsupportedExtensions == null) {
 				nbUnsupportedExtensions = new HashMap<String, Integer>();
 			}

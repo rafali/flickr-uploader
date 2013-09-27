@@ -30,6 +30,7 @@
     "rpcendpoint.sendMail" : {
       "path" : "sendMail/{recipient}/{subject}/{bodyHtml}/{fromAddress}",
       "httpMethod" : "POST",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],

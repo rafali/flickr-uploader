@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"VkkzLg1qSf2dHM9_JADuPMcBnRo/3GdFOdAuDF72X8HxTUdbtFTw6oY\"",
+ "etag": "\"_SAkL5LfohOjTvNX8memTU9s4HI/qtL8XZWYZmhWd2J_fHXFb7LxUeQ\"",
  "discoveryVersion": "v1",
  "id": "donationendpoint:v1",
  "name": "donationendpoint",
@@ -62,6 +62,15 @@
    "type": "string",
    "description": "IP address of the site where the request originates. Use this if you want to enforce per-user limits.",
    "location": "query"
+  }
+ },
+ "auth": {
+  "oauth2": {
+   "scopes": {
+    "https://www.googleapis.com/auth/userinfo.email": {
+     "description": "View your email address"
+    }
+   }
   }
  },
  "schemas": {
@@ -126,7 +135,10 @@
    ],
    "response": {
     "$ref": "Donation"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "insertDonation": {
    "id": "donationendpoint.insertDonation",
@@ -138,7 +150,10 @@
    },
    "response": {
     "$ref": "Donation"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "listDonation": {
    "id": "donationendpoint.listDonation",
@@ -157,7 +172,10 @@
    },
    "response": {
     "$ref": "CollectionResponse_Donation"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "removeDonation": {
    "id": "donationendpoint.removeDonation",
@@ -176,7 +194,10 @@
    ],
    "response": {
     "$ref": "Donation"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "updateDonation": {
    "id": "donationendpoint.updateDonation",
@@ -188,7 +209,10 @@
    },
    "response": {
     "$ref": "Donation"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   }
  }
 }

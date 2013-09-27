@@ -198,7 +198,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 				if (STR.wifionly.equals(arg1)) {
 					AlertDialog.Builder builder = new AlertDialog.Builder(Preferences.this);
 					builder.setTitle("WARNING")
-							.setMessage("This feature is not guaranteed. If you want to really make sure this app does not use your data plan, enforce it at the OS level as explained in the FAQ.")
+							.setMessage("This feature is not guaranteed. If you really want to make sure this app does not use your data plan, enforce it at the OS level as explained in the FAQ.")
 							.setNegativeButton("Later", null).setPositiveButton("See the FAQ", new OnClickListener() {
 								@Override
 								public void onClick(DialogInterface dialog, int which) {

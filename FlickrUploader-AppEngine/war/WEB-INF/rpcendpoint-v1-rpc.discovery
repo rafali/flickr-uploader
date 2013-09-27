@@ -1,6 +1,6 @@
 {
  "kind": "discovery#rpcDescription",
- "etag": "\"VkkzLg1qSf2dHM9_JADuPMcBnRo/fx-bgrrPdOdehkoxLQTRxfGET6k\"",
+ "etag": "\"_SAkL5LfohOjTvNX8memTU9s4HI/S9_TvA53u-hBDGowR1sRm_ooVp0\"",
  "discoveryVersion": "v1",
  "id": "rpcendpoint:v1",
  "name": "rpcendpoint",
@@ -62,6 +62,15 @@
    "location": "query"
   }
  },
+ "auth": {
+  "oauth2": {
+   "scopes": {
+    "https://www.googleapis.com/auth/userinfo.email": {
+     "description": "View your email address"
+    }
+   }
+  }
+ },
  "methods": {
   "rpcendpoint.sendMail": {
    "id": "rpcendpoint.sendMail",
@@ -88,6 +97,9 @@
     "subject",
     "bodyHtml",
     "fromAddress"
+   ],
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
    ]
   }
  }

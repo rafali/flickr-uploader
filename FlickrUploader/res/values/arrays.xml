@@ -6,8 +6,8 @@
         <item>wifionly</item>
     </array>
     <array name="network_entries">
-        <item>Wi-Fi and 3G</item>
-        <item>Wi-Fi only</item>
+        <item>any network</item>
+        <item>any network except 2G/3G/4G</item>
     </array>
 
     <array name="autoupload_photoset_values">

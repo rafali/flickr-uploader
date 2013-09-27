@@ -30,6 +30,7 @@
     "appinstallendpoint.getAppInstallsByEmails" : {
       "path" : "collectionresponse_appinstall/{concatenatedEmails}",
       "httpMethod" : "GET",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
@@ -47,9 +48,26 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
+    "appinstallendpoint.updateAppInstall" : {
+      "path" : "appinstall",
+      "httpMethod" : "PUT",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.rafali.flickruploader.AppInstallEndpoint.updateAppInstall",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
     "appinstallendpoint.listAppInstall" : {
       "path" : "appinstall",
       "httpMethod" : "GET",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
@@ -71,24 +89,10 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "appinstallendpoint.updateAppInstall" : {
-      "path" : "appinstall",
-      "httpMethod" : "PUT",
-      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
-      "audiences" : [ ],
-      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.rafali.flickruploader.AppInstallEndpoint.updateAppInstall",
-      "request" : {
-        "body" : "autoTemplate(backendRequest)",
-        "bodyName" : "resource"
-      },
-      "response" : {
-        "body" : "autoTemplate(backendResponse)"
-      }
-    },
     "appinstallendpoint.insertAppInstall" : {
       "path" : "appinstall",
       "httpMethod" : "POST",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
@@ -104,6 +108,7 @@
     "appinstallendpoint.getAppInstall" : {
       "path" : "appinstall/{id}",
       "httpMethod" : "GET",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
@@ -124,6 +129,7 @@
     "appinstallendpoint.removeAppInstall" : {
       "path" : "appinstall/{id}",
       "httpMethod" : "DELETE",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
@@ -240,17 +246,17 @@
           "$ref" : "CollectionResponse_AppInstall"
         }
       },
-      "com.rafali.flickruploader.AppInstallEndpoint.listAppInstall" : {
-        "response" : {
-          "$ref" : "CollectionResponse_AppInstall"
-        }
-      },
       "com.rafali.flickruploader.AppInstallEndpoint.updateAppInstall" : {
         "request" : {
           "$ref" : "AppInstall"
         },
         "response" : {
           "$ref" : "AppInstall"
+        }
+      },
+      "com.rafali.flickruploader.AppInstallEndpoint.listAppInstall" : {
+        "response" : {
+          "$ref" : "CollectionResponse_AppInstall"
         }
       },
       "com.rafali.flickruploader.AppInstallEndpoint.insertAppInstall" : {

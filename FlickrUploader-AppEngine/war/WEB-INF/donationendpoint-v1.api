@@ -30,6 +30,7 @@
     "donationendpoint.insertDonation" : {
       "path" : "donation",
       "httpMethod" : "POST",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
@@ -45,6 +46,7 @@
     "donationendpoint.updateDonation" : {
       "path" : "donation",
       "httpMethod" : "PUT",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
@@ -60,6 +62,7 @@
     "donationendpoint.listDonation" : {
       "path" : "donation",
       "httpMethod" : "GET",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
@@ -84,6 +87,7 @@
     "donationendpoint.getDonation" : {
       "path" : "donation/{id}",
       "httpMethod" : "GET",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
@@ -104,6 +108,7 @@
     "donationendpoint.removeDonation" : {
       "path" : "donation/{id}",
       "httpMethod" : "DELETE",
+      "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],

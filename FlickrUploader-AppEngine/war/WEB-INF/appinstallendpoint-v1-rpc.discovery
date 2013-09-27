@@ -1,6 +1,6 @@
 {
  "kind": "discovery#rpcDescription",
- "etag": "\"VkkzLg1qSf2dHM9_JADuPMcBnRo/xdi1IKjnYIagCKPgeIEmVOUWU7s\"",
+ "etag": "\"_SAkL5LfohOjTvNX8memTU9s4HI/F_EfJYFG5X9zPuqg9dy6xUMZVOA\"",
  "discoveryVersion": "v1",
  "id": "appinstallendpoint:v1",
  "name": "appinstallendpoint",
@@ -60,6 +60,15 @@
    "type": "string",
    "description": "IP address of the site where the request originates. Use this if you want to enforce per-user limits.",
    "location": "query"
+  }
+ },
+ "auth": {
+  "oauth2": {
+   "scopes": {
+    "https://www.googleapis.com/auth/userinfo.email": {
+     "description": "View your email address"
+    }
+   }
   }
  },
  "schemas": {
@@ -169,7 +178,10 @@
    ],
    "returns": {
     "$ref": "AppInstall"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "appinstallendpoint.getAppInstallsByEmails": {
    "id": "appinstallendpoint.getAppInstallsByEmails",
@@ -185,7 +197,10 @@
    ],
    "returns": {
     "$ref": "CollectionResponse_AppInstall"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "appinstallendpoint.insertAppInstall": {
    "id": "appinstallendpoint.insertAppInstall",
@@ -199,7 +214,10 @@
    ],
    "returns": {
     "$ref": "AppInstall"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "appinstallendpoint.listAppInstall": {
    "id": "appinstallendpoint.listAppInstall",
@@ -215,7 +233,10 @@
    },
    "returns": {
     "$ref": "CollectionResponse_AppInstall"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "appinstallendpoint.removeAppInstall": {
    "id": "appinstallendpoint.removeAppInstall",
@@ -230,7 +251,10 @@
    ],
    "returns": {
     "$ref": "AppInstall"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "appinstallendpoint.updateAppInstall": {
    "id": "appinstallendpoint.updateAppInstall",
@@ -244,7 +268,10 @@
    ],
    "returns": {
     "$ref": "AppInstall"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   }
  }
 }

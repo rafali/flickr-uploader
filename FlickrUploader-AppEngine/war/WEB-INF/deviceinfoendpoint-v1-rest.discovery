@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"VkkzLg1qSf2dHM9_JADuPMcBnRo/ErjahB-cXO7oIjfeeOyzN9_by9I\"",
+ "etag": "\"_SAkL5LfohOjTvNX8memTU9s4HI/-ABV6opqAIh8NfFOiaJt-BEdt5M\"",
  "discoveryVersion": "v1",
  "id": "deviceinfoendpoint:v1",
  "name": "deviceinfoendpoint",
@@ -64,6 +64,15 @@
    "location": "query"
   }
  },
+ "auth": {
+  "oauth2": {
+   "scopes": {
+    "https://www.googleapis.com/auth/userinfo.email": {
+     "description": "View your email address"
+    }
+   }
+  }
+ },
  "schemas": {
   "CollectionResponse_DeviceInfo": {
    "id": "CollectionResponse_DeviceInfo",
@@ -114,7 +123,10 @@
    ],
    "response": {
     "$ref": "DeviceInfo"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "insertDeviceInfo": {
    "id": "deviceinfoendpoint.insertDeviceInfo",
@@ -126,7 +138,10 @@
    },
    "response": {
     "$ref": "DeviceInfo"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "listDeviceInfo": {
    "id": "deviceinfoendpoint.listDeviceInfo",
@@ -145,7 +160,10 @@
    },
    "response": {
     "$ref": "CollectionResponse_DeviceInfo"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "removeDeviceInfo": {
    "id": "deviceinfoendpoint.removeDeviceInfo",
@@ -163,7 +181,10 @@
    ],
    "response": {
     "$ref": "DeviceInfo"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   },
   "updateDeviceInfo": {
    "id": "deviceinfoendpoint.updateDeviceInfo",
@@ -175,7 +196,10 @@
    },
    "response": {
     "$ref": "DeviceInfo"
-   }
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
   }
  }
 }

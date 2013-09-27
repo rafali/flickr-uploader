@@ -1,29 +1,30 @@
 {
   "files": [
     {
-      "downloadUrl": "/downloads/appinstallendpoint/v1/20130908183229/java/1.16.0-rc/rafali.com-appinstallendpoint-v1-20130908183229-java-1.16.0-rc-sources.jar", 
-      "path": "rafali.com-appinstallendpoint-v1-20130908183229-java-1.16.0-rc-sources.jar", 
+      "downloadUrl": "/downloads/appinstallendpoint/v1/20130926200230/java/1.16.0-rc/rafali.com-appinstallendpoint-v1-20130926200230-java-1.16.0-rc-sources.jar", 
+      "path": "rafali.com-appinstallendpoint-v1-20130926200230-java-1.16.0-rc-sources.jar", 
       "type": "source", 
-      "timestamp": "2013-09-08 18:32"
+      "timestamp": "2013-09-26 20:02"
     }, 
     {
-      "path": "rafali.com-appinstallendpoint-v1-20130908183229-java-1.16.0-rc.jar.properties", 
+      "path": "rafali.com-appinstallendpoint-v1-20130926200230-java-1.16.0-rc.jar.properties", 
       "type": "android.properties"
     }
   ], 
   "proguard-config": "proguard-google-api-client.txt", 
-  "kind": "discovery#directoryItem", 
+  "ownerDomain": "rafali.com", 
   "moduleName": "com.rafali.flickruploader", 
   "name": "appinstallendpoint", 
   "language": "java", 
-  "ownerDomain": "rafali.com", 
+  "title": "appinstallendpoint", 
+  "version": "v1", 
+  "kind": "discovery#directoryItem", 
+  "modulePath": "com/rafali/flickruploader", 
   "maven": {
     "group_id": "com.rafali", 
     "artifact_id": "flickruploader-appinstallendpoint", 
     "version": "v1-1.16.0-rc-SNAPSHOT"
   }, 
-  "version": "v1", 
-  "ownerName": "rafali.com", 
   "dependencies": [
     {
       "files": [
@@ -697,8 +698,9 @@
       ]
     }
   ], 
+  "ownerName": "rafali.com", 
+  "packagePath": "flickruploader", 
   "language_version": "1.16.0-rc", 
-  "revision": 20130908183229, 
   "id": "appinstallendpoint:v1", 
-  "modulePath": "com/rafali/flickruploader"
+  "revision": 20130926200230
 }

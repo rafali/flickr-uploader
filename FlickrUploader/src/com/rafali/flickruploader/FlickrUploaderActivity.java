@@ -120,6 +120,23 @@ public class FlickrUploaderActivity extends Activity {
 						toast("No media found for " + imageUri);
 					}
 				}
+			} else if (Intent.ACTION_SEND_MULTIPLE.equals(action) && type != null) {
+				if (type.startsWith("image/") || type.startsWith("video/")) {
+					ArrayList<Uri> imageUris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+					List<Media> loadImages = new ArrayList<Media>();
+					if (imageUris != null) {
+						for (Uri imageUri : imageUris) {
+							List<Media> tmpImages = Utils.loadImages(imageUri.toString(), type.startsWith("image/") ? MediaType.photo : MediaType.video, 1);
+							LOG.debug("imageUri : " + imageUri + ", loadImages : " + loadImages);
+							loadImages.addAll(tmpImages);
+						}
+						if (!loadImages.isEmpty()) {
+							confirmUpload(loadImages, false);
+						} else {
+							toast("No media found");
+						}
+					}
+				}
 			}
 		}
 	}
