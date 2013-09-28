@@ -41,6 +41,9 @@
         android:title="Upload privacy" />
 
     <PreferenceScreen
+        android:key="upload_description"
+        android:title="Upload description" />
+    <PreferenceScreen
         android:key="notifications"
         android:title="Notifications" />
     <PreferenceScreen

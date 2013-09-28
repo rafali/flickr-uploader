@@ -27,22 +27,6 @@
   "ownerName" : "rafali.com",
   "packagePath" : "flickruploader",
   "methods" : {
-    "donationendpoint.insertDonation" : {
-      "path" : "donation",
-      "httpMethod" : "POST",
-      "authLevel" : "NONE",
-      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
-      "audiences" : [ ],
-      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.rafali.flickruploader.DonationEndpoint.insertDonation",
-      "request" : {
-        "body" : "autoTemplate(backendRequest)",
-        "bodyName" : "resource"
-      },
-      "response" : {
-        "body" : "autoTemplate(backendResponse)"
-      }
-    },
     "donationendpoint.updateDonation" : {
       "path" : "donation",
       "httpMethod" : "PUT",
@@ -51,6 +35,22 @@
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
       "rosyMethod" : "com.rafali.flickruploader.DonationEndpoint.updateDonation",
+      "request" : {
+        "body" : "autoTemplate(backendRequest)",
+        "bodyName" : "resource"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
+    },
+    "donationendpoint.insertDonation" : {
+      "path" : "donation",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.rafali.flickruploader.DonationEndpoint.insertDonation",
       "request" : {
         "body" : "autoTemplate(backendRequest)",
         "bodyName" : "resource"
@@ -172,7 +172,7 @@
       }
     },
     "methods" : {
-      "com.rafali.flickruploader.DonationEndpoint.insertDonation" : {
+      "com.rafali.flickruploader.DonationEndpoint.updateDonation" : {
         "request" : {
           "$ref" : "Donation"
         },
@@ -180,7 +180,7 @@
           "$ref" : "Donation"
         }
       },
-      "com.rafali.flickruploader.DonationEndpoint.updateDonation" : {
+      "com.rafali.flickruploader.DonationEndpoint.insertDonation" : {
         "request" : {
           "$ref" : "Donation"
         },

@@ -365,8 +365,15 @@ public class FlickrApi {
 						if (file.length() <= 10) {
 							throw new UploadException("File is empty: " + file.getAbsolutePath());
 						}
+						if (file.length() > 1024 * 1024 * 1024L) {
+							throw new UploadException("File too big: " + file.getAbsolutePath());
+						}
 						// InputStream inputStream = new FileInputStream(uri);
 						UploadMetaData metaData = new UploadMetaData();
+						String uploadDescription = Utils.getUploadDescription();
+						if (ToolString.isNotBlank(uploadDescription)) {
+							metaData.setDescription(uploadDescription);
+						}
 						PRIVACY privacy = Utils.getDefaultPrivacy();
 						metaData.setFriendFlag(privacy == PRIVACY.FRIENDS || privacy == PRIVACY.FRIENDS_FAMILY);
 						metaData.setFamilyFlag(privacy == PRIVACY.FAMILY || privacy == PRIVACY.FRIENDS_FAMILY);

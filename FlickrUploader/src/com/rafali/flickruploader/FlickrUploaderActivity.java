@@ -3,6 +3,7 @@ package com.rafali.flickruploader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -202,6 +203,12 @@ public class FlickrUploaderActivity extends Activity {
 					}
 				}
 
+				if (getSort() == SORT.old_to_recent) {
+					Collections.reverse(photos);
+					Collections.reverse(videos);
+					Collections.reverse(feedPhotos);
+				}
+
 				List<Media> all = new ArrayList<Media>(photos);
 				all.addAll(videos);
 				folders = Utils.getFolders(all);
@@ -212,6 +219,19 @@ public class FlickrUploaderActivity extends Activity {
 			}
 
 		});
+	}
+
+	enum SORT {
+		recent_to_old, old_to_recent
+	}
+
+	SORT getSort() {
+		long sort_type = Utils.getLongProperty("sort_type");
+		if (sort_type == 1) {
+			return SORT.old_to_recent;
+		} else {
+			return SORT.recent_to_old;
+		}
 	}
 
 	@Override
@@ -1038,9 +1058,34 @@ public class FlickrUploaderActivity extends Activity {
 			i.setData(Uri.parse(url));
 			startActivity(i);
 			break;
+		case R.id.sort:
+			showSortDialog();
+			break;
 		}
 
 		return (super.onOptionsItemSelected(item));
+	}
+
+	@UiThread
+	void showSortDialog() {
+		final CharSequence[] modes = { "Recent to old", "Old to recent" };
+		AlertDialog.Builder alt_bld = new AlertDialog.Builder(this);
+		alt_bld.setTitle("Sort");
+		final int sort_type = (int) Utils.getLongProperty("sort_type");
+		alt_bld.setSingleChoiceItems(modes, sort_type, new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				dialog.dismiss();
+				if (sort_type != which) {
+					LOG.debug("clicked : " + modes[which]);
+					Utils.setLongProperty("sort_type", (long) which);
+					Mixpanel.track("Sort", "type", getSort());
+					load();
+				}
+			}
+		});
+		AlertDialog alert = alt_bld.create();
+		alert.show();
 	}
 
 	@Override

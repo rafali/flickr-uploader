@@ -1356,6 +1356,7 @@ public final class Utils {
 	}
 
 	public static boolean isPremium() {
+//		return false;
 		return getBooleanProperty(STR.premium, false);
 	}
 
@@ -1387,5 +1388,9 @@ public final class Utils {
 
 	public static boolean isTrial() {
 		return trialUntil() > System.currentTimeMillis();
+	}
+	
+	public static String getUploadDescription() {
+		return sp.getString("upload_description", "uploaded with <a href='https://play.google.com/store/apps/details?id=com.rafali.flickruploader'>Flickr Uploader</a> for Android");
 	}
 }
