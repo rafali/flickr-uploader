@@ -84,7 +84,7 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 	public void setCurrentTab(int tabIndex) {
 		queueTabView.setCurrentItem(tabIndex);
 	}
-	
+
 	@Click(R.id.pause_btn)
 	void onPauseClick() {
 		if (queueTabView.getCurrentItem() == TAB_QUEUED_INDEX) {
@@ -140,6 +140,7 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 			UploadService.clearQueued();
 		} else if (queueTabView.getCurrentItem() == TAB_FAILED_INDEX) {
 			UploadService.clearFailed();
+			FlickrApi.unretryable.clear();
 		}
 		updateLists();
 	}
@@ -172,7 +173,7 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 					notifyDataSetChanged(uploadedAdapter, uploadedMedias);
 					notifyDataSetChanged(failedAdapter, failedMedias);
 				} catch (Throwable e) {
-					LOG.error(e.getMessage(), e);
+					LOG.error(Utils.stack2string(e));
 				}
 			}
 		});
@@ -314,16 +315,20 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 					subTitleView.setText("");
 				}
 			} else if (titleRes == R.string.failed) {
-				long delay = UploadService.getRetryDelay(image);
 				String text = "";
-				if (nbError > 0) {
-					text = nbError + " error" + (nbError > 1 ? "s" : "");
-				}
-				if (delay > 0) {
-					if (!text.isEmpty()) {
-						text += ", ";
+				if (FlickrApi.unretryable.contains(image)) {
+					text = "unretryable error";
+				} else {
+					long delay = UploadService.getRetryDelay(image);
+					if (nbError > 0) {
+						text = nbError + " error" + (nbError > 1 ? "s" : "");
 					}
-					text += "retrying in " + ToolString.formatDuration(delay - System.currentTimeMillis());
+					if (delay > 0) {
+						if (!text.isEmpty()) {
+							text += ", ";
+						}
+						text += "retrying in " + ToolString.formatDuration(delay - System.currentTimeMillis());
+					}
 				}
 				Throwable lastException = FlickrApi.getLastException(image);
 				if (lastException != null) {
@@ -404,7 +409,7 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 				queueTabView.renderCurrentView();
 			}
 		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 		} finally {
 			if (activity != null && !activity.destroyed) {
 				checkStatus();

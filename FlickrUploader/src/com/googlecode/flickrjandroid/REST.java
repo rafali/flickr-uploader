@@ -38,6 +38,7 @@ import com.googlecode.flickrjandroid.util.UrlUtilities;
 import com.rafali.flickruploader.Config;
 import com.rafali.flickruploader.Media;
 import com.rafali.flickruploader.UploadService;
+import com.rafali.flickruploader.Utils;
 
 /**
  * Transport implementation using the REST interface.
@@ -182,7 +183,7 @@ public class REST extends Transport {
 
 			return buf.toString();
 		} catch (IOException e) {
-			LOG.error(e.getClass().getSimpleName(), e);
+			LOG.error(e.getMessage());
 			throw e;
 		} finally {
 			IOUtilities.close(in);
@@ -334,7 +335,7 @@ public class REST extends Transport {
 				}).start();
 				responseCode = conn.getResponseCode();
 			} catch (IOException e) {
-				LOG.error("Failed to get the POST response code", e);
+				LOG.error("Failed to get the POST response code\n" + Utils.stack2string(e));
 				if (conn.getErrorStream() != null) {
 					responseCode = conn.getResponseCode();
 				}
@@ -397,7 +398,7 @@ public class REST extends Transport {
 			try {
 				responseCode = conn.getResponseCode();
 			} catch (IOException e) {
-				LOG.error("Failed to get the POST response code", e);
+				LOG.error("Failed to get the POST response code\n" + Utils.stack2string(e));
 				if (conn.getErrorStream() != null) {
 					responseCode = conn.getResponseCode();
 				}

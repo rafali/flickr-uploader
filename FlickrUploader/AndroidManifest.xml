@@ -2,12 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.rafali.flickruploader"
     android:installLocation="internalOnly"
-    android:versionCode="31"
-    android:versionName="1.7.7" >
+    android:versionCode="33"
+    android:versionName="1.8.0" >
 
     <uses-sdk
         android:minSdkVersion="14"
-        android:targetSdkVersion="18" />
+        android:targetSdkVersion="19" />
 
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -46,20 +46,14 @@
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
             <intent-filter>
-                <action android:name="com.rafali.intent.CANCEL_UPLOAD" />
-            </intent-filter>
-            <intent-filter>
                 <action android:name="com.rafali.intent.SHARE_PHOTO" />
             </intent-filter>
         </receiver>
-
-        <activity
-            android:name="org.donations.DonationsActivity"
-            android:excludeFromRecents="true"
-            android:label="Donations"
-            android:launchMode="singleTask"
-            android:theme="@android:style/Theme.DeviceDefault.Dialog" />
-
+        <receiver
+            android:name=".AlarmBroadcastReceiver"
+            android:process=":remote" >
+        </receiver>
+        
         <!-- - Google Play Store donations -->
         <service android:name="org.donations.google.BillingService" />
 
@@ -113,6 +107,11 @@
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:icon="@drawable/empty_shape"
             android:label="Notifications" />
+        <activity
+            android:name=".PreferencesAdvanced"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:icon="@drawable/empty_shape"
+            android:label="Advanced Preferences" />
         <activity
             android:name=".WebAuth_"
             android:configChanges="orientation|screenSize|keyboardHidden"

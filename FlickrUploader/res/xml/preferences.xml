@@ -47,6 +47,9 @@
         android:key="notifications"
         android:title="Notifications" />
     <PreferenceScreen
+        android:key="advancedPreferences"
+        android:title="Advanced Preferences" />
+    <PreferenceScreen
         android:key="rate"
         android:summary="If you like this app, please rate it ★★★★★ on Google Play"
         android:title="Rate the app" />

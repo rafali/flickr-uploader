@@ -8,6 +8,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -113,17 +115,21 @@ public final class Utils {
 		alert.getButton(AlertDialog.BUTTON_NEGATIVE).setTextSize(TypedValue.COMPLEX_UNIT_DIP, textSize);
 	}
 
-	public static void confirmCancel(final Activity context, final int nb) {
+	public static void showConfirmCancel(final Activity context, final String title, final String message, final Callback<Boolean> callback) {
 		context.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				AlertDialog alertDialog = new AlertDialog.Builder(context).setTitle("Cancel uploads").setMessage("Do you want to cancel " + nb + " upload" + (nb > 1 ? "s" : ""))
-						.setPositiveButton("Cancel uploads", new DialogInterface.OnClickListener() {
-							@Override
-							public void onClick(DialogInterface dialog, int which) {
-								UploadService.cancel(true);
-							}
-						}).setNegativeButton("Continue", null).setCancelable(false).show();
+				AlertDialog alertDialog = new AlertDialog.Builder(context).setTitle(title).setMessage(message).setPositiveButton("OK", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						callback.onResult(true);
+					}
+				}).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						callback.onResult(false);
+					}
+				}).setCancelable(false).show();
 				setButtonSize(alertDialog);
 			}
 		});
@@ -277,7 +283,7 @@ public final class Utils {
 			LOG.debug("persisting images " + key + " : " + serialized);
 			setStringProperty(key, serialized);
 		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 
 		}
 	}
@@ -591,7 +597,7 @@ public final class Utils {
 				}
 			}
 		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 		} finally {
 			if (cursor != null)
 				cursor.close();
@@ -616,6 +622,24 @@ public final class Utils {
 
 	public enum CAN_UPLOAD {
 		ok, network, wifi, charging, manually
+	}
+
+	public static String canAutoUpload() {
+		if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
+			return "Autoupload disabled";
+		}
+		if (!Utils.isPremium() && !Utils.isTrial()) {
+			Notifications.notifyTrialEnded();
+			return "Trial has ended";
+		}
+		if (!FlickrApi.isAuthentified()) {
+			return "Flickr not authentified yet";
+		}
+		return "true";
+	}
+
+	public static boolean canAutoUploadBool() {
+		return "true".equals(canAutoUpload());
 	}
 
 	public static CAN_UPLOAD canUploadNow() {
@@ -703,7 +727,7 @@ public final class Utils {
 			} catch (OutOfMemoryError e) {
 				LOG.warn("retry : " + retry + ", " + e.getMessage(), e);
 			} catch (Throwable e) {
-				LOG.error(e.getMessage(), e);
+				LOG.error(Utils.stack2string(e));
 			} finally {
 				retry++;
 			}
@@ -744,7 +768,7 @@ public final class Utils {
 					LOG.debug("default synced folders : " + persisted);
 					setStringList("syncedFolder", persisted);
 				} catch (Throwable e) {
-					LOG.error(e.getMessage(), e);
+					LOG.error(Utils.stack2string(e));
 				}
 			}
 			syncedFolder = new HashSet<String>(persisted);
@@ -901,7 +925,7 @@ public final class Utils {
 					String admin = FlickrUploader.getAppContext().getString(R.string.admin_email);
 					endpoint.sendMail(admin, subject, bodyHtml, admin).execute();
 				} catch (Throwable e) {
-					LOG.error(e.getMessage(), e);
+					LOG.error(Utils.stack2string(e));
 
 				}
 			}
@@ -972,7 +996,7 @@ public final class Utils {
 				endpoint.updateAppInstall(appInstall).execute();
 			}
 		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 
 		}
 	}
@@ -1007,7 +1031,7 @@ public final class Utils {
 			boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL;
 			setCharging(isCharging);
 		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 		}
 		return charging;
 	}
@@ -1103,7 +1127,7 @@ public final class Utils {
 									bW.flush();
 									bW.close();
 								} catch (Throwable e) {
-									LOG.error(e.getMessage(), e);
+									LOG.error(Utils.stack2string(e));
 								}
 								Uri uri = Uri.fromFile(publicLog);
 								intent.putExtra(Intent.EXTRA_STREAM, uri);
@@ -1128,7 +1152,7 @@ public final class Utils {
 							activity.startActivity(Intent.createChooser(intent, "Send Feedback:"));
 						}
 					} catch (Throwable e) {
-						LOG.error(e.getMessage(), e);
+						LOG.error(Utils.stack2string(e));
 					} finally {
 						showingEmailActivity = false;
 					}
@@ -1213,7 +1237,7 @@ public final class Utils {
 					Utils.sendMail("[FlickrUploader] PremiumSuccess " + ToolString.formatDuration(timeSinceInstall) + " - " + getCountryCode(), Utils.getDeviceId() + " - " + Utils.getEmail() + " - "
 							+ Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
 				} catch (Throwable e) {
-					LOG.error(e.getMessage(), e);
+					LOG.error(Utils.stack2string(e));
 				}
 			}
 		};
@@ -1273,7 +1297,7 @@ public final class Utils {
 							LOG.warn(e.getMessage(), e);
 						}
 					} catch (Throwable e) {
-						LOG.error(e.getMessage(), e);
+						LOG.error(Utils.stack2string(e));
 					}
 				}
 			});
@@ -1320,7 +1344,7 @@ public final class Utils {
 								LOG.warn(e.getMessage(), e);
 							}
 						} catch (Throwable e) {
-							LOG.error(e.getMessage(), e);
+							LOG.error(Utils.stack2string(e));
 						}
 						activity.renderPremium();
 						if (!premium) {
@@ -1342,13 +1366,13 @@ public final class Utils {
 											}
 										}
 									} catch (IabException e) {
-										LOG.error(e.getMessage(), e);
+										LOG.error(Utils.stack2string(e));
 									}
 								}
 							});
 						}
 					} catch (Throwable e) {
-						LOG.error(e.getMessage(), e);
+						LOG.error(Utils.stack2string(e));
 					}
 				}
 			});
@@ -1356,7 +1380,7 @@ public final class Utils {
 	}
 
 	public static boolean isPremium() {
-//		return false;
+		// return false;
 		return getBooleanProperty(STR.premium, false);
 	}
 
@@ -1371,7 +1395,7 @@ public final class Utils {
 				return firstInstallTime + 7 * 24 * 3600 * 1000L;
 			}
 		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 		}
 		return System.currentTimeMillis() + 7 * 24 * 3600 * 1000L;
 	}
@@ -1381,7 +1405,7 @@ public final class Utils {
 			long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;
 			return (System.currentTimeMillis() - firstInstallTime) / (24 * 60 * 60 * 1000L);
 		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 		}
 		return 0;
 	}
@@ -1389,8 +1413,74 @@ public final class Utils {
 	public static boolean isTrial() {
 		return trialUntil() > System.currentTimeMillis();
 	}
-	
+
 	public static String getUploadDescription() {
 		return sp.getString("upload_description", "uploaded with <a href='https://play.google.com/store/apps/details?id=com.rafali.flickruploader'>Flickr Uploader</a> for Android");
 	}
+
+	public static String formatFileSize(long bytes) {
+		return humanReadableByteCount(bytes, false);
+	}
+
+	private static String humanReadableByteCount(long bytes, boolean si) {
+		int unit = si ? 1000 : 1024;
+		if (bytes < unit)
+			return bytes + " B";
+		int exp = (int) (Math.log(bytes) / Math.log(unit));
+		String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
+		return String.format(Locale.getDefault(), "%.1f %sB", bytes / Math.pow(unit, exp), pre);
+	}
+
+	public static String stack2string(Throwable e) {
+		try {
+			StringWriter sw = new StringWriter();
+			PrintWriter pw = new PrintWriter(sw);
+			e.printStackTrace(pw);
+			return "------\r\n" + sw.toString() + "------\r\n";
+		} catch (Throwable e2) {
+			return "bad stack2string";
+		}
+	}
+
+	public static long getUploadDelayMs() {
+		try {
+			String autoupload_delay = sp.getString("autoupload_delay", "delay0s");
+			return Long.valueOf(autoupload_delay.replaceAll("[^0-9.]", "")) * 1000L;
+		} catch (Throwable e) {
+			LOG.error(stack2string(e));
+		}
+		return 0;
+	}
+
+	public static long getFileSize(File file) {
+		long count = 0;
+		if (file.exists()) {
+			if (file.isDirectory()) {
+				for (File child : file.listFiles()) {
+					count += getFileSize(child);
+				}
+			} else {
+				count += file.length();
+			}
+			LOG.debug(file + " : " + count);
+		} else {
+			LOG.warn(file + " already deleted");
+		}
+		return count;
+	}
+
+	public static void deleteFiles(File file) {
+		if (file.exists()) {
+			if (file.isDirectory()) {
+				for (File child : file.listFiles()) {
+					deleteFiles(child);
+				}
+			}
+			LOG.warn(file + " deleted");
+			file.delete();
+		} else {
+			LOG.warn(file + " already deleted");
+		}
+	}
+
 }

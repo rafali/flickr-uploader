@@ -25,4 +25,5 @@ public class STR {
 	public static final String lastTrialEndedNotifications = "lastTrialEndedNotifications";
 	public static final String end_of_trial = "end_of_trial";
 	public static final String wifionly = "wifionly";
+	public static final String alarmSet = "alarmSet";
 }

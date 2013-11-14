@@ -1,13 +1,13 @@
 {
   "files": [
     {
-      "downloadUrl": "/downloads/donationendpoint/v1/20130927205349/java/1.16.0-rc/rafali.com-donationendpoint-v1-20130927205349-java-1.16.0-rc-sources.jar", 
-      "path": "rafali.com-donationendpoint-v1-20130927205349-java-1.16.0-rc-sources.jar", 
+      "downloadUrl": "/downloads/donationendpoint/v1/20131111180757/java/1.16.0-rc/rafali.com-donationendpoint-v1-20131111180757-java-1.16.0-rc-sources.jar", 
+      "path": "rafali.com-donationendpoint-v1-20131111180757-java-1.16.0-rc-sources.jar", 
       "type": "source", 
-      "timestamp": "2013-09-27 20:53"
+      "timestamp": "2013-11-11 18:07"
     }, 
     {
-      "path": "rafali.com-donationendpoint-v1-20130927205349-java-1.16.0-rc.jar.properties", 
+      "path": "rafali.com-donationendpoint-v1-20131111180757-java-1.16.0-rc.jar.properties", 
       "type": "android.properties"
     }
   ], 
@@ -702,5 +702,5 @@
   "packagePath": "flickruploader", 
   "language_version": "1.16.0-rc", 
   "id": "donationendpoint:v1", 
-  "revision": 20130927205349
+  "revision": 20131111180757
 }

@@ -161,7 +161,7 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 				}
 			}
 		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 		} finally {
 			if (activity != null && !activity.destroyed) {
 				checkStatus();

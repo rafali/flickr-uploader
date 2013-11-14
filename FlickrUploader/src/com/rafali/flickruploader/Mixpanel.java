@@ -34,7 +34,7 @@ public class Mixpanel {
 					mixpanel.registerSuperProperties(json);
 				}
 			} catch (Throwable e) {
-				LOG.error(e.getMessage(), e);
+				LOG.error(Utils.stack2string(e));
 			}
 
 		}
@@ -54,7 +54,7 @@ public class Mixpanel {
 					people.identify(Utils.getEmail());
 					people.increment(key, nb);
 				} catch (Throwable e) {
-					LOG.error(e.getMessage(), e);
+					LOG.error(Utils.stack2string(e));
 				}
 			}
 		});
@@ -83,7 +83,7 @@ public class Mixpanel {
 					mixpanel.identify(Utils.getEmail());
 					mixpanel.track(event, jsonObject);
 				} catch (Throwable e) {
-					LOG.error(e.getMessage(), e);
+					LOG.error(Utils.stack2string(e));
 				}
 			}
 		});

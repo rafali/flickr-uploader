@@ -90,7 +90,7 @@ public class Notifications {
 			// notification.iconLevel = progress / 10;
 			manager.notify(0, notification);
 		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 		}
 
 	}
@@ -117,7 +117,7 @@ public class Notifications {
 			// notification.iconLevel = progress / 10;
 			manager.notify(0, notification);
 		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 		}
 
 	}
@@ -147,7 +147,7 @@ public class Notifications {
 				}
 			}
 		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 		}
 
 	}

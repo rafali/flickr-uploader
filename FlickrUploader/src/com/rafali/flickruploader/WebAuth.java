@@ -56,7 +56,6 @@ public class WebAuth extends Activity {
 
 		webView.getSettings().setBuiltInZoomControls(false);
 		webView.getSettings().setSupportZoom(false);
-		webView.getSettings().setSavePassword(false);
 		webView.getSettings().setSaveFormData(false);
 		webView.getSettings().setAppCacheEnabled(false);
 		webView.getSettings().setSupportMultipleWindows(false);
@@ -98,7 +97,7 @@ public class WebAuth extends Activity {
 			// redirect(oauthUrl);
 			loadUrl(oauthUrl.toString());
 		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 			onNetworkError();
 		}
 	}

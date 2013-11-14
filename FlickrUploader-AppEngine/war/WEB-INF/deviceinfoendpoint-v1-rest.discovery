@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"_SAkL5LfohOjTvNX8memTU9s4HI/-ABV6opqAIh8NfFOiaJt-BEdt5M\"",
+ "etag": "\"doS0mIKix6_L3_LoT-sZZjofha4/-ABV6opqAIh8NfFOiaJt-BEdt5M\"",
  "discoveryVersion": "v1",
  "id": "deviceinfoendpoint:v1",
  "name": "deviceinfoendpoint",

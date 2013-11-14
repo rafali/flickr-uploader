@@ -92,6 +92,7 @@ public class FlickrApi {
 	private static Map<String, String> uploadedPhotos = Utils.getMapProperty(STR.uploadedPhotos);
 	private static Map<String, String> uploadedFolders = Utils.getMapProperty(STR.uploadedFolders);
 	private static Map<String, PRIVACY> photosPrivacy = Utils.getMapProperty(STR.photosPrivacy, PRIVACY.class);
+	public static Set<Media> unretryable = new HashSet<Media>();
 
 	static PRIVACY getPrivacy(Photo photo) {
 		if (photo.isPublicFlag()) {
@@ -170,10 +171,10 @@ public class FlickrApi {
 											if ("1".equals(e.getErrorCode())) {// Photo not found
 												LOG.debug(photoId + "=" + tag + " still no longer exist");
 											} else {
-												LOG.error(e.getMessage(), e);
+												LOG.error(Utils.stack2string(e));
 											}
 										} catch (Throwable e) {
-											LOG.error(e.getMessage(), e);
+											LOG.error(Utils.stack2string(e));
 										}
 									}
 									FlickrApi.uploadedPhotos = uploadedPhotos;
@@ -184,7 +185,7 @@ public class FlickrApi {
 							}
 						}
 					} catch (Throwable e) {
-						LOG.error(e.getMessage(), e);
+						LOG.error(Utils.stack2string(e));
 					}
 				}
 			});
@@ -252,7 +253,7 @@ public class FlickrApi {
 				}
 			}
 		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 		}
 	}
 
@@ -294,7 +295,7 @@ public class FlickrApi {
 				}
 			}
 		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 		}
 		return false;
 	}
@@ -345,6 +346,16 @@ public class FlickrApi {
 						throw new UploadException("Unsupported extension: " + extension);
 					}
 					String uri = image.path;
+					File file = new File(uri);
+					if (!file.exists()) {
+						throw new UploadException("File no longer exists: " + file.getAbsolutePath());
+					}
+					if (file.length() <= 10) {
+						throw new UploadException("File is empty: " + file.getAbsolutePath());
+					}
+					if (file.length() > 1024 * 1024 * 1024L) {
+						throw new UploadException("File too big: " + file.getAbsolutePath());
+					}
 					String md5tag = "file:md5sum=" + Utils.getMD5Checksum(image);
 					SearchParameters params = new SearchParameters();
 					params.setUserId(Utils.getStringProperty(STR.userId));
@@ -358,16 +369,6 @@ public class FlickrApi {
 						if (Utils.canUploadNow() != CAN_UPLOAD.ok)
 							break;
 						LOG.debug("uploading : " + uri);
-						File file = new File(uri);
-						if (!file.exists()) {
-							throw new UploadException("File no longer exists: " + file.getAbsolutePath());
-						}
-						if (file.length() <= 10) {
-							throw new UploadException("File is empty: " + file.getAbsolutePath());
-						}
-						if (file.length() > 1024 * 1024 * 1024L) {
-							throw new UploadException("File too big: " + file.getAbsolutePath());
-						}
 						// InputStream inputStream = new FileInputStream(uri);
 						UploadMetaData metaData = new UploadMetaData();
 						String uploadDescription = Utils.getUploadDescription();
@@ -397,8 +398,7 @@ public class FlickrApi {
 						} else {
 							title = STR.instantUpload;
 						}
-						String description = Utils.getString(R.string.photos_uploaded_by_android_app, Utils.getString(R.string.app_name));
-						Photoset photoset = FlickrApi.get().getPhotosetsInterface().create(title, description, photoId);
+						Photoset photoset = FlickrApi.get().getPhotosetsInterface().create(title, Utils.getUploadDescription(), photoId);
 						photosetId = photoset.getId();
 
 						if (photoSetTitle != null) {
@@ -441,15 +441,17 @@ public class FlickrApi {
 						Mixpanel.track("UnsupportedFileType", "extension", getExtension(image));
 					}
 				}
-				LOG.error(e.getMessage(), e);
+				LOG.error(Utils.stack2string(e));
 				if (!success) {
 					if (isRetryable(e)) {
-						LOG.error("retry " + retry + " : " + e.getClass().getSimpleName() + " : " + e.getMessage());
+						LOG.error("retry " + retry + " : " + e.getClass().getSimpleName() + " : " + e.getMessage() + ", cause : " + e.getCause());
 						try {
 							Thread.sleep((long) (Math.pow(2, retry) * 1000));
 						} catch (InterruptedException ignore) {
 						}
 					} else {
+						unretryable.add(image);
+						LOG.warn("not retrying : " + e.getClass().getSimpleName() + " : " + e.getMessage() + ", cause : " + e.getCause());
 						break;
 					}
 				}
@@ -518,6 +520,9 @@ public class FlickrApi {
 		} else if (e instanceof FileNotFoundException) {
 			return false;
 		}
+		if (e instanceof RuntimeException && e.getCause() != null) {
+			return isRetryable(e.getCause());
+		}
 		return true;
 	}
 
@@ -580,7 +585,7 @@ public class FlickrApi {
 						LOG.debug("set privacy " + privacy + " on " + photoId);
 					}
 				} catch (Throwable e) {
-					LOG.error(e.getMessage(), e);
+					LOG.error(Utils.stack2string(e));
 				}
 			}
 		});
@@ -599,7 +604,7 @@ public class FlickrApi {
 				photoSets.put(photoset.getId(), photoset.getTitle());
 			}
 		} catch (Throwable e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 		}
 		return photoSets;
 	}

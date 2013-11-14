@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <PreferenceScreen
+        android:key="clear_logs"
+        android:title="Clear log files" />
+
+    <ListPreference
+        android:defaultValue="delay0s"
+        android:dialogTitle="Auto-upload delay"
+        android:entries="@array/autoupload_delay_entries"
+        android:entryValues="@array/autoupload_delay_values"
+        android:key="autoupload_delay"
+        android:title="Auto-upload delay" />
+</PreferenceScreen>

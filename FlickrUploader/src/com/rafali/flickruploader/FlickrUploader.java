@@ -71,7 +71,7 @@ public class FlickrUploader extends Application {
 						Utils.setLongProperty(STR.versionCode, (long) Config.VERSION);
 					}
 				} catch (Throwable e) {
-					LOG.error(e.getMessage(), e);
+					LOG.error(Utils.stack2string(e));
 				}
 			}
 		});
@@ -111,6 +111,7 @@ public class FlickrUploader extends Application {
 		LoggerContext lc = logbackLogger.getLoggerContext();
 
 		Logger rootLogger = lc.getLogger(Logger.ROOT_LOGGER_NAME);
+		rootLogger.detachAndStopAllAppenders();
 
 		TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<ILoggingEvent>();
 		rollingPolicy.setMaxHistory(3);
@@ -197,6 +198,16 @@ public class FlickrUploader extends Application {
 		} catch (Throwable e) {
 			Log.e("Pictarine", e.getMessage(), e);
 		}
+	}
+
+	public static long getLogSize() {
+		flushLogs();
+		return Utils.getFileSize(new File(context.getFilesDir().getPath() + "/logs/"));
+	}
+
+	public static void deleteAllLogs() {
+		Utils.deleteFiles(new File(context.getFilesDir().getPath() + "/logs/"));
+		initLogs();
 	}
 
 }

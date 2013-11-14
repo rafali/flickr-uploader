@@ -25,7 +25,7 @@ public class Config {
 		try {
 			return FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).versionCode;
 		} catch (Exception e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 		}
 		return 0;
 	}
@@ -34,7 +34,7 @@ public class Config {
 		try {
 			return "" + FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).versionName;
 		} catch (Exception e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(Utils.stack2string(e));
 		}
 		return "0";
 	}

@@ -93,7 +93,7 @@ public class FlickrUploaderActivity extends Activity {
 	public void onCreate(Bundle bundle) {
 		super.onCreate(bundle);
 		LOG.debug("onCreate " + bundle);
-		startService(new Intent(this, UploadService.class));
+		UploadService.wake();
 		if (Utils.getStringProperty(STR.accessToken) == null) {
 			Utils.confirmSignIn(FlickrUploaderActivity.this);
 		}

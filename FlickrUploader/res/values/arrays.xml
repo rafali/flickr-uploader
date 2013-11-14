@@ -9,7 +9,6 @@
         <item>any network</item>
         <item>any network except 2G/3G/4G</item>
     </array>
-
     <array name="autoupload_photoset_values">
         <item>default</item>
         <item>custom</item>
@@ -17,6 +16,18 @@
     <array name="autoupload_photoset_entries">
         <item>Default</item>
         <item>Custom</item>
+    </array>
+    <array name="autoupload_delay_values">
+        <item>delay0s</item>
+        <item>delay30s</item>
+        <item>delay60s</item>
+        <item>delay300s</item>
+    </array>
+    <array name="autoupload_delay_entries">
+        <item>No delay</item>
+        <item>30 seconds</item>
+        <item>1 minute</item>
+        <item>5 minutes</item>
     </array>
 
 </resources>

@@ -82,7 +82,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 									editor.commit();
 									render();
 									FlickrApi.reset();
-									UploadService.cancel(false);
+									UploadService.clearQueued();
 								}
 							}).setNegativeButton("Cancel", null).show();
 				} else {
@@ -117,6 +117,13 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
 				startActivity(new Intent(Preferences.this, PreferencesNotification.class));
+				return false;
+			}
+		});
+		findPreference("advancedPreferences").setOnPreferenceClickListener(new OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				startActivity(new Intent(Preferences.this, PreferencesAdvanced.class));
 				return false;
 			}
 		});
@@ -308,9 +315,8 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 			}
 			findPreference(AUTOUPLOAD_PHOTOSET).setSummary(summary);
 		}
-		
-		findPreference("upload_description").setSummary(Html.fromHtml(Utils.getUploadDescription()));
 
+		findPreference("upload_description").setSummary(Html.fromHtml(Utils.getUploadDescription()));
 
 		String privacy = sp.getString(UPLOAD_PRIVACY, PRIVACY.PRIVATE.toString());
 		findPreference(UPLOAD_PRIVACY).setSummary(PRIVACY.valueOf(privacy).getSimpleName());

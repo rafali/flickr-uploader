@@ -18,13 +18,9 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		LOG.info("intent : " + intent);
-		if ("com.rafali.intent.CANCEL_UPLOAD".equals(intent.getAction())) {
-			Mixpanel.track("Cancel in notification");
-			LOG.debug( "canceling uploads");
-			UploadService.cancel(true);
-		} else if ("com.rafali.intent.SHARE_PHOTO".equals(intent.getAction())) {
+		if ("com.rafali.intent.SHARE_PHOTO".equals(intent.getAction())) {
 			Mixpanel.track("Share in notification");
-			LOG.debug( "share intent : " + intent);
+			LOG.debug("share intent : " + intent);
 			int imageId = intent.getIntExtra("imageId", -1);
 			if (imageId > 0) {
 				Media image = Utils.getImage(imageId);
@@ -38,15 +34,14 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
 					Intent createChooser = Intent.createChooser(sharingIntent, "Share via");
 					createChooser.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 					context.startActivity(createChooser);
-					LOG.debug( "url : " + url);
+					LOG.debug("url : " + url);
 					FlickrApi.setPrivacy(PRIVACY.PUBLIC, Arrays.asList(photoId));
 					NotificationManager mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 					mNotificationManager.cancelAll();
 				}
 			}
 		} else {
-			LOG.debug( "action : " + intent.getAction());
-			context.startService(new Intent(context, UploadService.class));
+			LOG.debug("action : " + intent.getAction());
 			UploadService.wake();
 		}
 	}

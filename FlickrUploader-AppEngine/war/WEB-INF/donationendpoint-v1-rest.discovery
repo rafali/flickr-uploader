@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"_SAkL5LfohOjTvNX8memTU9s4HI/qtL8XZWYZmhWd2J_fHXFb7LxUeQ\"",
+ "etag": "\"doS0mIKix6_L3_LoT-sZZjofha4/qtL8XZWYZmhWd2J_fHXFb7LxUeQ\"",
  "discoveryVersion": "v1",
  "id": "donationendpoint:v1",
  "name": "donationendpoint",
