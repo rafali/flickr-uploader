@@ -3,7 +3,6 @@ package com.rafali.flickruploader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -17,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import android.content.Context;
 import android.net.ConnectivityManager;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.googlecode.flickrjandroid.Flickr;
@@ -379,7 +379,12 @@ public class FlickrApi {
 						metaData.setFriendFlag(privacy == PRIVACY.FRIENDS || privacy == PRIVACY.FRIENDS_FAMILY);
 						metaData.setFamilyFlag(privacy == PRIVACY.FAMILY || privacy == PRIVACY.FRIENDS_FAMILY);
 						metaData.setPublicFlag(privacy == PRIVACY.PUBLIC);
-						metaData.setTags(Arrays.asList(md5tag, sha1tag));
+						List<String> tags = Lists.newArrayList(md5tag, sha1tag);
+						String custom_tags = Utils.getStringProperty("custom_tags");
+						if (ToolString.isNotBlank(custom_tags)) {
+							tags.add(custom_tags);
+						}
+						metaData.setTags(tags);
 						long start = System.currentTimeMillis();
 						photoId = FlickrApi.get().getUploader().upload(image.name, file, metaData, image);
 						LOG.debug("photo uploaded in " + (System.currentTimeMillis() - start) + "ms : " + photoId);

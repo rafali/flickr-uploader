@@ -27,9 +27,7 @@ import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import android.text.Html;
 import android.view.MenuItem;
-import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.analytics.tracking.android.EasyTracker;
@@ -124,49 +122,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
 				startActivity(new Intent(Preferences.this, PreferencesAdvanced.class));
-				return false;
-			}
-		});
-		findPreference("upload_description").setOnPreferenceClickListener(new OnPreferenceClickListener() {
-			@Override
-			public boolean onPreferenceClick(Preference preference) {
-				Mixpanel.track("UploadDescription", "premium", Utils.isPremium());
-				AlertDialog.Builder alert = new AlertDialog.Builder(Preferences.this);
-				alert.setTitle("Upload description");
-				if (Utils.isPremium()) {
-					// Set an EditText view to get user input
-					final EditText input = new EditText(Preferences.this);
-					input.setText(Utils.getUploadDescription());
-					alert.setView(input);
-
-					alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-						public void onClick(DialogInterface dialog, int whichButton) {
-							String value = input.getText().toString();
-							LOG.debug("value : " + value);
-							Utils.setStringProperty("upload_description", value);
-							render();
-						}
-					});
-
-					alert.setNegativeButton("Cancel", null);
-				} else {
-					alert.setMessage("A Premium account is needed to customize this branding feature");
-					alert.setPositiveButton("Get Premium Now", new OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							Mixpanel.track("UploadDescriptionPremium");
-							Utils.startPayment(Preferences.this, new Utils.Callback<Boolean>() {
-								@Override
-								public void onResult(Boolean result) {
-									Mixpanel.track("UploadDescriptionPremiumOk");
-								}
-							});
-						}
-					});
-					alert.setNegativeButton("Later", null);
-				}
-
-				alert.show();
 				return false;
 			}
 		});
@@ -315,8 +270,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 			}
 			findPreference(AUTOUPLOAD_PHOTOSET).setSummary(summary);
 		}
-
-		findPreference("upload_description").setSummary(Html.fromHtml(Utils.getUploadDescription()));
 
 		String privacy = sp.getString(UPLOAD_PRIVACY, PRIVACY.PRIVATE.toString());
 		findPreference(UPLOAD_PRIVACY).setSummary(PRIVACY.valueOf(privacy).getSimpleName());

@@ -192,6 +192,10 @@ public final class Utils {
 		return sp.getString(property, null);
 	}
 
+	public static String getStringProperty(String property, String defaultValue) {
+		return sp.getString(property, defaultValue);
+	}
+
 	public static void clearProperty(String property) {
 		Editor editor = sp.edit();
 		editor.remove(property);

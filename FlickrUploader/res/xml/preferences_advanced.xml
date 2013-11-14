@@ -12,4 +12,12 @@
         android:entryValues="@array/autoupload_delay_values"
         android:key="autoupload_delay"
         android:title="Auto-upload delay" />
+
+    <PreferenceScreen
+        android:key="upload_description"
+        android:title="Upload description" />
+    <PreferenceScreen
+        android:key="custom_tags"
+        android:title="Upload tag" />
+
 </PreferenceScreen>
