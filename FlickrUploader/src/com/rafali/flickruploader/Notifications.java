@@ -12,6 +12,7 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
 
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 
 public class Notifications {
@@ -90,7 +91,7 @@ public class Notifications {
 			// notification.iconLevel = progress / 10;
 			manager.notify(0, notification);
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		}
 
 	}
@@ -117,7 +118,7 @@ public class Notifications {
 			// notification.iconLevel = progress / 10;
 			manager.notify(0, notification);
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		}
 
 	}
@@ -147,7 +148,7 @@ public class Notifications {
 				}
 			}
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		}
 
 	}

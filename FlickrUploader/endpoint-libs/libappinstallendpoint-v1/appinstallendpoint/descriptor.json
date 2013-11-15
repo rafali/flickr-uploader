@@ -1,13 +1,13 @@
 {
   "files": [
     {
-      "downloadUrl": "/downloads/appinstallendpoint/v1/20131111180800/java/1.16.0-rc/rafali.com-appinstallendpoint-v1-20131111180800-java-1.16.0-rc-sources.jar", 
-      "path": "rafali.com-appinstallendpoint-v1-20131111180800-java-1.16.0-rc-sources.jar", 
+      "downloadUrl": "/downloads/appinstallendpoint/v1/20131115053737/java/1.16.0-rc/rafali.com-appinstallendpoint-v1-20131115053737-java-1.16.0-rc-sources.jar", 
+      "path": "rafali.com-appinstallendpoint-v1-20131115053737-java-1.16.0-rc-sources.jar", 
       "type": "source", 
-      "timestamp": "2013-11-11 18:08"
+      "timestamp": "2013-11-15 05:37"
     }, 
     {
-      "path": "rafali.com-appinstallendpoint-v1-20131111180800-java-1.16.0-rc.jar.properties", 
+      "path": "rafali.com-appinstallendpoint-v1-20131115053737-java-1.16.0-rc.jar.properties", 
       "type": "android.properties"
     }
   ], 
@@ -702,5 +702,5 @@
   "packagePath": "flickruploader", 
   "language_version": "1.16.0-rc", 
   "id": "appinstallendpoint:v1", 
-  "revision": 20131111180800
+  "revision": 20131115053737
 }

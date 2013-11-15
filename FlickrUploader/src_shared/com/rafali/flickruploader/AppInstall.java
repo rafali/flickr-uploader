@@ -13,6 +13,9 @@ import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
+import com.rafali.flickruploader.AndroidDevice;
+
+
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class AppInstall implements Serializable {
 	private static final long serialVersionUID = 1L;

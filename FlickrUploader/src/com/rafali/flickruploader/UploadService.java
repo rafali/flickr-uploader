@@ -32,6 +32,7 @@ import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Video;
 
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.rafali.common.ToolString;
 import com.rafali.flickruploader.Utils.CAN_UPLOAD;
 import com.rafali.flickruploader.Utils.MediaType;
 
@@ -141,7 +142,7 @@ public class UploadService extends Service {
 
 			}
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		}
 		register(uploadProgressListener);
 		getContentResolver().registerContentObserver(Images.Media.EXTERNAL_CONTENT_URI, true, imageTableObserver);
@@ -207,7 +208,7 @@ public class UploadService extends Service {
 			try {
 				future.cancel(mayInterruptIfRunning);
 			} catch (Throwable e) {
-				LOG.error(Utils.stack2string(e));
+				LOG.error(ToolString.stack2string(e));
 			}
 		}
 
@@ -451,7 +452,7 @@ public class UploadService extends Service {
 				} catch (InterruptedException e) {
 					LOG.warn("Thread interrupted");
 				} catch (Throwable e) {
-					LOG.error(Utils.stack2string(e));
+					LOG.error(ToolString.stack2string(e));
 				} finally {
 					mediaCurrentlyUploading = null;
 				}
@@ -664,7 +665,7 @@ public class UploadService extends Service {
 				FlickrUploaderActivity.staticRefresh(true);
 			}
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		}
 	}
 }

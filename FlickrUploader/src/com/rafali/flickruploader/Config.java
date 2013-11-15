@@ -2,6 +2,8 @@ package com.rafali.flickruploader;
 
 import org.slf4j.LoggerFactory;
 
+import com.rafali.common.ToolString;
+
 import android.content.pm.ApplicationInfo;
 
 public class Config {
@@ -11,6 +13,9 @@ public class Config {
 	public static final long MAX_FILE_SIZE = 200 * 1024 * 1024L;
 	public static final String VERSION_NAME = getVersionName();
 	public static final String FULL_VERSION_NAME = VERSION_NAME + "-" + VERSION;
+
+	public static final String HOSTNAME = "ra-fa-li.appspot.com";
+	public static final String HTTP_START = "http://" + HOSTNAME;
 
 	private static Boolean DEBUG = null;
 
@@ -25,7 +30,7 @@ public class Config {
 		try {
 			return FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).versionCode;
 		} catch (Exception e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		}
 		return 0;
 	}
@@ -34,7 +39,7 @@ public class Config {
 		try {
 			return "" + FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).versionName;
 		} catch (Exception e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		}
 		return "0";
 	}

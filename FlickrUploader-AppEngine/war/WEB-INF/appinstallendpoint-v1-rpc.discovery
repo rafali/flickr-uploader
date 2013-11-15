@@ -1,6 +1,6 @@
 {
  "kind": "discovery#rpcDescription",
- "etag": "\"doS0mIKix6_L3_LoT-sZZjofha4/F_EfJYFG5X9zPuqg9dy6xUMZVOA\"",
+ "etag": "\"doS0mIKix6_L3_LoT-sZZjofha4/I0nXa3M-XxDYzTvQF0fIpXL_iOk\"",
  "discoveryVersion": "v1",
  "id": "appinstallendpoint:v1",
  "name": "appinstallendpoint",
@@ -84,6 +84,9 @@
      "type": "boolean"
     },
     "appVersion": {
+     "type": "string"
+    },
+    "countryCode": {
      "type": "string"
     },
     "dateCreation": {

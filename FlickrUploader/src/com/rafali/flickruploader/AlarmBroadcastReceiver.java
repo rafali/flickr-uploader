@@ -2,6 +2,8 @@ package com.rafali.flickruploader;
 
 import org.slf4j.LoggerFactory;
 
+import com.rafali.common.ToolString;
+
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -25,7 +27,7 @@ public class AlarmBroadcastReceiver extends BroadcastReceiver {
 				initAlarm();
 			}
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		} finally {
 			if (wl != null) {
 				wl.release();
@@ -52,7 +54,7 @@ public class AlarmBroadcastReceiver extends BroadcastReceiver {
 				Utils.setBooleanProperty(STR.alarmSet, false);
 			}
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		}
 	}
 }

@@ -236,6 +236,9 @@
           },
           "androidVersion" : {
             "type" : "integer"
+          },
+          "countryCode" : {
+            "type" : "string"
           }
         }
       }

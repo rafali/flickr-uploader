@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.mixpanel.android.mpmetrics.MixpanelAPI;
 import com.mixpanel.android.mpmetrics.MixpanelAPI.People;
+import com.rafali.common.ToolString;
 
 public class Mixpanel {
 
@@ -34,7 +35,7 @@ public class Mixpanel {
 					mixpanel.registerSuperProperties(json);
 				}
 			} catch (Throwable e) {
-				LOG.error(Utils.stack2string(e));
+				LOG.error(ToolString.stack2string(e));
 			}
 
 		}
@@ -54,7 +55,7 @@ public class Mixpanel {
 					people.identify(Utils.getEmail());
 					people.increment(key, nb);
 				} catch (Throwable e) {
-					LOG.error(Utils.stack2string(e));
+					LOG.error(ToolString.stack2string(e));
 				}
 			}
 		});
@@ -83,7 +84,7 @@ public class Mixpanel {
 					mixpanel.identify(Utils.getEmail());
 					mixpanel.track(event, jsonObject);
 				} catch (Throwable e) {
-					LOG.error(Utils.stack2string(e));
+					LOG.error(ToolString.stack2string(e));
 				}
 			}
 		});

@@ -6,6 +6,7 @@ import java.util.List;
 import org.slf4j.LoggerFactory;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.SharedPreferences;
@@ -19,6 +20,7 @@ import android.text.Html;
 import android.view.MenuItem;
 import android.widget.EditText;
 
+import com.google.common.base.Joiner;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 
 @SuppressWarnings("deprecation")
@@ -55,7 +57,44 @@ public class PreferencesAdvanced extends PreferenceActivity implements OnSharedP
 
 		findPreference("upload_description").setOnPreferenceClickListener(new PremiumOnclick("upload_description"));
 		findPreference("custom_tags").setOnPreferenceClickListener(new PremiumOnclick("custom_tags"));
-
+		findPreference("check_premium_status").setOnPreferenceClickListener(new OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						findPreference("check_premium_status").setSummary("Checking from server...");
+					}
+				});
+				BackgroundExecutor.execute(new Runnable() {
+					@Override
+					public void run() {
+						Utils.checkPremium(true, new Utils.Callback<Boolean>() {
+							@Override
+							public void onResult(final Boolean result) {
+								runOnUiThread(new Runnable() {
+									@Override
+									public void run() {
+										String message;
+										if (result) {
+											message = "Premium status confirmed!";
+										} else {
+											if (Utils.customSku == null) {
+												message = "No premium info found for your device email: " + Joiner.on(", ").join(Utils.getAccountEmails());
+											} else {
+												message = "Your coupon has been applied to the device!";
+											}
+										}
+										findPreference("check_premium_status").setSummary(message);
+									}
+								});
+							}
+						});
+					}
+				});
+				return false;
+			}
+		});
 		render();
 	}
 

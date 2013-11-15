@@ -29,6 +29,7 @@ import com.googlecode.flickrjandroid.auth.Permission;
 import com.googlecode.flickrjandroid.oauth.OAuth;
 import com.googlecode.flickrjandroid.oauth.OAuthInterface;
 import com.googlecode.flickrjandroid.oauth.OAuthToken;
+import com.rafali.common.ToolString;
 
 @EActivity(R.layout.webauth)
 public class WebAuth extends Activity {
@@ -97,7 +98,7 @@ public class WebAuth extends Activity {
 			// redirect(oauthUrl);
 			loadUrl(oauthUrl.toString());
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 			onNetworkError();
 		}
 	}

@@ -2,6 +2,9 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <PreferenceScreen
+        android:key="check_premium_status"
+        android:title="Check Premium Status" />
+    <PreferenceScreen
         android:key="clear_logs"
         android:title="Clear log files" />
 

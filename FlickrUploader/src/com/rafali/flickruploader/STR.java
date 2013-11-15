@@ -26,4 +26,5 @@ public class STR {
 	public static final String end_of_trial = "end_of_trial";
 	public static final String wifionly = "wifionly";
 	public static final String alarmSet = "alarmSet";
+	public static final String lastServerDeviceSaved = "lastServerDeviceSaved";
 }

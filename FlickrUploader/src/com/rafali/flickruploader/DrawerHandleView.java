@@ -15,6 +15,7 @@ import com.googlecode.androidannotations.annotations.EViewGroup;
 import com.googlecode.androidannotations.annotations.UiThread;
 import com.googlecode.androidannotations.annotations.ViewById;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import com.rafali.flickruploader.UploadService.UploadProgressListener;
 import com.rafali.flickruploader.Utils.CAN_UPLOAD;
@@ -161,7 +162,7 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 				}
 			}
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		} finally {
 			if (activity != null && !activity.destroyed) {
 				checkStatus();

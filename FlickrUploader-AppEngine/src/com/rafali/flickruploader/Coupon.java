@@ -3,37 +3,38 @@ package com.rafali.flickruploader;
 import java.io.Serializable;
 import java.util.Date;
 
-import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
-public class Donation implements Serializable {
+public class Coupon implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	public enum FIELD {
-		id, email, name, dateCreation, amount
+		email, premium, dateCreation, sku
 	}
 
 	@PrimaryKey
-	@Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-	private Long id;
-
 	@Persistent
 	private String email;
 
 	@Persistent
-	private String name;
+	private Boolean premium;
 
 	@Persistent
-	private double amount;
+	private String sku;
 
 	@Persistent
 	private Date dateCreation;
 
-	public Donation() {
+	protected Coupon() {
+	}
+
+	protected Coupon(String email) {
+		this.email = email;
+		this.dateCreation = new Date();
 	}
 
 	public String getEmail() {
@@ -46,7 +47,7 @@ public class Donation implements Serializable {
 
 	@Override
 	public String toString() {
-		return email + "-" + dateCreation + " : " + getName() + " : " + amount;
+		return email + "-" + dateCreation + " : premium=" + premium + " : sku=" + getSku();
 	}
 
 	public void setDateCreation(Date dateCreation) {
@@ -57,23 +58,21 @@ public class Donation implements Serializable {
 		return this.dateCreation;
 	}
 
-	public void setAmount(double amount) {
-		this.amount = amount;
-	}
-	
-	public double getAmount() {
-		return amount;
+	public boolean isPremium() {
+		if (premium != null)
+			return premium;
+		return false;
 	}
 
-	public String getName() {
-		return name;
+	public void setPremium(boolean premium) {
+		this.premium = premium;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public String getSku() {
+		return sku;
 	}
 
-	public Object getId() {
-		return id;
+	public void setSku(String sku) {
+		this.sku = sku;
 	}
 }

@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import android.app.Application;
 import android.content.Context;
+import android.os.Handler;
 import android.util.Log;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
@@ -42,6 +43,7 @@ import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.rafali.common.ToolString;
 
 @ReportsCrashes(formUri = "http://ra-fa-li.appspot.com/androidCrashReport", formKey = "", mode = ReportingInteractionMode.TOAST, forceCloseDialogAfterToast = false, // optional, default false
 resToastText = R.string.crash_toast_text, customReportContent = { REPORT_ID, APP_VERSION_CODE, APP_VERSION_NAME, PHONE_MODEL, ANDROID_VERSION, BUILD, BRAND, PRODUCT, TOTAL_MEM_SIZE,
@@ -56,6 +58,7 @@ public class FlickrUploader extends Application {
 	public void onCreate() {
 		super.onCreate();
 		FlickrUploader.context = getApplicationContext();
+		getHandler();
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
@@ -71,7 +74,7 @@ public class FlickrUploader extends Application {
 						Utils.setLongProperty(STR.versionCode, (long) Config.VERSION);
 					}
 				} catch (Throwable e) {
-					LOG.error(Utils.stack2string(e));
+					LOG.error(ToolString.stack2string(e));
 				}
 			}
 		});
@@ -81,26 +84,14 @@ public class FlickrUploader extends Application {
 		return context;
 	}
 
-	// private static synchronized void initLogs() {
-	// try {
-	// File logFile = Utils.getLogFile();
-	// ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-	// RollingFileAppender<ILoggingEvent> appender = (RollingFileAppender<ILoggingEvent>) root.getAppender("file");
-	// appender.setFile(logFile.getAbsolutePath());
-	// @SuppressWarnings("unchecked")
-	// TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = (TimeBasedRollingPolicy<ILoggingEvent>) appender.getRollingPolicy();
-	// rollingPolicy.setFileNamePattern(logFile.getParent() + "/log/flickruploader.%d{yyyy-MM-dd}.%i.log");
-	//
-	// if (!Config.isDebug()) {
-	// LogcatAppender logcatAppender = (LogcatAppender) root.getAppender("logcat");
-	// if (logcatAppender != null) {
-	// logcatAppender.stop();
-	// }
-	// }
-	// } catch (Throwable e) {
-	// e.printStackTrace();
-	// }
-	// }
+	private static Handler handler;
+	public static Handler getHandler() {
+		if (handler == null) {
+			handler = new Handler();
+		}
+		return handler;
+	}
+
 
 	public static String getLogFilePath() {
 		return context.getFilesDir().getPath() + "/logs/flickruploader.log";

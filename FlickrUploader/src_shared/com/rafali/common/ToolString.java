@@ -1,5 +1,7 @@
-package com.rafali.flickruploader;
+package com.rafali.common;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.HashMap;
@@ -176,5 +178,16 @@ public class ToolString {
 	    final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
 	    int digitGroups = (int) (Math.log10(size)/Math.log10(1024));
 	    return new DecimalFormat("#,##0.#").format(size/Math.pow(1024, digitGroups)) + " " + units[digitGroups];
+	}
+
+	public static String stack2string(Throwable e) {
+		try {
+			StringWriter sw = new StringWriter();
+			PrintWriter pw = new PrintWriter(sw);
+			e.printStackTrace(pw);
+			return "------\r\n" + sw.toString() + "------\r\n";
+		} catch (Throwable e2) {
+			return "bad stack2string";
+		}
 	}
 }

@@ -31,6 +31,7 @@ import com.googlecode.flickrjandroid.photos.SearchParameters;
 import com.googlecode.flickrjandroid.photosets.Photoset;
 import com.googlecode.flickrjandroid.photosets.Photosets;
 import com.googlecode.flickrjandroid.uploader.UploadMetaData;
+import com.rafali.common.ToolString;
 import com.rafali.flickruploader.Utils.CAN_UPLOAD;
 
 public class FlickrApi {
@@ -171,10 +172,10 @@ public class FlickrApi {
 											if ("1".equals(e.getErrorCode())) {// Photo not found
 												LOG.debug(photoId + "=" + tag + " still no longer exist");
 											} else {
-												LOG.error(Utils.stack2string(e));
+												LOG.error(ToolString.stack2string(e));
 											}
 										} catch (Throwable e) {
-											LOG.error(Utils.stack2string(e));
+											LOG.error(ToolString.stack2string(e));
 										}
 									}
 									FlickrApi.uploadedPhotos = uploadedPhotos;
@@ -185,7 +186,7 @@ public class FlickrApi {
 							}
 						}
 					} catch (Throwable e) {
-						LOG.error(Utils.stack2string(e));
+						LOG.error(ToolString.stack2string(e));
 					}
 				}
 			});
@@ -253,7 +254,7 @@ public class FlickrApi {
 				}
 			}
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		}
 	}
 
@@ -295,7 +296,7 @@ public class FlickrApi {
 				}
 			}
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		}
 		return false;
 	}
@@ -446,7 +447,7 @@ public class FlickrApi {
 						Mixpanel.track("UnsupportedFileType", "extension", getExtension(image));
 					}
 				}
-				LOG.error(Utils.stack2string(e));
+				LOG.error(ToolString.stack2string(e));
 				if (!success) {
 					if (isRetryable(e)) {
 						LOG.error("retry " + retry + " : " + e.getClass().getSimpleName() + " : " + e.getMessage() + ", cause : " + e.getCause());
@@ -590,7 +591,7 @@ public class FlickrApi {
 						LOG.debug("set privacy " + privacy + " on " + photoId);
 					}
 				} catch (Throwable e) {
-					LOG.error(Utils.stack2string(e));
+					LOG.error(ToolString.stack2string(e));
 				}
 			}
 		});
@@ -609,7 +610,7 @@ public class FlickrApi {
 				photoSets.put(photoset.getId(), photoset.getTitle());
 			}
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		}
 		return photoSets;
 	}

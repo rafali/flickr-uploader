@@ -41,4 +41,11 @@
 		<nature>org.eclipse.wst.common.project.facet.core.nature</nature>
 		<nature>com.google.appengine.eclipse.core.gaeNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>src_shared</name>
+			<type>2</type>
+			<location>/Users/emerix/git/flickr-uploader/FlickrUploader/src_shared</location>
+		</link>
+	</linkedResources>
 </projectDescription>

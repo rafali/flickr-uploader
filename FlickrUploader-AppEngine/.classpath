@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="src_shared"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/gcm-server.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/LIB-slf4j-api-1.6.0.jar"/>
 	<classpathentry kind="con" path="com.google.appengine.eclipse.core.GAE_CONTAINER"/>
 	<classpathentry kind="var" path="REMOTE_API_JAR"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/LIB-google-collect-1.0.jar"/>

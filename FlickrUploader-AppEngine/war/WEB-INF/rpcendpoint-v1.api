@@ -59,13 +59,52 @@
       "response" : {
         "body" : "empty"
       }
+    },
+    "rpcendpoint.checkPremiumStatus" : {
+      "path" : "checkPremiumStatus/{emails}",
+      "httpMethod" : "POST",
+      "authLevel" : "NONE",
+      "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
+      "audiences" : [ ],
+      "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
+      "rosyMethod" : "com.rafali.flickruploader.RpcEndpoint.checkPremiumStatus",
+      "request" : {
+        "parameters" : {
+          "emails" : {
+            "repeated" : true,
+            "type" : "string",
+            "required" : true
+          }
+        },
+        "body" : "empty"
+      },
+      "response" : {
+        "body" : "autoTemplate(backendResponse)"
+      }
     }
   },
   "descriptor" : {
     "schemas" : {
+      "StringCollection" : {
+        "id" : "StringCollection",
+        "type" : "object",
+        "properties" : {
+          "items" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      }
     },
     "methods" : {
       "com.rafali.flickruploader.RpcEndpoint.sendMail" : {
+      },
+      "com.rafali.flickruploader.RpcEndpoint.checkPremiumStatus" : {
+        "response" : {
+          "$ref" : "StringCollection"
+        }
       }
     }
   }

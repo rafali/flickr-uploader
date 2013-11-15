@@ -56,6 +56,7 @@ import com.googlecode.androidannotations.annotations.EActivity;
 import com.googlecode.androidannotations.annotations.UiThread;
 import com.googlecode.androidannotations.annotations.ViewById;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.Utils.MediaType;
 import com.rafali.flickruploader.billing.IabHelper;
@@ -101,7 +102,12 @@ public class FlickrUploaderActivity extends Activity {
 		if (instance != null)
 			instance.finish();
 		instance = this;
-		Utils.checkPremium(this);
+		Utils.checkPremium(false, new Utils.Callback<Boolean>() {
+			@Override
+			public void onResult(Boolean result) {
+				renderPremium();
+			}
+		});
 		handleIntent(getIntent());
 	}
 
@@ -1222,7 +1228,7 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	@UiThread
-	public void renderPremium() {
+	void renderPremium() {
 		if (!destroyed) {
 			boolean showAds = false;
 			if (Utils.isPremium()) {

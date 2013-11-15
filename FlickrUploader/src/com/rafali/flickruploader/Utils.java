@@ -8,15 +8,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -63,29 +60,20 @@ import android.telephony.TelephonyManager;
 import android.util.TypedValue;
 import android.view.WindowManager;
 
-import com.google.api.client.extensions.android.http.AndroidHttp;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpRequestInitializer;
-import com.google.api.client.json.jackson.JacksonFactory;
-import com.google.api.client.util.DateTime;
 import com.google.common.base.Joiner;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
-import com.rafali.flickruploader.appinstallendpoint.Appinstallendpoint;
-import com.rafali.flickruploader.appinstallendpoint.model.AndroidDevice;
-import com.rafali.flickruploader.appinstallendpoint.model.AppInstall;
-import com.rafali.flickruploader.appinstallendpoint.model.CollectionResponseAppInstall;
 import com.rafali.flickruploader.billing.IabException;
 import com.rafali.flickruploader.billing.IabHelper;
 import com.rafali.flickruploader.billing.IabHelper.OnIabPurchaseFinishedListener;
 import com.rafali.flickruploader.billing.IabResult;
 import com.rafali.flickruploader.billing.Inventory;
 import com.rafali.flickruploader.billing.Purchase;
-import com.rafali.flickruploader.rpcendpoint.Rpcendpoint;
 
 public final class Utils {
 
@@ -287,7 +275,7 @@ public final class Utils {
 			LOG.debug("persisting images " + key + " : " + serialized);
 			setStringProperty(key, serialized);
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 
 		}
 	}
@@ -601,7 +589,7 @@ public final class Utils {
 				}
 			}
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		} finally {
 			if (cursor != null)
 				cursor.close();
@@ -731,7 +719,7 @@ public final class Utils {
 			} catch (OutOfMemoryError e) {
 				LOG.warn("retry : " + retry + ", " + e.getMessage(), e);
 			} catch (Throwable e) {
-				LOG.error(Utils.stack2string(e));
+				LOG.error(ToolString.stack2string(e));
 			} finally {
 				retry++;
 			}
@@ -772,7 +760,7 @@ public final class Utils {
 					LOG.debug("default synced folders : " + persisted);
 					setStringList("syncedFolder", persisted);
 				} catch (Throwable e) {
-					LOG.error(Utils.stack2string(e));
+					LOG.error(ToolString.stack2string(e));
 				}
 			}
 			syncedFolder = new HashSet<String>(persisted);
@@ -921,15 +909,10 @@ public final class Utils {
 			@Override
 			public void run() {
 				try {
-					Rpcendpoint.Builder endpointBuilder = new Rpcendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
-						public void initialize(HttpRequest httpRequest) {
-						}
-					});
-					Rpcendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
 					String admin = FlickrUploader.getAppContext().getString(R.string.admin_email);
-					endpoint.sendMail(admin, subject, bodyHtml, admin).execute();
+					RPC.getRpcService().sendEmail(admin, subject, bodyHtml, admin);
 				} catch (Throwable e) {
-					LOG.error(Utils.stack2string(e));
+					LOG.error(ToolString.stack2string(e));
 
 				}
 			}
@@ -937,13 +920,10 @@ public final class Utils {
 	}
 
 	public static AndroidDevice createAndroidDevice() {
-		AndroidDevice androidDevice = new AndroidDevice();
-		androidDevice.setId(getDeviceId());
-		androidDevice.setEmails(getAccountEmails());
-		androidDevice.setLanguage(Locale.getDefault().getLanguage());
-		androidDevice.setAndroidVersion(Build.VERSION.SDK_INT);
+		AndroidDevice androidDevice = new AndroidDevice(getDeviceId(), getAccountEmails(), Locale.getDefault().getLanguage(), Build.VERSION.SDK_INT);
 		androidDevice.setAppVersion(Config.FULL_VERSION_NAME);
 		androidDevice.setModelInfo(android.os.Build.MODEL + " - " + android.os.Build.VERSION.RELEASE);
+		androidDevice.setCountryCode(getCountryCode());
 		return androidDevice;
 	}
 
@@ -972,36 +952,13 @@ public final class Utils {
 
 	public static void saveAndroidDevice() {
 		try {
-			Appinstallendpoint.Builder endpointBuilder = new Appinstallendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
-				public void initialize(HttpRequest httpRequest) {
-				}
-			});
-
-			Appinstallendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
-			AppInstall appInstall = null;
-			try {
-				appInstall = endpoint.getAppInstall(getDeviceId()).execute();
-			} catch (Throwable e) {
-				LOG.warn(e.getMessage(), e);
-			}
-			boolean newInstall = appInstall == null;
-			if (appInstall == null) {
-				appInstall = new AppInstall();
-				appInstall.setDateCreation(new DateTime(new Date()));
-				Utils.sendMail("[FlickrUploader] New install - " + getCountryCode() + " - " + Locale.getDefault().getLanguage() + " - " + Utils.getDeviceId(), Utils.getAccountEmails() + " - "
-						+ android.os.Build.MODEL + " - " + android.os.Build.VERSION.RELEASE + " - " + Config.FULL_VERSION_NAME);
-			}
-			appInstall.setEmails(getAccountEmails());
-			appInstall.setAndroidDevice(createAndroidDevice());
-			appInstall.setDeviceId(getDeviceId());
-			if (newInstall) {
-				endpoint.insertAppInstall(appInstall).execute();
-			} else {
-				endpoint.updateAppInstall(appInstall).execute();
+			long lastServerDeviceSaved = Utils.getLongProperty(STR.lastServerDeviceSaved);
+			if (lastServerDeviceSaved <= 0 || System.currentTimeMillis() - lastServerDeviceSaved > 5 * 24 * 3600 * 1000L) {
+				RPC.getRpcService().createOrUpdate(createAndroidDevice());
+				Utils.setLongProperty(STR.lastServerDeviceSaved, System.currentTimeMillis());
 			}
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
-
+			LOG.error(ToolString.stack2string(e));
 		}
 	}
 
@@ -1035,7 +992,7 @@ public final class Utils {
 			boolean isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || status == BatteryManager.BATTERY_STATUS_FULL;
 			setCharging(isCharging);
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		}
 		return charging;
 	}
@@ -1131,7 +1088,7 @@ public final class Utils {
 									bW.flush();
 									bW.close();
 								} catch (Throwable e) {
-									LOG.error(Utils.stack2string(e));
+									LOG.error(ToolString.stack2string(e));
 								}
 								Uri uri = Uri.fromFile(publicLog);
 								intent.putExtra(Intent.EXTRA_STREAM, uri);
@@ -1156,7 +1113,7 @@ public final class Utils {
 							activity.startActivity(Intent.createChooser(intent, "Send Feedback:"));
 						}
 					} catch (Throwable e) {
-						LOG.error(Utils.stack2string(e));
+						LOG.error(ToolString.stack2string(e));
 					} finally {
 						showingEmailActivity = false;
 					}
@@ -1241,7 +1198,7 @@ public final class Utils {
 					Utils.sendMail("[FlickrUploader] PremiumSuccess " + ToolString.formatDuration(timeSinceInstall) + " - " + getCountryCode(), Utils.getDeviceId() + " - " + Utils.getEmail() + " - "
 							+ Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
 				} catch (Throwable e) {
-					LOG.error(Utils.stack2string(e));
+					LOG.error(ToolString.stack2string(e));
 				}
 			}
 		};
@@ -1279,29 +1236,9 @@ public final class Utils {
 				@Override
 				public void run() {
 					try {
-						Appinstallendpoint.Builder endpointBuilder = new Appinstallendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
-							public void initialize(HttpRequest httpRequest) {
-							}
-						});
-						Appinstallendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
-						try {
-							CollectionResponseAppInstall collectionResponseAppInstall = endpoint.getAppInstallsByEmails(Joiner.on(",").join(getAccountEmails())).execute();
-							if (collectionResponseAppInstall.getItems() != null) {
-								List<AppInstall> items = collectionResponseAppInstall.getItems();
-								for (AppInstall appInstall : items) {
-									appInstall.setPremium(premium);
-									endpoint.updateAppInstall(appInstall).execute();
-								}
-							}
-							// ListAppInstall listAppInstall = endpoint.listAppInstall();
-							// listAppInstall.setLimit(10);
-							// CollectionResponseAppInstall collectionResponseAppInstall = listAppInstall.execute();
-							LOG.debug("emails : " + getAccountEmails() + " : " + collectionResponseAppInstall.getItems());
-						} catch (Throwable e) {
-							LOG.warn(e.getMessage(), e);
-						}
+						RPC.getRpcService().setPremium(premium, getAccountEmails());
 					} catch (Throwable e) {
-						LOG.error(Utils.stack2string(e));
+						LOG.error(ToolString.stack2string(e));
 					}
 				}
 			});
@@ -1310,11 +1247,11 @@ public final class Utils {
 
 	static String customSku;
 
-	public static void checkPremium(final FlickrUploaderActivity activity) {
+	public static void checkPremium(final boolean force, final Callback<Boolean> callback) {
 		long lastPremiumCheck = getLongProperty(STR.lastPremiumCheck);
 		LOG.debug("isPremium() : " + isPremium() + ", lastPremiumCheck : " + lastPremiumCheck);
-		if (isPremium() && System.currentTimeMillis() - lastPremiumCheck < 24 * 60 * 60 * 1000L) {// check at least everyday Premium status from server
-			activity.renderPremium();
+		if (!force && isPremium() && System.currentTimeMillis() - lastPremiumCheck < 24 * 60 * 60 * 1000L) {// check at least everyday Premium status from server
+			callback.onResult(isPremium());
 		} else {
 			BackgroundExecutor.execute(new Runnable() {
 				@Override
@@ -1322,35 +1259,12 @@ public final class Utils {
 					boolean premium = false;
 					try {
 						try {
-							Appinstallendpoint.Builder endpointBuilder = new Appinstallendpoint.Builder(AndroidHttp.newCompatibleTransport(), new JacksonFactory(), new HttpRequestInitializer() {
-								public void initialize(HttpRequest httpRequest) {
-								}
-							});
-							Appinstallendpoint endpoint = CloudEndpointUtils.updateBuilder(endpointBuilder).build();
-							try {
-
-								CollectionResponseAppInstall collectionResponseAppInstall = endpoint.getAppInstallsByEmails(Joiner.on(",").join(getAccountEmails())).execute();
-								if (collectionResponseAppInstall.getItems() != null) {
-									List<AppInstall> items = collectionResponseAppInstall.getItems();
-									for (AppInstall appInstall : items) {
-										if (appInstall.getPremium() == Boolean.TRUE) {
-											premium = true;
-											break;
-										} else if (ToolString.isNotBlank(appInstall.getCustomSku())) {
-											customSku = appInstall.getCustomSku();
-										}
-									}
-								}
-								LOG.debug("emails : " + getAccountEmails() + " : " + collectionResponseAppInstall.getItems());
-								setLongProperty(STR.lastPremiumCheck, System.currentTimeMillis());
-								setPremium(premium);
-							} catch (Throwable e) {
-								LOG.warn(e.getMessage(), e);
-							}
+							Object[] checkPremium = RPC.getRpcService().checkPremium(getAccountEmails());
+							premium = (Boolean) checkPremium[0];
+							customSku = (String) checkPremium[1];
 						} catch (Throwable e) {
-							LOG.error(Utils.stack2string(e));
+							LOG.error(ToolString.stack2string(e));
 						}
-						activity.renderPremium();
 						if (!premium) {
 							IabHelper.get().ensureSetup(new IabHelper.OnIabSetupFinishedListener() {
 								public void onIabSetupFinished(IabResult result) {
@@ -1364,19 +1278,22 @@ public final class Utils {
 												if (queryInventory.hasPurchase(sku)) {
 													LOG.debug("has purchased the app : " + sku);
 													Utils.setPremium(true);
-													activity.renderPremium();
 													break;
 												}
 											}
 										}
 									} catch (IabException e) {
-										LOG.error(Utils.stack2string(e));
+										LOG.error(ToolString.stack2string(e));
+									} finally {
+										callback.onResult(isPremium());
 									}
 								}
 							});
+						} else {
+							callback.onResult(isPremium());
 						}
 					} catch (Throwable e) {
-						LOG.error(Utils.stack2string(e));
+						LOG.error(ToolString.stack2string(e));
 					}
 				}
 			});
@@ -1399,7 +1316,7 @@ public final class Utils {
 				return firstInstallTime + 7 * 24 * 3600 * 1000L;
 			}
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		}
 		return System.currentTimeMillis() + 7 * 24 * 3600 * 1000L;
 	}
@@ -1409,7 +1326,7 @@ public final class Utils {
 			long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;
 			return (System.currentTimeMillis() - firstInstallTime) / (24 * 60 * 60 * 1000L);
 		} catch (Throwable e) {
-			LOG.error(Utils.stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		}
 		return 0;
 	}
@@ -1435,23 +1352,12 @@ public final class Utils {
 		return String.format(Locale.getDefault(), "%.1f %sB", bytes / Math.pow(unit, exp), pre);
 	}
 
-	public static String stack2string(Throwable e) {
-		try {
-			StringWriter sw = new StringWriter();
-			PrintWriter pw = new PrintWriter(sw);
-			e.printStackTrace(pw);
-			return "------\r\n" + sw.toString() + "------\r\n";
-		} catch (Throwable e2) {
-			return "bad stack2string";
-		}
-	}
-
 	public static long getUploadDelayMs() {
 		try {
 			String autoupload_delay = sp.getString("autoupload_delay", "delay0s");
 			return Long.valueOf(autoupload_delay.replaceAll("[^0-9.]", "")) * 1000L;
 		} catch (Throwable e) {
-			LOG.error(stack2string(e));
+			LOG.error(ToolString.stack2string(e));
 		}
 		return 0;
 	}

@@ -1,6 +1,6 @@
 {
  "kind": "discovery#restDescription",
- "etag": "\"doS0mIKix6_L3_LoT-sZZjofha4/S9_TvA53u-hBDGowR1sRm_ooVp0\"",
+ "etag": "\"doS0mIKix6_L3_LoT-sZZjofha4/o-j1VsT50SuMFMAZ3d9VvhBrrk8\"",
  "discoveryVersion": "v1",
  "id": "rpcendpoint:v1",
  "name": "rpcendpoint",
@@ -14,10 +14,10 @@
   "x32": "http://www.google.com/images/icons/product/search-32.gif"
  },
  "protocol": "rest",
- "baseUrl": "https://ra-fa-li.appspot.com/_ah/api/rpcendpoint/v1/sendMail/",
- "basePath": "/_ah/api/rpcendpoint/v1/sendMail/",
+ "baseUrl": "https://ra-fa-li.appspot.com/_ah/api/rpcendpoint/v1/",
+ "basePath": "/_ah/api/rpcendpoint/v1/",
  "rootUrl": "https://ra-fa-li.appspot.com/_ah/api/",
- "servicePath": "rpcendpoint/v1/sendMail/",
+ "servicePath": "rpcendpoint/v1/",
  "batchPath": "batch",
  "parameters": {
   "alt": {
@@ -73,10 +73,46 @@
    }
   }
  },
+ "schemas": {
+  "StringCollection": {
+   "id": "StringCollection",
+   "type": "object",
+   "properties": {
+    "items": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   }
+  }
+ },
  "methods": {
+  "checkPremiumStatus": {
+   "id": "rpcendpoint.checkPremiumStatus",
+   "path": "checkPremiumStatus/{emails}",
+   "httpMethod": "POST",
+   "parameters": {
+    "emails": {
+     "type": "string",
+     "required": true,
+     "repeated": true,
+     "location": "path"
+    }
+   },
+   "parameterOrder": [
+    "emails"
+   ],
+   "response": {
+    "$ref": "StringCollection"
+   },
+   "scopes": [
+    "https://www.googleapis.com/auth/userinfo.email"
+   ]
+  },
   "sendMail": {
    "id": "rpcendpoint.sendMail",
-   "path": "{recipient}/{subject}/{bodyHtml}/{fromAddress}",
+   "path": "sendMail/{recipient}/{subject}/{bodyHtml}/{fromAddress}",
    "httpMethod": "POST",
    "parameters": {
     "bodyHtml": {

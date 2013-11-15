@@ -43,14 +43,14 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "deviceinfoendpoint.removeDeviceInfo" : {
+    "deviceinfoendpoint.getDeviceInfo" : {
       "path" : "deviceinfo/{id}",
-      "httpMethod" : "DELETE",
+      "httpMethod" : "GET",
       "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.removeDeviceInfo",
+      "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.getDeviceInfo",
       "request" : {
         "parameters" : {
           "id" : {
@@ -64,14 +64,14 @@
         "body" : "autoTemplate(backendResponse)"
       }
     },
-    "deviceinfoendpoint.getDeviceInfo" : {
+    "deviceinfoendpoint.removeDeviceInfo" : {
       "path" : "deviceinfo/{id}",
-      "httpMethod" : "GET",
+      "httpMethod" : "DELETE",
       "authLevel" : "NONE",
       "scopes" : [ "https://www.googleapis.com/auth/userinfo.email" ],
       "audiences" : [ ],
       "clientIds" : [ "292824132082.apps.googleusercontent.com" ],
-      "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.getDeviceInfo",
+      "rosyMethod" : "com.rafali.flickruploader.DeviceInfoEndpoint.removeDeviceInfo",
       "request" : {
         "parameters" : {
           "id" : {
@@ -170,12 +170,12 @@
           "$ref" : "DeviceInfo"
         }
       },
-      "com.rafali.flickruploader.DeviceInfoEndpoint.removeDeviceInfo" : {
+      "com.rafali.flickruploader.DeviceInfoEndpoint.getDeviceInfo" : {
         "response" : {
           "$ref" : "DeviceInfo"
         }
       },
-      "com.rafali.flickruploader.DeviceInfoEndpoint.getDeviceInfo" : {
+      "com.rafali.flickruploader.DeviceInfoEndpoint.removeDeviceInfo" : {
         "response" : {
           "$ref" : "DeviceInfo"
         }
