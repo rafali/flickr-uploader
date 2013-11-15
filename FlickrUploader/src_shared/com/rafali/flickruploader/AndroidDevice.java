@@ -20,13 +20,14 @@ public class AndroidDevice implements Serializable {
 	private List<String> emails;
 	private String otherInfos;
 	private Integer androidVersion;
+	private String countryCode;
 
 	protected AndroidDevice() {
 	}
 
 	public AndroidDevice(String id, Collection<String> emails, String language, int androidVersion) {
 		this.id = id;
-		this.setAndroidVersion(androidVersion);
+		this.androidVersion = androidVersion;
 		this.dateCreation = new Date();
 		this.appInstalled = true;
 		this.emails = emails == null ? new ArrayList<String>() : new ArrayList<String>(new HashSet<String>(emails));
@@ -120,6 +121,14 @@ public class AndroidDevice implements Serializable {
 
 	public void setAndroidVersion(int androidVersion) {
 		this.androidVersion = androidVersion;
+	}
+
+	public String getCountryCode() {
+		return countryCode;
+	}
+
+	public void setCountryCode(String countryCode) {
+		this.countryCode = countryCode;
 	}
 
 }
