@@ -22,6 +22,7 @@ import static org.acra.ReportField.USER_CRASH_DATE;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.util.List;
 
 import org.acra.ACRA;
 import org.acra.ReportingInteractionMode;
@@ -69,6 +70,15 @@ public class FlickrUploader extends Application {
 					if (Config.VERSION != versionCode) {
 						if (versionCode == 0) {
 							Mixpanel.track("First install");
+						} else if (versionCode < 33) {
+							String instantCustomAlbumId = Utils.getStringProperty("instantCustomAlbumId");
+							if (instantCustomAlbumId != null) {
+								List<Folder> syncedFolders = Utils.getSyncedFolders();
+								for (Folder folder : syncedFolders) {
+									Utils.setAutoUploaded(folder, true, instantCustomAlbumId);
+								}
+							}
+							Utils.clearProperty("instantCustomAlbumId");
 						}
 						Utils.saveAndroidDevice();
 						Utils.setLongProperty(STR.versionCode, (long) Config.VERSION);
@@ -85,13 +95,13 @@ public class FlickrUploader extends Application {
 	}
 
 	private static Handler handler;
+
 	public static Handler getHandler() {
 		if (handler == null) {
 			handler = new Handler();
 		}
 		return handler;
 	}
-
 
 	public static String getLogFilePath() {
 		return context.getFilesDir().getPath() + "/logs/flickruploader.log";

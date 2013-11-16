@@ -58,6 +58,7 @@ import com.googlecode.androidannotations.annotations.ViewById;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
+import com.rafali.flickruploader.Utils.Callback;
 import com.rafali.flickruploader.Utils.MediaType;
 import com.rafali.flickruploader.billing.IabHelper;
 
@@ -379,8 +380,6 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	private MenuItem shareItem;
-	private MenuItem enableAutoUpload;
-	private MenuItem disableAutoUpload;
 	private ShareActionProvider shareActionProvider;
 
 	@UiThread(delay = 200)
@@ -428,14 +427,7 @@ public class FlickrUploaderActivity extends Activity {
 		public boolean onCreateActionMode(ActionMode mode, Menu menu) {
 			getMenuInflater().inflate(R.menu.context_menu, menu);
 			shareItem = menu.findItem(R.id.menu_item_share);
-			enableAutoUpload = menu.findItem(R.id.menu_item_enable_auto_upload);
-			disableAutoUpload = menu.findItem(R.id.menu_item_disable_auto_upload);
-			if (isFolderTab()) {
-				shareItem.setVisible(false);
-			} else {
-				enableAutoUpload.setVisible(false);
-				disableAutoUpload.setVisible(false);
-			}
+			shareItem.setVisible(!isFolderTab());
 			privacyItem = menu.findItem(R.id.menu_item_privacy);
 
 			shareActionProvider = (ShareActionProvider) shareItem.getActionProvider();
@@ -569,18 +561,6 @@ public class FlickrUploaderActivity extends Activity {
 			}
 				break;
 
-			case R.id.menu_item_enable_auto_upload:
-				for (Media image : getImageSelected(SelectionType.all)) {
-					Utils.setAutoUploaded(foldersMap.get(image), true);
-				}
-				refresh(false);
-				break;
-			case R.id.menu_item_disable_auto_upload:
-				for (Media image : getImageSelected(SelectionType.all)) {
-					Utils.setAutoUploaded(foldersMap.get(image), false);
-				}
-				refresh(false);
-				break;
 			}
 			return false;
 		}
@@ -591,26 +571,38 @@ public class FlickrUploaderActivity extends Activity {
 	void confirmUpload(final List<Media> selection, boolean isFolderTab) {
 		if (isFolderTab) {
 			new AlertDialog.Builder(this).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
-					.setItems(new String[] { "Default set (" + Utils.getInstantAlbumTitle() + ")", "One set per folder", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
+					.setItems(new String[] { "Default set (" + STR.instantUpload + ")", "One set per folder", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
 						@Override
 						public void onClick(DialogInterface dialog, int which) {
 							switch (which) {
 							case 0:
 								for (Media image : selection) {
 									Folder folder = foldersMap.get(image);
-									enqueue(false, folder.images, Utils.getInstantAlbumId(), STR.instantUpload);
+									enqueue(folder.images, Utils.getInstantAlbumId());
 								}
 								clearSelection();
 								break;
-							case 1:
+							case 1: {
+								List<Folder> folders = new ArrayList<Folder>();
 								for (Media image : selection) {
 									Folder folder = foldersMap.get(image);
-									enqueue(false, folder.images, folder, null, null);
+									folders.add(folder);
 								}
-								clearSelection();
+								createSets(folders);
+							}
 								break;
-							case 2:
-								showNewSetDialog(selection);
+							case 2: {
+								List<Folder> folders = new ArrayList<Folder>();
+								for (Media image : selection) {
+									Folder folder = foldersMap.get(image);
+									folders.add(folder);
+								}
+								if (folders.size() == 1) {
+									showNewSetDialog(folders.get(0), selection);
+								} else {
+									showNewSetDialog(null, selection);
+								}
+							}
 								break;
 							case 3:
 								showExistingSetDialog(selection);
@@ -624,16 +616,16 @@ public class FlickrUploaderActivity extends Activity {
 					}).show();
 		} else {
 			new AlertDialog.Builder(this).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
-					.setItems(new String[] { "Default set (" + Utils.getInstantAlbumTitle() + ")", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
+					.setItems(new String[] { "Default set (" + STR.instantUpload + ")", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
 						@Override
 						public void onClick(DialogInterface dialog, int which) {
 							switch (which) {
 							case 0:
-								enqueue(false, selection, Utils.getInstantAlbumId(), STR.instantUpload);
+								enqueue(selection, Utils.getInstantAlbumId());
 								clearSelection();
 								break;
 							case 1:
-								showNewSetDialog(selection);
+								showNewSetDialog(null, selection);
 								break;
 							case 2:
 								showExistingSetDialog(selection);
@@ -656,19 +648,37 @@ public class FlickrUploaderActivity extends Activity {
 
 	@UiThread
 	void showExistingSetDialog(final List<Media> selection) {
-		final ProgressDialog dialog = ProgressDialog.show(this, "", "Loading photosets", true);
+		showExistingSetDialog(this, new Callback<String[]>() {
+			@Override
+			public void onResult(String[] result) {
+				String photoSetId = result[0];
+				if (isFolderTab()) {
+					for (Media image : selection) {
+						Folder folder = foldersMap.get(image);
+						enqueue(folder.images, photoSetId);
+					}
+				} else {
+					enqueue(selection, photoSetId);
+				}
+				clearSelection();
+			}
+		}, null);
+	}
+
+	static void showExistingSetDialog(final Activity activity, final Callback<String[]> callback, final Map<String, String> cachedPhotosets) {
+		final ProgressDialog dialog = ProgressDialog.show(activity, "", "Loading photosets", true);
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
-				final Map<String, String> photosets = FlickrApi.getPhotoSets();
-				runOnUiThread(new Runnable() {
+				final Map<String, String> photosets = cachedPhotosets == null ? FlickrApi.getPhotoSets() : cachedPhotosets;
+				activity.runOnUiThread(new Runnable() {
 					@Override
 					public void run() {
 						dialog.cancel();
 						if (photosets.isEmpty()) {
-							Toast.makeText(FlickrUploaderActivity.this, "No photoset found", Toast.LENGTH_LONG).show();
+							Toast.makeText(activity, "No photoset found", Toast.LENGTH_LONG).show();
 						} else {
-							AlertDialog.Builder builder = new AlertDialog.Builder(FlickrUploaderActivity.this);
+							AlertDialog.Builder builder = new AlertDialog.Builder(activity);
 							final List<String> photosetTitles = new ArrayList<String>();
 							final List<String> photosetIds = new ArrayList<String>();
 							for (String photosetId : photosets.keySet()) {
@@ -681,15 +691,8 @@ public class FlickrUploaderActivity extends Activity {
 								public void onClick(DialogInterface dialog, int which) {
 									LOG.debug("selected : " + photosetIds.get(which) + " - " + photosetTitles.get(which));
 									String photoSetId = photosetIds.get(which);
-									if (isFolderTab()) {
-										for (Media image : selection) {
-											Folder folder = foldersMap.get(image);
-											enqueue(false, folder.images, photoSetId, null);
-										}
-									} else {
-										enqueue(false, selection, photoSetId, null);
-									}
-									clearSelection();
+									String photoSetTitle = photosetTitles.get(which);
+									callback.onResult(new String[] { photoSetId, photoSetTitle });
 								}
 							});
 							builder.show();
@@ -701,51 +704,111 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	@UiThread
-	void showNewSetDialog(final List<Media> selection) {
-		AlertDialog.Builder alert = new AlertDialog.Builder(this);
+	void showNewSetDialog(final Folder folder, final List<Media> selection) {
+		showNewSetDialog(this, folder == null ? null : folder.name, new Callback<String>() {
+			@Override
+			public void onResult(final String value) {
+				if (ToolString.isBlank(value)) {
+					toast("Title cannot be empty");
+					showNewSetDialog(folder, selection);
+				} else {
+					BackgroundExecutor.execute(new Runnable() {
+						@Override
+						public void run() {
+							createSet(value, folder, selection);
+						}
+					});
+				}
+			}
+		});
+	}
+
+	ProgressDialog progressDialog;
+
+	@UiThread
+	void showLoading(String title, String message) {
+		if (progressDialog == null) {
+			progressDialog = new ProgressDialog(this);
+		}
+		progressDialog.setTitle(title);
+		progressDialog.setMessage(message);
+		progressDialog.setIndeterminate(true);
+		progressDialog.show();
+	}
+
+	@UiThread
+	void hideLoading() {
+		if (progressDialog != null) {
+			progressDialog.dismiss();
+		}
+	}
+
+	@Background
+	void createSets(List<Folder> folders) {
+		for (Folder folder : folders) {
+			try {
+				Map<String, String> foldersSets = Utils.getFoldersSets();
+				String photoSetId = foldersSets.get(folder.path);
+				if (photoSetId == null) {
+					photoSetId = createSet(folder.name, folder, folder.images);
+				} else {
+					enqueue(folder.images, photoSetId);
+				}
+			} catch (Throwable e) {
+				LOG.error(ToolString.stack2string(e));
+			}
+		}
+	}
+
+	String createSet(String photoSetTitle, Folder folder, final List<Media> selection) {
+		showLoading("Creating set...", "Please wait while your new set '" + photoSetTitle + "' is created");
+		try {
+			final String[] result = FlickrApi.createSet(photoSetTitle);
+			if (result != null && result[0] != null) {
+				if (folder != null) {
+					enqueue(folder.images, result[0]);
+					Utils.setFolderSetId(folder, result[0]);
+				} else {
+					enqueue(selection, result[0]);
+				}
+				clearSelection();
+				return result[0];
+			} else {
+				toast("Failed to create an new photoset");
+			}
+		} finally {
+			hideLoading();
+		}
+		return null;
+	}
+
+	static void showNewSetDialog(final Activity activity, final String folderTitle, final Callback<String> callback) {
+		AlertDialog.Builder alert = new AlertDialog.Builder(activity);
 
 		alert.setTitle("Photo Set Title");
 
 		// Set an EditText view to get user input
-		final EditText input = new EditText(this);
+		final EditText input = new EditText(activity);
+		input.setText(folderTitle);
 		alert.setView(input);
 
 		alert.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int whichButton) {
 				String value = input.getText().toString();
 				LOG.debug("value : " + value);
-				if (ToolString.isBlank(value)) {
-					showNewSetDialog(selection);
-				} else {
-					if (isFolderTab()) {
-						for (Media image : selection) {
-							Folder folder = foldersMap.get(image);
-							enqueue(false, folder.images, null, value);
-						}
-					} else {
-						enqueue(false, selection, null, value);
-					}
-					clearSelection();
-				}
+				callback.onResult(value);
 			}
 
 		});
 
-		alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int whichButton) {
-				// Canceled.
-			}
-		});
+		alert.setNegativeButton("Cancel", null);
 
 		alert.show();
 	}
 
-	private void enqueue(boolean auto, Collection<Media> images, String photoSetId, String photoSetTitle) {
-		enqueue(auto, images, null, photoSetId, photoSetTitle);
-	}
-
-	private void enqueue(boolean auto, Collection<Media> images, Folder folder, String photoSetId, String photoSetTitle) {
-		int enqueued = UploadService.enqueue(auto, images, folder, photoSetId, photoSetTitle);
+	@UiThread
+	void enqueue(Collection<Media> images, String photoSetId) {
+		int enqueued = UploadService.enqueue(false, images, photoSetId);
 		if (slidingDrawer != null && enqueued > 0) {
 			slidingDrawer.animateOpen();
 			drawerContentView.setCurrentTab(DrawerContentView.TAB_QUEUED_INDEX);

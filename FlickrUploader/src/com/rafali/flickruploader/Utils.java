@@ -171,7 +171,11 @@ public final class Utils {
 
 	public static void setStringProperty(String property, String value) {
 		Editor editor = sp.edit();
-		editor.putString(property, value);
+		if (value == null) {
+			editor.remove(property);
+		} else {
+			editor.putString(property, value);
+		}
 		editor.apply();
 		editor.commit();
 	}
@@ -728,6 +732,7 @@ public final class Utils {
 	}
 
 	static Set<String> syncedFolder;
+	static Map<String, String> folderSets;
 
 	static boolean isAutoUpload(Folder folder) {
 		if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
@@ -737,15 +742,38 @@ public final class Utils {
 		return syncedFolder.contains(folder.path);
 	}
 
-	static void setAutoUploaded(Folder folder, boolean synced) {
+	static void setAutoUploaded(Folder folder, boolean synced, String setId) {
 		ensureSyncedFolder();
 		if (synced) {
+			if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
+				if (Utils.isPremium() || Utils.isTrial()) {
+					Utils.setBooleanProperty(Preferences.AUTOUPLOAD, true);
+				}
+			}
 			syncedFolder.add(folder.path);
+			if (setId == null) {
+				getFoldersSets().remove(folder.path);
+			} else {
+				getFoldersSets().put(folder.path, setId);
+			}
+			setMapProperty("folderSets", folderSets);
 		} else {
 			syncedFolder.remove(folder.path);
 		}
 		Mixpanel.track("Sync Folder", "name", folder.name, "synced", synced);
 		setStringList("syncedFolder", syncedFolder);
+	}
+
+	static void setFolderSetId(Folder folder, String setId) {
+		getFoldersSets().put(folder.path, setId);
+		setMapProperty("folderSets", folderSets);
+	}
+
+	public static Map<String, String> getFoldersSets() {
+		if (folderSets == null) {
+			folderSets = getMapProperty("folderSets");
+		}
+		return folderSets;
 	}
 
 	private static void ensureSyncedFolder() {
@@ -872,21 +900,7 @@ public final class Utils {
 	}
 
 	public static String getInstantAlbumId() {
-		String instantCustomAlbumId = getStringProperty(STR.instantCustomAlbumId);
-		if (instantCustomAlbumId != null) {
-			return instantCustomAlbumId;
-		} else {
-			return getStringProperty(STR.instantAlbumId);
-		}
-	}
-
-	public static String getInstantAlbumTitle() {
-		String instantCustomAlbumId = getStringProperty(STR.instantCustomAlbumId);
-		if (instantCustomAlbumId != null) {
-			return getStringProperty(STR.instantCustomAlbumTitle);
-		} else {
-			return STR.instantUpload;
-		}
+		return getStringProperty(STR.instantAlbumId);
 	}
 
 	public static final Comparator<Media> MEDIA_COMPARATOR = new Comparator<Media>() {
@@ -1391,6 +1405,20 @@ public final class Utils {
 		} else {
 			LOG.warn(file + " already deleted");
 		}
+	}
+
+	public static List<Folder> getSyncedFolders() {
+		List<Folder> syncedFolders = new ArrayList<Folder>();
+		List<Media> media = Utils.loadImages(null);
+		if (media != null) {
+			List<Folder> folders = Utils.getFolders(media);
+			for (Folder folder : folders) {
+				if (Utils.isAutoUpload(folder)) {
+					syncedFolders.add(folder);
+				}
+			}
+		}
+		return syncedFolders;
 	}
 
 }

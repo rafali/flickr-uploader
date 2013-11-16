@@ -16,13 +16,10 @@
         android:summaryOn="Videos are automatically uploaded"
         android:title="Video Instant Upload" />
 
-    <ListPreference
-        android:dialogTitle="Instant Upload Photoset"
-        android:entries="@array/autoupload_photoset_entries"
-        android:entryValues="@array/autoupload_photoset_values"
-        android:key="autoupload_photoset"
-        android:title="Instant Upload Photoset" />
-    <ListPreference
+    <PreferenceScreen
+        android:key="autoupload_folder_settings"
+        android:title="Auto Upload Folders" />
+    <ListPreference
         android:defaultValue="wifior3G"
         android:dialogTitle="Upload when connected to"
         android:entries="@array/network_entries"

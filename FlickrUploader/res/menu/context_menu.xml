@@ -23,13 +23,5 @@
         android:id="@+id/menu_item_privacy"
         android:showAsAction="never"
         android:title="Set privacy"/>
-    <item
-        android:id="@+id/menu_item_enable_auto_upload"
-        android:showAsAction="never"
-        android:title="Enable auto upload"/>
-    <item
-        android:id="@+id/menu_item_disable_auto_upload"
-        android:showAsAction="never"
-        android:title="Disable auto upload"/>
 
 </menu>

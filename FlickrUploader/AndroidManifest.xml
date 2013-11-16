@@ -53,7 +53,7 @@
             android:name=".AlarmBroadcastReceiver"
             android:process=":remote" >
         </receiver>
-        
+
         <!-- - Google Play Store donations -->
         <service android:name="org.donations.google.BillingService" />
 
@@ -105,39 +105,21 @@
         <activity
             android:name=".PreferencesNotification"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:icon="@drawable/empty_shape"
             android:label="Notifications" />
         <activity
             android:name=".PreferencesAdvanced"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:icon="@drawable/empty_shape"
             android:label="Advanced Preferences" />
         <activity
             android:name=".WebAuth_"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:icon="@drawable/empty_shape"
             android:windowSoftInputMode="adjustResize" />
-
-        <service android:name=".GCMIntentService" />
-
-        <receiver
-            android:name="com.google.android.gcm.GCMBroadcastReceiver"
-            android:permission="com.google.android.c2dm.permission.SEND" >
-            <intent-filter>
-                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
-
-                <category android:name="com.rafali.flickruploader" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
-
-                <category android:name="com.rafali.flickruploader" />
-            </intent-filter>
-        </receiver>
-
         <activity
-            android:name=".RegisterActivity"
-            android:launchMode="singleTop" />
+            android:name=".AutoUploadFoldersActivity_"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="Auto Upload Folders"
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name="com.google.ads.AdActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize" />

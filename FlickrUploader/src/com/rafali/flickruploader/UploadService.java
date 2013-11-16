@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -235,7 +234,7 @@ public class UploadService extends Service {
 	private static Map<Media, Long> retryDelay = new ConcurrentHashMap<Media, Long>();
 	private static Map<Integer, Integer> failedCount = new ConcurrentHashMap<Integer, Integer>();
 
-	public static int enqueue(boolean auto, Collection<Media> images, Folder folder, String photoSetId, String photoSetTitle) {
+	public static int enqueue(boolean auto, Collection<Media> images, String photoSetId) {
 		int nbQueued = 0;
 		int nbAlreadyQueued = 0;
 		int nbAlreadyUploaded = 0;
@@ -250,11 +249,7 @@ public class UploadService extends Service {
 				nbQueued++;
 				LOG.debug("enqueueing " + image);
 				queue.add(image);
-				if (folder != null) {
-					uploadFolders.put(image, folder);
-				}
-				uploadPhotosetIds.put(image, photoSetId);
-				uploadPhotosetTitles.put(image, photoSetTitle);
+				mediaPhotosetIds.put(image.path, photoSetId);
 			}
 		}
 		for (UploadProgressListener uploadProgressListener : uploadProgressListeners) {
@@ -282,21 +277,18 @@ public class UploadService extends Service {
 			if (queue.contains(image)) {
 				LOG.debug("dequeueing " + image);
 				queue.remove(image);
-				uploadFolders.remove(image);
-				uploadPhotosetIds.remove(image);
-				uploadPhotosetTitles.remove(image);
+				mediaPhotosetIds.remove(image.path);
 			}
 		}
 		persistQueue();
 		wake();
 	}
 
-	private static Map<Media, Folder> uploadFolders = new HashMap<Media, Folder>();
-	private static Map<Media, String> uploadPhotosetIds = new HashMap<Media, String>();
-	private static Map<Media, String> uploadPhotosetTitles = new HashMap<Media, String>();
+	private static Map<String, String> mediaPhotosetIds = Utils.getMapProperty("mediaPhotosetIds");
 
 	public static void persistQueue() {
 		Utils.setImages(STR.queueIds, queue);
+		Utils.setMapProperty("mediaPhotosetIds", mediaPhotosetIds);
 	}
 
 	public static void persistFailedCount() {
@@ -381,11 +373,10 @@ public class UploadService extends Service {
 							long start = System.currentTimeMillis();
 							mediaCurrentlyUploading = queue.get(queue.size() - 1);
 							onProgress(mediaCurrentlyUploading, 0);
-							Folder folder = uploadFolders.get(mediaCurrentlyUploading);
-							boolean success = folder == null && FlickrApi.isUploaded(mediaCurrentlyUploading);
+							boolean success = FlickrApi.isUploaded(mediaCurrentlyUploading);
 							if (!success) {
 								LOG.debug("Starting upload : " + mediaCurrentlyUploading);
-								success = FlickrApi.upload(mediaCurrentlyUploading, uploadPhotosetIds.get(mediaCurrentlyUploading), uploadPhotosetTitles.get(mediaCurrentlyUploading), folder);
+								success = FlickrApi.upload(mediaCurrentlyUploading, mediaPhotosetIds.get(mediaCurrentlyUploading.path));
 							}
 							long time = System.currentTimeMillis() - start;
 							queue.remove(mediaCurrentlyUploading);
@@ -397,8 +388,8 @@ public class UploadService extends Service {
 								LOG.debug("Upload success : " + time + "ms " + mediaCurrentlyUploading);
 								uploaded.put(mediaCurrentlyUploading, System.currentTimeMillis());
 								if (queue.isEmpty()) {
-									if (folder != null) {
-										FlickrApi.ensureOrdered(folder);
+									if (mediaPhotosetIds.get(mediaCurrentlyUploading.path) != null) {
+										FlickrApi.ensureOrdered(mediaPhotosetIds.get(mediaCurrentlyUploading.path));
 									} else {
 										FlickrApi.ensureOrdered(Utils.getInstantAlbumId());
 									}
@@ -407,6 +398,7 @@ public class UploadService extends Service {
 								}
 								failed.remove(mediaCurrentlyUploading);
 								failedCount.remove(mediaCurrentlyUploading.id);
+								mediaPhotosetIds.remove(mediaCurrentlyUploading.path);
 							} else {
 								if (FlickrApi.unretryable.contains(mediaCurrentlyUploading)) {
 									failed.remove(mediaCurrentlyUploading);
@@ -661,7 +653,7 @@ public class UploadService extends Service {
 			}
 			if (!not_uploaded.isEmpty()) {
 				LOG.debug("enqueuing " + not_uploaded.size() + " media: " + not_uploaded);
-				enqueue(true, not_uploaded, null, Utils.getInstantAlbumId(), STR.instantUpload);
+				enqueue(true, not_uploaded, Utils.getInstantAlbumId());
 				FlickrUploaderActivity.staticRefresh(true);
 			}
 		} catch (Throwable e) {

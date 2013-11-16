@@ -6,7 +6,6 @@ import java.util.List;
 import org.slf4j.LoggerFactory;
 
 import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.SharedPreferences;
