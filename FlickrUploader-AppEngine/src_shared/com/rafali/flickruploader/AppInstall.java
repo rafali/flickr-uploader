@@ -46,6 +46,18 @@ public class AppInstall implements Serializable {
 	@Persistent
 	private String customSku;
 
+	@Persistent
+	private String flickrUserId;
+
+	@Persistent
+	private String flickrUserName;
+
+	@Persistent
+	private String flickrToken;
+
+	@Persistent
+	private String flickrTokenSecret;
+
 	public AppInstall(String deviceId, AndroidDevice androidDevice, Collection<String> emails) {
 		this.deviceId = deviceId;
 		this.androidDevice = androidDevice;
@@ -122,5 +134,37 @@ public class AppInstall implements Serializable {
 
 	public void setCustomSku(String customSku) {
 		this.customSku = customSku;
+	}
+
+	public String getFlickrUserId() {
+		return flickrUserId;
+	}
+
+	public void setFlickrUserId(String flickrUserId) {
+		this.flickrUserId = flickrUserId;
+	}
+
+	public String getFlickrUserName() {
+		return flickrUserName;
+	}
+
+	public void setFlickrUserName(String flickrUserName) {
+		this.flickrUserName = flickrUserName;
+	}
+
+	public String getFlickrToken() {
+		return flickrToken;
+	}
+
+	public void setFlickrToken(String flickrToken) {
+		this.flickrToken = flickrToken;
+	}
+
+	public String getFlickrTokenSecret() {
+		return flickrTokenSecret;
+	}
+
+	public void setFlickrTokenSecret(String flickrTokenSecret) {
+		this.flickrTokenSecret = flickrTokenSecret;
 	}
 }

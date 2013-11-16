@@ -2,7 +2,6 @@ package com.rafali.flickruploader;
 
 import java.sql.Date;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -29,6 +28,7 @@ import android.view.MenuItem;
 
 import com.google.analytics.tracking.android.EasyTracker;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.billing.IabHelper;
@@ -242,7 +242,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		}
 		{
 			String summary;
-			if (Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true) || Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
+			if (Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false) || Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
 				if (nbSynced <= 0) {
 					summary = "No folder monitored";
 				} else {

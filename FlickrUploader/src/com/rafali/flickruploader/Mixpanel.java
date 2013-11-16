@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.mixpanel.android.mpmetrics.MixpanelAPI;
 import com.mixpanel.android.mpmetrics.MixpanelAPI.People;
+import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 
 public class Mixpanel {

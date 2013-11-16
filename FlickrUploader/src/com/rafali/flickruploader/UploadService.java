@@ -1,6 +1,8 @@
 package com.rafali.flickruploader;
 
 import java.io.File;
+import java.sql.Date;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,6 +33,7 @@ import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Video;
 
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.Utils.CAN_UPLOAD;
 import com.rafali.flickruploader.Utils.MediaType;
@@ -153,6 +156,12 @@ public class UploadService extends Service {
 		}
 		IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
 		registerReceiver(batteryReceiver, filter);
+		BackgroundExecutor.execute(new Runnable() {
+			@Override
+			public void run() {
+				checkNewFiles();
+			}
+		});
 	}
 
 	ContentObserver imageTableObserver = new ContentObserver(new Handler()) {
@@ -592,12 +601,26 @@ public class UploadService extends Service {
 	public static void checkNewFiles() {
 		try {
 			String canAutoUpload = Utils.canAutoUpload();
-			if ("true".equals(canAutoUpload)) {
-				LOG.info("not autouploading : " + canAutoUpload);
+			if (!"true".equals(canAutoUpload)) {
+				LOG.info("canAutoUpload : " + canAutoUpload);
 				return;
 			}
 
-			List<Media> media = Utils.loadImages(null, 10);
+			long lastNewFilesCheckNotEmpty = Utils.getLongProperty(STR.lastNewFilesCheckNotEmpty);
+			List<Media> media;
+			if (lastNewFilesCheckNotEmpty <= 0) {
+				media = Utils.loadImages(null, 10);
+			} else {
+				media = new ArrayList<Media>();
+				List<Media> all = Utils.loadImages(null);
+				for (Media media2 : all) {
+					if (media2.date >= lastNewFilesCheckNotEmpty) {
+						media.add(media2);
+					}
+				}
+				LOG.debug("found " + media.size() + " media files since: " + SimpleDateFormat.getDateTimeInstance().format(new Date(lastNewFilesCheckNotEmpty)));
+			}
+
 			if (media == null || media.isEmpty()) {
 				LOG.debug("no media found");
 				return;
@@ -606,11 +629,11 @@ public class UploadService extends Service {
 			long uploadDelayMs = Utils.getUploadDelayMs();
 			long newestFileAge = 0;
 			List<Media> not_uploaded = new ArrayList<Media>();
-			for (Media image : media.subList(0, Math.min(10, media.size()))) {
-				if (image.mediaType == MediaType.photo && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true)) {
+			for (Media image : media) {
+				if (image.mediaType == MediaType.photo && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false)) {
 					LOG.debug("not uploading " + media + " because photo upload disabled");
 					continue;
-				} else if (image.mediaType == MediaType.video && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
+				} else if (image.mediaType == MediaType.video && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
 					LOG.debug("not uploading " + media + " because video upload disabled");
 					continue;
 				} else {
@@ -652,6 +675,7 @@ public class UploadService extends Service {
 				}
 			}
 			if (!not_uploaded.isEmpty()) {
+				Utils.setLongProperty(STR.lastNewFilesCheckNotEmpty, System.currentTimeMillis());
 				LOG.debug("enqueuing " + not_uploaded.size() + " media: " + not_uploaded);
 				enqueue(true, not_uploaded, Utils.getInstantAlbumId());
 				FlickrUploaderActivity.staticRefresh(true);

@@ -12,4 +12,6 @@ public interface AndroidRpcInterface {
 	void setPremium(boolean premium, List<String> emails);
 
 	void createOrUpdate(AndroidDevice androidDevice);
+
+	void saveFlickrData(AndroidDevice androidDevice, String id, String username, String oauthToken, String oauthTokenSecret);
 }

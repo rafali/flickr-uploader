@@ -15,6 +15,7 @@ import com.googlecode.androidannotations.annotations.EViewGroup;
 import com.googlecode.androidannotations.annotations.UiThread;
 import com.googlecode.androidannotations.annotations.ViewById;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import com.rafali.flickruploader.UploadService.UploadProgressListener;
@@ -105,6 +106,12 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 		}
 	}
 
+	int nbMonitored = -1;
+
+	void onResume() {
+		nbMonitored = Utils.getSyncedFolders().size();
+	}
+
 	@UiThread(delay = 1000)
 	void checkStatus() {
 		FlickrUploaderActivity activity = null;
@@ -113,7 +120,9 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 			if (activity != null && !activity.isPaused()) {
 				long canShow = System.currentTimeMillis() - messageUntil;
 				if (canShow > 4000) {
-					if (!Utils.isPremium() && !Utils.isTrial()) {
+					if (!FlickrApi.isAuthentified()) {
+						message.setText("Login into Flickr from the Preferences");
+					} else if (!Utils.isPremium() && !Utils.isTrial() && Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false)) {
 						message.setText("Click on the menu and select 'Trial Info'");
 					} else if (UploadService.getNbQueued() == 0) {
 						String text = "No media queued";
@@ -126,14 +135,11 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 							text += ", " + nbError + " error" + (nbError > 1 ? "s" : "");
 						}
 						if (nbError + nbUploaded <= 0) {
-							boolean photoAutoUpload = Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true);
-							boolean videoAutoUpload = Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true);
-							if (photoAutoUpload && videoAutoUpload) {
-								text += ", photos/videos auto-upload enabled";
-							} else if (photoAutoUpload) {
-								text += ", photos auto-upload enabled";
-							} else if (videoAutoUpload) {
-								text += ", videos auto-upload enabled";
+							if (Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false) || Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
+								if (nbMonitored < 0) {
+									nbMonitored = Utils.getSyncedFolders().size();
+								}
+								text += ", " + nbMonitored + " folders monitored";
 							}
 						}
 

@@ -56,6 +56,7 @@ import com.googlecode.androidannotations.annotations.EActivity;
 import com.googlecode.androidannotations.annotations.UiThread;
 import com.googlecode.androidannotations.annotations.ViewById;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.Utils.Callback;
@@ -94,6 +95,7 @@ public class FlickrUploaderActivity extends Activity {
 	@Override
 	public void onCreate(Bundle bundle) {
 		super.onCreate(bundle);
+		getActionBar().setTitle("Flickr Uploader");
 		LOG.debug("onCreate " + bundle);
 		UploadService.wake();
 		if (Utils.getStringProperty(STR.accessToken) == null) {
@@ -1164,50 +1166,24 @@ public class FlickrUploaderActivity extends Activity {
 		refresh(false);
 		UploadService.wake();
 		renderPremium();
-	}
-
-	boolean showFolderAutoUploadDialog = false;
-
-	@UiThread
-	void showFolderAutoUploadDialog() {
-		if (showFolderAutoUploadDialog) {
-			showFolderAutoUploadDialog = false;
-			if (Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true) || Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
-				mainTabView.setCurrentItem(Arrays.asList(TAB.values()).indexOf(TAB.folder));
-				AlertDialog.Builder alt_bld = new AlertDialog.Builder(this);
-				alt_bld.setTitle("Auto-upload folders");
-				List<String> foldersName = Utils.getAutoUploadFoldersName();
-				int size = foldersName.size();
-				String message = "Make sure all the folders you want auto-uploaded are selected (small sync icon on the top right). ";
-				if (size > 0) {
-					message += size + " folder" + (size > 1 ? "s" : "") + " have already been preselected for you.";
-				}
-				message += "\n\nIf you have any questions, please check the FAQ first then contact me at flickruploader@rafali.com.";
-				alt_bld.setMessage(message);
-				alt_bld.setPositiveButton("OK", null);
-				AlertDialog alert = alt_bld.create();
-				alert.show();
-			}
-		}
+		drawerHandleView.onResume();
 	}
 
 	@UiThread
 	void confirmSync() {
-		showFolderAutoUploadDialog = true;
 		final CharSequence[] modes = { "Auto-upload new photos", "Auto-upload new videos" };
-		AlertDialog.Builder alt_bld = new AlertDialog.Builder(this);
-		alt_bld.setTitle("Auto-upload");
-		alt_bld.setMultiChoiceItems(modes, new boolean[] { true, true }, null);
-		alt_bld.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setTitle("Auto-upload (7-days Trial)");
+		builder.setMultiChoiceItems(modes, new boolean[] { true, true }, null);
+		builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int id) {
 				ListView lw = ((AlertDialog) dialog).getListView();
 				Utils.setBooleanProperty(Preferences.AUTOUPLOAD, lw.isItemChecked(0));
 				Utils.setBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, lw.isItemChecked(1));
-				showFolderAutoUploadDialog();
 			}
 
 		});
-		alt_bld.setNegativeButton("More options", new OnClickListener() {
+		builder.setNegativeButton("More options", new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				ListView lw = ((AlertDialog) dialog).getListView();
@@ -1216,9 +1192,8 @@ public class FlickrUploaderActivity extends Activity {
 				startActivity(new Intent(FlickrUploaderActivity.this, Preferences.class));
 			}
 		});
-		alt_bld.setCancelable(false);
-		AlertDialog alert = alt_bld.create();
-		alert.show();
+		builder.setCancelable(false);
+		builder.create().show();
 	}
 
 	@Override
@@ -1231,7 +1206,6 @@ public class FlickrUploaderActivity extends Activity {
 				confirmSync();
 			}
 		} else {
-			showFolderAutoUploadDialog();
 			super.onActivityResult(requestCode, resultCode, data);
 		}
 	}
@@ -1295,13 +1269,20 @@ public class FlickrUploaderActivity extends Activity {
 		if (!destroyed) {
 			boolean showAds = false;
 			if (Utils.isPremium()) {
-				getActionBar().setTitle("Flickr Uploader");
+				getActionBar().setSubtitle(null);
 			} else {
-				if (Utils.isTrial()) {
-					getActionBar().setTitle("Flickr Uploader (Trial)");
+				if (Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false) || Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
+					if (Utils.isTrial()) {
+						getActionBar().setSubtitle("Auto-Upload Trial");
+					} else {
+						getActionBar().setSubtitle("Trial Expired");
+						showAds = true;
+					}
 				} else {
-					getActionBar().setTitle("Trial Expired");
-					showAds = true;
+					getActionBar().setSubtitle(null);
+					if (!Utils.isTrial()) {
+						showAds = true;
+					}
 				}
 			}
 			if (showAds) {

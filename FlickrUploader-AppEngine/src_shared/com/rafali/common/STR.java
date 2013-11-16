@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.common;
 
 public class STR {
 	public static final String accessToken = "accessToken";
@@ -25,4 +25,6 @@ public class STR {
 	public static final String wifionly = "wifionly";
 	public static final String alarmSet = "alarmSet";
 	public static final String lastServerDeviceSaved = "lastServerDeviceSaved";
+	public static final String supportEmail = "flickruploader@rafali.com";
+	public static final String lastNewFilesCheckNotEmpty = "lastNewFilesCheckNotEmpty";
 }

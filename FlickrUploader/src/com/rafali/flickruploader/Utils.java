@@ -65,6 +65,7 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
@@ -617,11 +618,11 @@ public final class Utils {
 	}
 
 	public enum CAN_UPLOAD {
-		ok, network, wifi, charging, manually
+		ok, network, wifi, charging, manually, no_flickr_login
 	}
 
 	public static String canAutoUpload() {
-		if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
+		if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
 			return "Autoupload disabled";
 		}
 		if (!Utils.isPremium() && !Utils.isTrial()) {
@@ -639,6 +640,9 @@ public final class Utils {
 	}
 
 	public static CAN_UPLOAD canUploadNow() {
+		if (!FlickrApi.isAuthentified()) {
+			return CAN_UPLOAD.no_flickr_login;
+		}
 		if (System.currentTimeMillis() < Utils.getLongProperty(STR.manuallyPaused)) {
 			return CAN_UPLOAD.manually;
 		}
@@ -735,7 +739,7 @@ public final class Utils {
 	static Map<String, String> folderSets;
 
 	static boolean isAutoUpload(Folder folder) {
-		if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
+		if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
 			return false;
 		}
 		ensureSyncedFolder();
@@ -745,7 +749,7 @@ public final class Utils {
 	static void setAutoUploaded(Folder folder, boolean synced, String setId) {
 		ensureSyncedFolder();
 		if (synced) {
-			if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, true) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, true)) {
+			if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
 				if (Utils.isPremium() || Utils.isTrial()) {
 					Utils.setBooleanProperty(Preferences.AUTOUPLOAD, true);
 				}
@@ -1159,6 +1163,7 @@ public final class Utils {
 				activity.startActivity(i);
 			}
 		});
+		builder.create().show();
 	}
 
 	public static void showPremiumDialog(final Activity activity, final Callback<Boolean> callback) {
@@ -1274,8 +1279,14 @@ public final class Utils {
 					try {
 						try {
 							Object[] checkPremium = RPC.getRpcService().checkPremium(getAccountEmails());
-							premium = (Boolean) checkPremium[0];
-							customSku = (String) checkPremium[1];
+							if (checkPremium != null && checkPremium[0] != null) {
+								premium = (Boolean) checkPremium[0];
+								customSku = (String) checkPremium[1];
+								if (premium) {
+									setPremium(premium);
+								}
+								LOG.debug("server premium check: " + Arrays.toString(checkPremium));
+							}
 						} catch (Throwable e) {
 							LOG.error(ToolString.stack2string(e));
 						}
@@ -1288,7 +1299,7 @@ public final class Utils {
 											Inventory queryInventory = IabHelper.get().queryInventory(true, Lists.newArrayList(Utils.getPremiumSku()));
 											LOG.debug("queryInventory : " + Utils.getPremiumSku() + " : " + queryInventory.hasPurchase(Utils.getPremiumSku()));
 											for (String sku : Arrays.asList("flickruploader.donation.1", "flickruploader.donation.2", "flickruploader.donation.3", "flickruploader.donation.5",
-													"flickruploader.donation.8", "premium.5", "premium.2.5")) {
+													"flickruploader.donation.8", "premium.5", "premium.2.5", "premium.1.25")) {
 												if (queryInventory.hasPurchase(sku)) {
 													LOG.debug("has purchased the app : " + sku);
 													Utils.setPremium(true);

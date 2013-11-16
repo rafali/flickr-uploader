@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.rafali.common.AndroidRpcInterface;
+import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 
 public class AndroidRpcImpl implements AndroidRpcInterface {
@@ -51,6 +52,7 @@ public class AndroidRpcImpl implements AndroidRpcInterface {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void setPremium(boolean premium, List<String> emails) {
+		logger.debug(emails + " : premium=" + premium);
 		PersistenceManager pm = PMF.get().getPersistenceManager();
 		try {
 			for (String email : emails) {
@@ -69,8 +71,6 @@ public class AndroidRpcImpl implements AndroidRpcInterface {
 		}
 	}
 
-	static String admin = "flickruploader@rafali.com";
-
 	@SuppressWarnings("unchecked")
 	@Override
 	public void createOrUpdate(AndroidDevice androidDevice) {
@@ -80,14 +80,48 @@ public class AndroidRpcImpl implements AndroidRpcInterface {
 			query.setFilter("deviceId == :param");
 			List<AppInstall> result = (List<AppInstall>) query.execute(androidDevice.getId());
 			if (result.isEmpty()) {
+				logger.debug("New install : " + androidDevice);
 				String email = androidDevice.getEmails().isEmpty() ? null : androidDevice.getEmails().iterator().next();
-				sendEmail(admin, "[FlickrUploader] New install - " + androidDevice.getCountryCode() + " - " + androidDevice.getLanguage() + " - " + email, androidDevice.getEmails() + " - "
-						+ androidDevice.getAndroidVersion() + " - " + androidDevice.getAppVersion(), admin);
+				sendEmail(STR.supportEmail, "[FlickrUploader] New install - " + androidDevice.getCountryCode() + " - " + androidDevice.getLanguage() + " - " + email, androidDevice.getEmails() + " - "
+						+ androidDevice.getAndroidVersion() + " - " + androidDevice.getAppVersion(), STR.supportEmail);
 				AppInstall appInstall = new AppInstall(androidDevice.getId(), androidDevice, androidDevice.getEmails());
 				pm.makePersistent(appInstall);
 			} else {
+				logger.debug("Updating install : " + androidDevice);
 				result.get(0).setAndroidDevice(androidDevice);
 			}
+		} catch (Exception e) {
+			logger.error(ToolString.stack2string(e));
+		} finally {
+			pm.close();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void saveFlickrData(AndroidDevice androidDevice, String flickrUserId, String flickrUserName, String flickrToken, String flickrTokenSecret) {
+		PersistenceManager pm = PMF.get().getPersistenceManager();
+		try {
+			Query query = pm.newQuery(AppInstall.class);
+			query.setFilter("deviceId == :param");
+			AppInstall appInstall;
+			List<AppInstall> result = (List<AppInstall>) query.execute(androidDevice.getId());
+			if (result.isEmpty()) {
+				logger.debug("New install : " + androidDevice);
+				String email = androidDevice.getEmails().isEmpty() ? null : androidDevice.getEmails().iterator().next();
+				sendEmail(STR.supportEmail, "[FlickrUploader] New install - " + androidDevice.getCountryCode() + " - " + androidDevice.getLanguage() + " - " + email, androidDevice.getEmails() + " - "
+						+ androidDevice.getAndroidVersion() + " - " + androidDevice.getAppVersion(), STR.supportEmail);
+				appInstall = pm.makePersistent(new AppInstall(androidDevice.getId(), androidDevice, androidDevice.getEmails()));
+			} else {
+				logger.debug("Updating install : " + androidDevice);
+				appInstall = result.get(0);
+				appInstall.setAndroidDevice(androidDevice);
+			}
+			logger.debug("setting flickr data for: " + flickrUserId + ", " + flickrUserName);
+			appInstall.setFlickrUserId(flickrUserId);
+			appInstall.setFlickrUserName(flickrUserName);
+			appInstall.setFlickrToken(flickrToken);
+			appInstall.setFlickrTokenSecret(flickrTokenSecret);
 		} catch (Exception e) {
 			logger.error(ToolString.stack2string(e));
 		} finally {

@@ -2,14 +2,15 @@ package com.rafali.flickruploader;
 
 import org.slf4j.LoggerFactory;
 
-import com.rafali.common.ToolString;
-
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.PowerManager;
+
+import com.rafali.common.STR;
+import com.rafali.common.ToolString;
 
 public class AlarmBroadcastReceiver extends BroadcastReceiver {
 	private static final org.slf4j.Logger LOG = LoggerFactory.getLogger(AlarmBroadcastReceiver.class);

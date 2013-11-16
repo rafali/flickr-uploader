@@ -31,6 +31,7 @@ import com.googlecode.flickrjandroid.photos.SearchParameters;
 import com.googlecode.flickrjandroid.photosets.Photoset;
 import com.googlecode.flickrjandroid.photosets.Photosets;
 import com.googlecode.flickrjandroid.uploader.UploadMetaData;
+import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.Utils.CAN_UPLOAD;
 
@@ -406,23 +407,34 @@ public class FlickrApi {
 					}
 				}
 				if (photoId != null) {
-					if (ToolString.isBlank(photosetId)) {
-						String title = STR.instantUpload;
-						Photoset photoset = FlickrApi.get().getPhotosetsInterface().create(title, Utils.getUploadDescription(), photoId);
-						photosetId = photoset.getId();
-						Utils.setStringProperty(STR.instantAlbumId, photosetId);
-					} else {
-						FlickrApi.get().getPhotosetsInterface().addPhoto(photosetId, photoId);
-						String tempPrimaryId = tempSetPrimaryIds.get(photosetId);
-						if (tempPrimaryId != null) {
-							try {
-								LOG.debug("removing tempPrimaryId : " + tempPrimaryId + " from photosetId : " + photosetId);
-								FlickrApi.get().getPhotosetsInterface().removePhoto(photosetId, tempPrimaryId);
-								tempSetPrimaryIds.remove(photosetId);
-								Utils.setMapProperty("tempSetPrimaryIds", tempSetPrimaryIds);
-							} catch (Throwable e) {
-								LOG.error(ToolString.stack2string(e));
+					try {
+						if (ToolString.isBlank(photosetId)) {
+							String title = STR.instantUpload;
+							Photoset photoset = FlickrApi.get().getPhotosetsInterface().create(title, Utils.getUploadDescription(), photoId);
+							photosetId = photoset.getId();
+							Utils.setStringProperty(STR.instantAlbumId, photosetId);
+						} else {
+							FlickrApi.get().getPhotosetsInterface().addPhoto(photosetId, photoId);
+							String tempPrimaryId = tempSetPrimaryIds.get(photosetId);
+							if (tempPrimaryId != null) {
+								try {
+									LOG.debug("removing tempPrimaryId : " + tempPrimaryId + " from photosetId : " + photosetId);
+									FlickrApi.get().getPhotosetsInterface().removePhoto(photosetId, tempPrimaryId);
+									tempSetPrimaryIds.remove(photosetId);
+									Utils.setMapProperty("tempSetPrimaryIds", tempSetPrimaryIds);
+								} catch (Throwable e) {
+									LOG.error(ToolString.stack2string(e));
+								}
 							}
+						}
+					} catch (FlickrException fe) {
+						if ("1".equals(fe.getErrorCode())) {// Photoset not found
+							LOG.warn("photosetId : " + photosetId + " not found, photo will not be saved in a set");
+							if (photosetId != null && photosetId.equals(Utils.getStringProperty(STR.instantAlbumId))) {
+								Utils.clearProperty(STR.instantAlbumId);
+							}
+						} else {
+							throw fe;
 						}
 					}
 				}
@@ -434,10 +446,9 @@ public class FlickrApi {
 					FlickrException fe = (FlickrException) e;
 					LOG.warn("retry " + retry + " : " + fe.getErrorCode() + " : " + fe.getErrorMessage());
 					if ("1".equals(fe.getErrorCode())) {// Photoset not found
-						if (photosetId != null) {
-							if (photosetId.equals(Utils.getStringProperty(STR.instantAlbumId))) {
-								Utils.clearProperty(STR.instantAlbumId);
-							}
+						LOG.warn("photosetId : " + photosetId + " not found");
+						if (photosetId != null && photosetId.equals(Utils.getStringProperty(STR.instantAlbumId))) {
+							Utils.clearProperty(STR.instantAlbumId);
 						}
 					} else if ("3".equals(fe.getErrorCode())) {// Photo already in set
 						success = true;

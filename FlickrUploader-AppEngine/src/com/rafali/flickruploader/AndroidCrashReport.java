@@ -23,6 +23,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.rafali.common.STR;
+
 @SuppressWarnings("serial")
 public class AndroidCrashReport extends HttpServlet {
 
@@ -48,13 +50,18 @@ public class AndroidCrashReport extends HttpServlet {
 		sendEmailNow("rafalax@gmail.com", "FLICKR-CRASH - " + versionId, "<pre>" + stackTrace + "\n\n" + strb + "</pre>", "rafalax@gmail.com");
 	}
 
+	static final String robotEmail = "script@rafali.com";
+
 	public static synchronized void sendEmailNow(String recipient, String subject, String bodyHtml, String fromAddress) {
 		Properties props = new Properties();
 		Session session = Session.getDefaultInstance(props, null);
 		try {
 			Message msg = new MimeMessage(session);
 
-			msg.setFrom(new InternetAddress(fromAddress, "Robot Flickr Uploader"));
+			msg.setFrom(new InternetAddress(robotEmail, "Robot Flickr Uploader"));
+			if (fromAddress != null) {
+				msg.setReplyTo(new InternetAddress[] { new InternetAddress(fromAddress) });
+			}
 			msg.addRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
 			msg.setSubject(subject);
 

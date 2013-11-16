@@ -4,17 +4,17 @@
     <PreferenceScreen android:key="login" />
 
     <CheckBoxPreference
-        android:defaultValue="true"
+        android:defaultValue="false"
         android:key="autoupload"
         android:summaryOff="Photos are manually uploaded"
         android:summaryOn="Photos are automatically uploaded"
-        android:title="Photo Instant Upload" />
+        android:title="Photo Auto Upload" />
     <CheckBoxPreference
-        android:defaultValue="true"
+        android:defaultValue="false"
         android:key="autouploadvideos"
         android:summaryOff="Videos are manually uploaded"
         android:summaryOn="Videos are automatically uploaded"
-        android:title="Video Instant Upload" />
+        android:title="Video Auto Upload" />
 
     <PreferenceScreen
         android:key="autoupload_folder_settings"

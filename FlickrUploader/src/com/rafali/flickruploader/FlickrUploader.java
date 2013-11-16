@@ -44,6 +44,7 @@ import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 
 @ReportsCrashes(formUri = "http://ra-fa-li.appspot.com/androidCrashReport", formKey = "", mode = ReportingInteractionMode.TOAST, forceCloseDialogAfterToast = false, // optional, default false
@@ -70,15 +71,31 @@ public class FlickrUploader extends Application {
 					if (Config.VERSION != versionCode) {
 						if (versionCode == 0) {
 							Mixpanel.track("First install");
-						} else if (versionCode < 33) {
-							String instantCustomAlbumId = Utils.getStringProperty("instantCustomAlbumId");
-							if (instantCustomAlbumId != null) {
-								List<Folder> syncedFolders = Utils.getSyncedFolders();
-								for (Folder folder : syncedFolders) {
-									Utils.setAutoUploaded(folder, true, instantCustomAlbumId);
+						} else {
+							if (versionCode < 33) {
+								try {
+									String instantCustomAlbumId = Utils.getStringProperty("instantCustomAlbumId");
+									if (instantCustomAlbumId != null) {
+										List<Folder> syncedFolders = Utils.getSyncedFolders();
+										for (Folder folder : syncedFolders) {
+											Utils.setAutoUploaded(folder, true, instantCustomAlbumId);
+										}
+									}
+									Utils.clearProperty("instantCustomAlbumId");
+								} catch (Throwable e) {
+									LOG.error(ToolString.stack2string(e));
 								}
 							}
-							Utils.clearProperty("instantCustomAlbumId");
+							if (versionCode < 34) {
+								try {
+									if (ToolString.isNotBlank(Utils.getStringProperty(STR.accessToken))) {
+									RPC.getRpcService().saveFlickrData(Utils.createAndroidDevice(), Utils.getStringProperty(STR.userId), Utils.getStringProperty(STR.userName),
+											Utils.getStringProperty(STR.accessToken), Utils.getStringProperty(STR.accessTokenSecret));
+									}
+								} catch (Throwable e) {
+									LOG.error(ToolString.stack2string(e));
+								}
+							}
 						}
 						Utils.saveAndroidDevice();
 						Utils.setLongProperty(STR.versionCode, (long) Config.VERSION);

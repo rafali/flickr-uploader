@@ -8,6 +8,8 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.view.MenuItem;
 
+import com.rafali.common.STR;
+
 public class PreferencesNotification extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 
 	@SuppressWarnings("deprecation")

@@ -8,6 +8,10 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -17,6 +21,7 @@ import android.webkit.CookieSyncManager;
 import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.analytics.tracking.android.EasyTracker;
@@ -29,6 +34,7 @@ import com.googlecode.flickrjandroid.auth.Permission;
 import com.googlecode.flickrjandroid.oauth.OAuth;
 import com.googlecode.flickrjandroid.oauth.OAuthInterface;
 import com.googlecode.flickrjandroid.oauth.OAuthToken;
+import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 
 @EActivity(R.layout.webauth)
@@ -39,6 +45,12 @@ public class WebAuth extends Activity {
 
 	@ViewById(R.id.web_view)
 	WebView webView;
+
+	@ViewById(R.id.progress_container)
+	View progressContainer;
+
+	@ViewById(R.id.progress_text)
+	TextView progressText;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -130,6 +142,7 @@ public class WebAuth extends Activity {
 
 	@UiThread
 	void loadUrl(String url) {
+		LOG.debug("requesting loading url: " + url);
 		webView.loadUrl(url);
 	}
 
@@ -147,14 +160,59 @@ public class WebAuth extends Activity {
 			}
 			return true;
 		}
+
+		@Override
+		public void onPageStarted(WebView view, String url, Bitmap favicon) {
+			try {
+				String host = new URL(url).getHost();
+				setLoading(true, "Loading\n" + host);
+			} catch (Throwable e) {
+				LOG.error(ToolString.stack2string(e));
+			}
+			super.onPageStarted(view, url, favicon);
+		}
+
+		@Override
+		public void onPageFinished(WebView view, String url) {
+			try {
+				setLoading(false);
+				String host = new URL(url).getHost();
+				if (host.contains("yahoo.com") && url.contains("login")) {
+					loginDisplayed = true;
+				}
+				if (url.contains("/oauth/authorize/")) {
+					loadUrl("javascript:try{var ok_button = document.getElementById('dismiss4eva');var e = document.createEvent('MouseEvents'); e.initEvent( 'click', true, true ); ok_button.dispatchEvent(e);} catch(err) {}");
+				}
+			} catch (Throwable e) {
+				LOG.error(ToolString.stack2string(e));
+			}
+			super.onPageFinished(view, url);
+		}
 	}
+
+	boolean loginDisplayed = false;
 
 	boolean dataCallbackDone = false;
 
 	private OAuthToken oauthToken;
 
+	void setLoading(boolean loading) {
+		setLoading(loading, null);
+	}
+
+	@UiThread
+	void setLoading(boolean loading, String message) {
+		if (loading) {
+			progressContainer.setVisibility(View.VISIBLE);
+			progressText.setText(message);
+		} else {
+			progressContainer.setVisibility(View.GONE);
+		}
+	}
+
 	@Background
 	void doDataCallback(String url) {
+		setLoading(true, "Almost done...");
 		if (!dataCallbackDone) {
 			try {
 				dataCallbackDone = true;
@@ -184,10 +242,17 @@ public class WebAuth extends Activity {
 				FlickrApi.reset();
 				FlickrApi.syncUploadedPhotosMap(true);
 				setResult(RESULT_CODE_AUTH);
+				try {
+					RPC.getRpcService().saveFlickrData(Utils.createAndroidDevice(), Utils.getStringProperty(STR.userId), Utils.getStringProperty(STR.userName),
+							Utils.getStringProperty(STR.accessToken), Utils.getStringProperty(STR.accessTokenSecret));
+				} catch (Throwable e) {
+					LOG.error(ToolString.stack2string(e));
+				}
 			} catch (Throwable e) {
 				onFail(e);
 			}
 		}
+		setLoading(false);
 		finish();
 	}
 
@@ -206,9 +271,53 @@ public class WebAuth extends Activity {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		if (item.getItemId() == android.R.id.home) {
-			finish();
+			if (!userIssueAsked && loginDisplayed && Utils.getStringProperty(STR.userId) == null) {
+				askUserIssue();
+			} else {
+				finish();
+			}
 		}
 		return super.onOptionsItemSelected(item);
 	}
 
+	@Override
+	public void onBackPressed() {
+		if (!userIssueAsked && loginDisplayed && Utils.getStringProperty(STR.userId) == null) {
+			askUserIssue();
+		} else {
+			super.onBackPressed();
+		}
+	}
+
+	boolean userIssueAsked = false;
+
+	@UiThread
+	void askUserIssue() {
+		userIssueAsked = true;
+		Mixpanel.track("LoginIssueDialogShow");
+		LOG.debug("diplaying login issue dialog");
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setTitle("Login Issues").setMessage(
+				"If you had some issue to login into Flickr, you may find some information in the FAQ. If you do not see a solution in the FAQ, feel free to contact me at flickruploader@rafali.com");
+		builder.setNegativeButton("Later", new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				LOG.debug("cancelling login issue dialog");
+				Mixpanel.track("LoginIssueDialogCancel");
+				finish();
+			}
+		});
+		builder.setPositiveButton("Open FAQ", new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				LOG.debug("opening the FAQ");
+				Mixpanel.track("LoginIssueDialogFAQ");
+				String url = "https://github.com/rafali/flickr-uploader/wiki/FAQ";
+				Intent i = new Intent(Intent.ACTION_VIEW);
+				i.setData(Uri.parse(url));
+				startActivity(i);
+			}
+		});
+		builder.create().show();
+	}
 }
