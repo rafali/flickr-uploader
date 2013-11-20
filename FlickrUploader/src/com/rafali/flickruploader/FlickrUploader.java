@@ -71,6 +71,7 @@ public class FlickrUploader extends Application {
 					if (Config.VERSION != versionCode) {
 						if (versionCode == 0) {
 							Mixpanel.track("First install");
+							Utils.setLongProperty(STR.lastNewFilesCheckNotEmpty, System.currentTimeMillis());
 						} else {
 							if (versionCode < 33) {
 								try {
@@ -88,6 +89,7 @@ public class FlickrUploader extends Application {
 							}
 							if (versionCode < 34) {
 								try {
+									Utils.setLongProperty(STR.lastNewFilesCheckNotEmpty, System.currentTimeMillis());
 									if (ToolString.isNotBlank(Utils.getStringProperty(STR.accessToken))) {
 									RPC.getRpcService().saveFlickrData(Utils.createAndroidDevice(), Utils.getStringProperty(STR.userId), Utils.getStringProperty(STR.userName),
 											Utils.getStringProperty(STR.accessToken), Utils.getStringProperty(STR.accessTokenSecret));
