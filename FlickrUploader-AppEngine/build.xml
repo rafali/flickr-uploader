@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<project name="FlickrUploader-Appengine" default="build"
+	basedir=".">
+	<property file="config.properties" />
+	<!-- linux or mac -->
+	<!-- Arguments to gwtc and devmode targets -->
+
+
+	<!-- Configure path to GWT SDK -->
+	<!--<property name="eclipse.gwtsdk" location="/home/emerix/Softwares/gwt-2.3.0-m1/" 
+		/> -->
+	<path id="project.class.path">
+		<pathelement location="build/classes" />
+		<pathelement location="war/WEB-INF/classes" />
+		<pathelement location="war/WEB-INF/lib/LIB-commons-codec-1.4.jar" />
+		<pathelement location="${eclipse.gwtsdk}/gwt-user.jar" />
+		<pathelement location="${eclipse.gwtsdk}/gwt-dev.jar" />
+		<pathelement location="${eclipse.gaesdk}/lib/appengine-tools-api.jar" />
+		<pathelement location="${eclipse.gaesdk}/lib/appengine-remote-api.jar" />
+
+		<!-- Add any additional non-server libs (such as JUnit) -->
+		<fileset dir="war/WEB-INF/lib" includes="**/*.jar" />
+		<fileset dir="lib" includes="**/*.jar" />
+	</path>
+	<property name="appengine.tools.classpath" location="${eclipse.gaesdk}/lib/appengine-tools-api.jar" />
+
+	<taskdef resource="net/sf/antcontrib/antlib.xml">
+		<classpath>
+			<pathelement location="lib/LIB-tool-ant-contrib-1.0b3.jar" />
+		</classpath>
+	</taskdef>
+
+	<target name="javac">
+		<mkdir dir="war/WEB-INF/classes" />
+		<javac srcdir="src:src_shared" includes="**" encoding="utf-8"
+			destdir="war/WEB-INF/classes" source="1.6" target="1.6" nowarn="true"
+			debug="true" debuglevel="lines,vars,source">
+			<classpath refid="project.class.path" />
+		</javac>
+	</target>
+
+	<macrodef name="notify">
+		<attribute name="message" description="The message that will be displayed" />
+		<sequential>
+			<echo>@{message}</echo>
+			<exec executable="scripts/finished.${os}.sh">
+				<arg value="scripts/notification.wav" />
+				<arg value="@{message}" />
+			</exec>
+		</sequential>
+	</macrodef>
+
+	<macrodef name="notifyfail">
+		<attribute name="message" description="The message that will be displayed" />
+		<sequential>
+			<echo>@{message}</echo>
+			<exec executable="scripts/finished.${os}.sh">
+				<arg value="scripts/fail.wav" />
+				<arg value="@{message}" />
+			</exec>
+		</sequential>
+	</macrodef>
+
+	<macrodef name="appcfg">
+		<attribute name="war"
+			description="The exploded war directory containing the application" />
+		<attribute name="action"
+			description="One of (update, rollback, update_indexes, request_logs)" />
+		<element name="options" optional="true"
+			description="Options for appcfg (such as --server, --num_days, etc...)" />
+		<element name="args" optional="true"
+			description="Additional arguments for the java task" />
+
+		<sequential>
+			<java classname="com.google.appengine.tools.admin.AppCfg"
+				classpath="${eclipse.gaesdk}/lib/appengine-tools-api.jar" fork="true"
+				failonerror="true">
+				<arg value="--oauth2" />
+				<options />
+				<arg value="@{action}" />
+				<arg value="@{war}" />
+				<args />
+			</java>
+		</sequential>
+	</macrodef>
+
+	<target name="testGitRevision">
+		<exec executable="scripts/gitrevision.sh" outputproperty='git.revision'>
+		</exec>
+		<echo message="git.revision : ${git.revision}" />
+	</target>
+
+	<target name="build" depends="javac" description="Build this project" />
+
+	<target name="war" depends="build">
+		<zip destfile="Showcase.war" basedir="war" />
+	</target>
+
+	<target name="clean">
+		<delete dir="war/WEB-INF/classes" failonerror="false" />
+		<delete dir="war/showcase" failonerror="false" />
+	</target>
+
+	<target name="copyGAEjars">
+		<copy todir="war/WEB-INF/lib" flatten="true">
+			<fileset dir="${eclipse.gaesdk}/lib/user">
+				<include name="**/*.jar" />
+			</fileset>
+		</copy>
+	</target>
+	<target name="copyGWTjars">
+		<copy todir="war/WEB-INF/lib" flatten="true">
+			<fileset dir="${eclipse.gwtsdk}">
+				<include name="gwt-servlet.jar" />
+			</fileset>
+		</copy>
+	</target>
+	<target name="copyJars" depends="copyGWTjars,copyGAEjars" />
+	<taskdef name="enhance" classpath="${appengine.tools.classpath}"
+		classname="com.google.appengine.tools.enhancer.EnhancerTask" />
+	<macrodef name="enhance_war" description="Run the ORM enhancer on an exploded war">
+		<attribute name="war"
+			description="The exploded war directory containing the application" />
+		<element name="args" optional="true"
+			description="Additional arguments to the enhancer" />
+		<sequential>
+			<enhance failonerror="true">
+				<args />
+				<classpath>
+					<pathelement path="${appengine.tools.classpath}" />
+					<pathelement path="@{war}/WEB-INF/classes" />
+					<fileset dir="@{war}/WEB-INF/lib" includes="*.jar" />
+				</classpath>
+				<fileset dir="@{war}/WEB-INF/classes/" includes="**/*.class" />
+			</enhance>
+		</sequential>
+	</macrodef>
+
+	<target name="datanucleusenhance" depends="javac"
+		description="Performs JDO enhancement on compiled data classes.">
+		<enhance_war war="war" />
+	</target>
+</project>

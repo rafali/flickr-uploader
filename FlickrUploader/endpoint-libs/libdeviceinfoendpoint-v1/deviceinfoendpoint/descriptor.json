@@ -1,13 +1,13 @@
 {
   "files": [
     {
-      "downloadUrl": "/downloads/deviceinfoendpoint/v1/20131115053726/java/1.16.0-rc/rafali.com-deviceinfoendpoint-v1-20131115053726-java-1.16.0-rc-sources.jar", 
-      "path": "rafali.com-deviceinfoendpoint-v1-20131115053726-java-1.16.0-rc-sources.jar", 
+      "downloadUrl": "/downloads/deviceinfoendpoint/v1/20131125220611/java/1.16.0-rc/rafali.com-deviceinfoendpoint-v1-20131125220611-java-1.16.0-rc-sources.jar", 
+      "path": "rafali.com-deviceinfoendpoint-v1-20131125220611-java-1.16.0-rc-sources.jar", 
       "type": "source", 
-      "timestamp": "2013-11-15 05:37"
+      "timestamp": "2013-11-25 22:06"
     }, 
     {
-      "path": "rafali.com-deviceinfoendpoint-v1-20131115053726-java-1.16.0-rc.jar.properties", 
+      "path": "rafali.com-deviceinfoendpoint-v1-20131125220611-java-1.16.0-rc.jar.properties", 
       "type": "android.properties"
     }
   ], 
@@ -702,5 +702,5 @@
   "packagePath": "flickruploader", 
   "language_version": "1.16.0-rc", 
   "id": "deviceinfoendpoint:v1", 
-  "revision": 20131115053726
+  "revision": 20131125220611
 }
