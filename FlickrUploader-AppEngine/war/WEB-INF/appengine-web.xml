@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appengine-web-app xmlns="http://appengine.google.com/ns/1.0">
 	<application>ra-fa-li</application>
-	<version>6</version>
+	<version>7</version>
 
 	<!-- Allows App Engine to send multiple requests to one instance in parallel: -->
 	<threadsafe>true</threadsafe>
@@ -11,6 +11,9 @@
 		<property name="java.util.logging.config.file" value="WEB-INF/logging.properties" />
 	</system-properties>
 
+	<inbound-services>
+		<service>mail</service>
+	</inbound-services>
 	<!-- HTTP Sessions are disabled by default. To enable HTTP sessions specify: 
 		<sessions-enabled>true</sessions-enabled> It's possible to reduce request 
 		latency by configuring your application to asynchronously write HTTP session 

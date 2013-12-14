@@ -46,7 +46,7 @@ public class AndroidRpcImpl implements AndroidRpcInterface {
 	@Override
 	public void sendEmail(String recipient, String subject, String bodyHtml, String fromAddress) {
 		logger.debug("sendMail " + recipient + ", " + subject);
-		AndroidCrashReport.sendEmailNow(recipient, subject, bodyHtml, fromAddress);
+		ToolMail.sendEmailNow(recipient, subject, bodyHtml, fromAddress);
 	}
 
 	@SuppressWarnings("unchecked")
