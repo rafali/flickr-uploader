@@ -5,8 +5,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,7 +51,9 @@ import com.google.ads.AdRequest;
 import com.google.ads.AdSize;
 import com.google.ads.AdView;
 import com.google.analytics.tracking.android.EasyTracker;
+import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
+import com.google.common.collect.Ordering;
 import com.googlecode.androidannotations.annotations.AfterViews;
 import com.googlecode.androidannotations.annotations.Background;
 import com.googlecode.androidannotations.annotations.EActivity;
@@ -410,7 +414,10 @@ public class FlickrUploaderActivity extends Activity {
 	private MenuItem privacyItem;
 	final ActionMode.Callback mCallback = new ActionMode.Callback() {
 
-		/** Invoked whenever the action mode is shown. This is invoked immediately after onCreateActionMode */
+		/**
+		 * Invoked whenever the action mode is shown. This is invoked
+		 * immediately after onCreateActionMode
+		 */
 		@Override
 		public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
 			return false;
@@ -424,7 +431,10 @@ public class FlickrUploaderActivity extends Activity {
 			renderSelection();
 		}
 
-		/** This is called when the action mode is created. This is called by startActionMode() */
+		/**
+		 * This is called when the action mode is created. This is called by
+		 * startActionMode()
+		 */
 		@Override
 		public boolean onCreateActionMode(ActionMode mode, Menu menu) {
 			getMenuInflater().inflate(R.menu.context_menu, menu);
@@ -580,7 +590,7 @@ public class FlickrUploaderActivity extends Activity {
 							case 0:
 								for (Media image : selection) {
 									Folder folder = foldersMap.get(image);
-									enqueue(folder.images, Utils.getInstantAlbumId());
+									enqueue(folder.images, STR.instantUpload);
 								}
 								clearSelection();
 								break;
@@ -590,7 +600,7 @@ public class FlickrUploaderActivity extends Activity {
 									Folder folder = foldersMap.get(image);
 									folders.add(folder);
 								}
-								createSets(folders);
+								createOneSetPerFolder(folders);
 							}
 								break;
 							case 2: {
@@ -623,7 +633,7 @@ public class FlickrUploaderActivity extends Activity {
 						public void onClick(DialogInterface dialog, int which) {
 							switch (which) {
 							case 0:
-								enqueue(selection, Utils.getInstantAlbumId());
+								enqueue(selection, STR.instantUpload);
 								clearSelection();
 								break;
 							case 1:
@@ -653,14 +663,14 @@ public class FlickrUploaderActivity extends Activity {
 		showExistingSetDialog(this, new Callback<String[]>() {
 			@Override
 			public void onResult(String[] result) {
-				String photoSetId = result[0];
+				String photoSetTitle = result[1];
 				if (isFolderTab()) {
 					for (Media image : selection) {
 						Folder folder = foldersMap.get(image);
-						enqueue(folder.images, photoSetId);
+						enqueue(folder.images, photoSetTitle);
 					}
 				} else {
-					enqueue(selection, photoSetId);
+					enqueue(selection, photoSetTitle);
 				}
 				clearSelection();
 			}
@@ -672,7 +682,7 @@ public class FlickrUploaderActivity extends Activity {
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
-				final Map<String, String> photosets = cachedPhotosets == null ? FlickrApi.getPhotoSets() : cachedPhotosets;
+				final Map<String, String> photosets = cachedPhotosets == null ? FlickrApi.getPhotoSets(true) : cachedPhotosets;
 				activity.runOnUiThread(new Runnable() {
 					@Override
 					public void run() {
@@ -682,9 +692,21 @@ public class FlickrUploaderActivity extends Activity {
 						} else {
 							AlertDialog.Builder builder = new AlertDialog.Builder(activity);
 							final List<String> photosetTitles = new ArrayList<String>();
-							final List<String> photosetIds = new ArrayList<String>();
-							for (String photosetId : photosets.keySet()) {
-								photosetIds.add(photosetId);
+							final List<String> photosetIds = new ArrayList<String>(photosets.keySet());
+							Map<String, String> lowerCasePhotosets = new HashMap<String, String>();
+							Iterator<String> it = photosetIds.iterator();
+							while (it.hasNext()) {
+								String photosetId = it.next();
+								String photoSetTitle = photosets.get(photosetId);
+								if (ToolString.isNotBlank(photoSetTitle)) {
+									lowerCasePhotosets.put(photosetId, photoSetTitle.toLowerCase(Locale.US));
+								} else {
+									it.remove();
+								}
+							}
+							Ordering<String> valueComparator = Ordering.natural().onResultOf(Functions.forMap(lowerCasePhotosets));
+							Collections.sort(photosetIds, valueComparator);
+							for (String photosetId : photosetIds) {
 								photosetTitles.add(photosets.get(photosetId));
 							}
 							String[] photosetTitlesArray = photosetTitles.toArray(new String[photosetTitles.size()]);
@@ -717,7 +739,8 @@ public class FlickrUploaderActivity extends Activity {
 					BackgroundExecutor.execute(new Runnable() {
 						@Override
 						public void run() {
-							createSet(value, folder, selection);
+							enqueue(selection, value);
+							clearSelection();
 						}
 					});
 				}
@@ -746,42 +769,15 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	@Background
-	void createSets(List<Folder> folders) {
+	void createOneSetPerFolder(List<Folder> folders) {
 		for (Folder folder : folders) {
 			try {
-				Map<String, String> foldersSets = Utils.getFoldersSets();
-				String photoSetId = foldersSets.get(folder.path);
-				if (photoSetId == null) {
-					photoSetId = createSet(folder.name, folder, folder.images);
-				} else {
-					enqueue(folder.images, photoSetId);
-				}
+				enqueue(folder.images, folder.name);
+				clearSelection();
 			} catch (Throwable e) {
 				LOG.error(ToolString.stack2string(e));
 			}
 		}
-	}
-
-	String createSet(String photoSetTitle, Folder folder, final List<Media> selection) {
-		showLoading("Creating set...", "Please wait while your new set '" + photoSetTitle + "' is created");
-		try {
-			final String[] result = FlickrApi.createSet(photoSetTitle);
-			if (result != null && result[0] != null) {
-				if (folder != null) {
-					enqueue(folder.images, result[0]);
-					Utils.setFolderSetId(folder, result[0]);
-				} else {
-					enqueue(selection, result[0]);
-				}
-				clearSelection();
-				return result[0];
-			} else {
-				toast("Failed to create an new photoset");
-			}
-		} finally {
-			hideLoading();
-		}
-		return null;
 	}
 
 	static void showNewSetDialog(final Activity activity, final String folderTitle, final Callback<String> callback) {
@@ -809,8 +805,8 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	@UiThread
-	void enqueue(Collection<Media> images, String photoSetId) {
-		int enqueued = UploadService.enqueue(false, images, photoSetId);
+	void enqueue(Collection<Media> images, String photoSetTitle) {
+		int enqueued = UploadService.enqueue(false, images, photoSetTitle);
 		if (slidingDrawer != null && enqueued > 0) {
 			slidingDrawer.animateOpen();
 			drawerContentView.setCurrentTab(DrawerContentView.TAB_QUEUED_INDEX);
@@ -1293,7 +1289,9 @@ public class FlickrUploaderActivity extends Activity {
 					AdRequest adRequest = new AdRequest();
 					adRequest.addTestDevice("DE46A4A314F9E6F59597CD32A63D68C4");
 					bannerAdView.loadAd(adRequest);
-					// bannerAdView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+					// bannerAdView.setLayoutParams(new
+					// LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+					// LinearLayout.LayoutParams.WRAP_CONTENT));
 					adContainer.addView(bannerAdView);
 				}
 			} else {

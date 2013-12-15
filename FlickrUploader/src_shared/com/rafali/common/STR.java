@@ -4,7 +4,6 @@ public class STR {
 	public static final String accessToken = "accessToken";
 	public static final String accessTokenSecret = "accessTokenSecret";
 	public static final String userId = "userId";
-	public static final String instantAlbumId = "instantAlbumId";
 	public static final String instantUpload = "Instant Upload";
 	public static final String uploadedPhotos = "uploadedPhotos";
 	public static final String userName = "userName";

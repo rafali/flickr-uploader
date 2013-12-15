@@ -92,7 +92,6 @@ public class FlickrApi {
 	private static boolean authentified = false;
 
 	private static Map<String, String> uploadedPhotos = Utils.getMapProperty(STR.uploadedPhotos);
-	private static Map<String, String> uploadedFolders = Utils.getMapProperty(STR.uploadedFolders);
 	private static Map<String, PRIVACY> photosPrivacy = Utils.getMapProperty(STR.photosPrivacy, PRIVACY.class);
 	public static Set<Media> unretryable = new HashSet<Media>();
 
@@ -131,7 +130,8 @@ public class FlickrApi {
 								int per_page = 500;
 								int count = 0;
 								// fetching all uploaded photos
-								// the flickr query is not consistent (not all photos are retrieved)
+								// the flickr query is not consistent (not all
+								// photos are retrieved)
 								while (page <= totalPage) {
 									lastSync = System.currentTimeMillis();
 									SearchParameters params = new SearchParameters();
@@ -149,7 +149,8 @@ public class FlickrApi {
 												if (tag.startsWith("file:sha1sig")) {
 													uploadedPhotos.put(tag, photo.getId());
 													photosPrivacy.put(photo.getId(), getPrivacy(photo));
-													// System.out.println(tag + " = " + photo.getId());
+													// System.out.println(tag +
+													// " = " + photo.getId());
 												}
 											}
 										}
@@ -159,7 +160,9 @@ public class FlickrApi {
 									}
 								}
 								if (FlickrApi.uploadedPhotos != uploadedPhotos) {
-									// as all photos may not have been retrieve, we need to check which one have really been deleted manually
+									// as all photos may not have been retrieve,
+									// we need to check which one have really
+									// been deleted manually
 									FlickrApi.uploadedPhotos.keySet().removeAll(uploadedPhotos.keySet());
 									for (String tag : FlickrApi.uploadedPhotos.keySet()) {
 										String photoId = FlickrApi.uploadedPhotos.get(tag);
@@ -170,7 +173,9 @@ public class FlickrApi {
 												uploadedPhotos.put(tag, photoId);
 											}
 										} catch (FlickrException e) {
-											if ("1".equals(e.getErrorCode())) {// Photo not found
+											if ("1".equals(e.getErrorCode())) {// Photo
+																				// not
+																				// found
 												LOG.debug(photoId + "=" + tag + " still no longer exist");
 											} else {
 												LOG.error(ToolString.stack2string(e));
@@ -194,8 +199,9 @@ public class FlickrApi {
 		}
 	}
 
-	public static void ensureOrdered(String photosetId) {
+	public static void ensureOrdered(String photosetTitle) {
 		try {
+			String photosetId = getPhotoSetId(photosetTitle);
 			if (photosetId != null) {
 				List<String> instantPhotoIds = new ArrayList<String>();
 				int page = 1;
@@ -216,7 +222,8 @@ public class FlickrApi {
 						page++;
 						for (Photo photo : photos) {
 							instantPhotoIds.add(photo.getId());
-							// as long as we are fetching data, let's make sure we have (again) the machine_tags
+							// as long as we are fetching data, let's make sure
+							// we have (again) the machine_tags
 							for (String tag : photo.getMachineTags()) {
 								if (tag.startsWith("file:sha1sig")) {
 									uploadedPhotos.put(tag, photo.getId());
@@ -259,10 +266,6 @@ public class FlickrApi {
 		}
 	}
 
-	public static void ensureOrdered(Folder folder) {
-		ensureOrdered(uploadedFolders.get(folder.path));
-	}
-
 	public static boolean isUploaded(Object object) {
 		if (object instanceof Media) {
 			String sha1tag = Utils.getSHA1tag((Media) object);
@@ -282,51 +285,12 @@ public class FlickrApi {
 		return uploadedPhotos.get(sha1tag);
 	}
 
-	private static boolean containsUploadedPhotos(String photosetId) {
-		try {
-			int per_page = 100;
-			// Log.i(TAG, "persisted uploadedPhotos : " + uploadedPhotos);
-			lastSync = System.currentTimeMillis();
-			PhotoList photos = FlickrApi.get().getPhotosetsInterface().getPhotos(photosetId, EXTRAS_MACHINE_TAGS, Flickr.PRIVACY_LEVEL_NO_FILTER, per_page, 1);
-			LOG.debug("nb photos uploaded : " + photos.size());
-			for (Photo photo : photos) {
-				for (String tag : photo.getMachineTags()) {
-					if (tag.startsWith("file:sha1sig")) {
-						return true;
-					}
-				}
-			}
-		} catch (Throwable e) {
-			LOG.error(ToolString.stack2string(e));
+	@SuppressWarnings("deprecation")
+	public static boolean upload(Media image, String photosetTitle) {
+		if (photosetTitle == null) {
+			LOG.warn("photosetTitle should not be null here, setting it to default " + STR.instantUpload);
+			photosetTitle = STR.instantUpload;
 		}
-		return false;
-	}
-
-	static Map<String, String> tempSetPrimaryIds = Utils.getMapProperty("tempSetPrimaryIds");
-
-	public static String[] createSet(String photoSetTitle) {
-		String photoSetId = null;
-		try {
-			SearchParameters params = new SearchParameters();
-			params.setUserId(Utils.getStringProperty(STR.userId));
-			PhotoList search = FlickrApi.get().getPhotosInterface().search(params, 1, 0);
-			if (!search.isEmpty()) {
-				String primaryPhotoId = search.get(0).getId();
-				LOG.debug("recent : " + primaryPhotoId);
-				Photoset photoset = FlickrApi.get().getPhotosetsInterface().create(photoSetTitle, Utils.getUploadDescription(), primaryPhotoId);
-				photoSetId = photoset.getId();
-				tempSetPrimaryIds.put(photoSetId, primaryPhotoId);
-				Utils.setMapProperty("tempSetPrimaryIds", tempSetPrimaryIds);
-			}
-
-		} catch (Throwable e) {
-			LOG.error(ToolString.stack2string(e));
-		}
-		LOG.debug("created photoSetId : " + photoSetId);
-		return new String[] { photoSetId, photoSetTitle };
-	}
-
-	public static boolean upload(Media image, String photosetId) {
 		boolean success = false;
 		int retry = 0;
 		String photoId = null;
@@ -337,22 +301,10 @@ public class FlickrApi {
 		} else {
 			cm.setNetworkPreference(ConnectivityManager.DEFAULT_NETWORK_PREFERENCE);
 		}
+		String photosetId = null;
 		while (retry < NB_RETRY && !success) {
-			if (photosetId == null) {
-				photosetId = Utils.getInstantAlbumId();
-			}
+			photosetId = getPhotoSetId(photosetTitle);
 			try {
-				if (photosetId == null) {
-					Photosets list = FlickrApi.get().getPhotosetsInterface().getList(Utils.getStringProperty(STR.userId));
-					for (Photoset photoset : list.getPhotosets()) {
-						if (STR.instantUpload.equals(photoset.getTitle()) && containsUploadedPhotos(photoset.getId())) {
-							photosetId = photoset.getId();
-							LOG.debug("instantAlbumId : " + photosetId);
-							Utils.setStringProperty(STR.instantAlbumId, photosetId);
-							break;
-						}
-					}
-				}
 				if (photoId == null) {
 					String extension = getExtension(image);
 					if (unsupportedExtensions.contains(extension)) {
@@ -409,30 +361,16 @@ public class FlickrApi {
 				if (photoId != null) {
 					try {
 						if (ToolString.isBlank(photosetId)) {
-							String title = STR.instantUpload;
-							Photoset photoset = FlickrApi.get().getPhotosetsInterface().create(title, Utils.getUploadDescription(), photoId);
+							Photoset photoset = FlickrApi.get().getPhotosetsInterface().create(photosetTitle, Utils.getUploadDescription(), photoId);
 							photosetId = photoset.getId();
-							Utils.setStringProperty(STR.instantAlbumId, photosetId);
+							cachedPhotoSets = null;
 						} else {
 							FlickrApi.get().getPhotosetsInterface().addPhoto(photosetId, photoId);
-							String tempPrimaryId = tempSetPrimaryIds.get(photosetId);
-							if (tempPrimaryId != null) {
-								try {
-									LOG.debug("removing tempPrimaryId : " + tempPrimaryId + " from photosetId : " + photosetId);
-									FlickrApi.get().getPhotosetsInterface().removePhoto(photosetId, tempPrimaryId);
-									tempSetPrimaryIds.remove(photosetId);
-									Utils.setMapProperty("tempSetPrimaryIds", tempSetPrimaryIds);
-								} catch (Throwable e) {
-									LOG.error(ToolString.stack2string(e));
-								}
-							}
 						}
 					} catch (FlickrException fe) {
-						if ("1".equals(fe.getErrorCode())) {// Photoset not found
+						if ("1".equals(fe.getErrorCode())) {// Photoset not
 							LOG.warn("photosetId : " + photosetId + " not found, photo will not be saved in a set");
-							if (photosetId != null && photosetId.equals(Utils.getStringProperty(STR.instantAlbumId))) {
-								Utils.clearProperty(STR.instantAlbumId);
-							}
+							cachedPhotoSets = null;
 						} else {
 							throw fe;
 						}
@@ -447,10 +385,9 @@ public class FlickrApi {
 					LOG.warn("retry " + retry + " : " + fe.getErrorCode() + " : " + fe.getErrorMessage());
 					if ("1".equals(fe.getErrorCode())) {// Photoset not found
 						LOG.warn("photosetId : " + photosetId + " not found");
-						if (photosetId != null && photosetId.equals(Utils.getStringProperty(STR.instantAlbumId))) {
-							Utils.clearProperty(STR.instantAlbumId);
-						}
-					} else if ("3".equals(fe.getErrorCode())) {// Photo already in set
+						cachedPhotoSets = null;
+					} else if ("3".equals(fe.getErrorCode())) {// Photo already
+																// in set
 						success = true;
 					} else if ("98".equals(fe.getErrorCode())) {
 						auth = null;
@@ -483,6 +420,18 @@ public class FlickrApi {
 			Utils.setMapProperty(STR.uploadedPhotos, uploadedPhotos);
 		}
 		return success;
+	}
+
+	private static String getPhotoSetId(String photosetTitle) {
+		if (photosetTitle != null) {
+			Map<String, String> photoSets = getPhotoSets(false);
+			for (String setId : photoSets.keySet()) {
+				if (photosetTitle.equals(photoSets.get(setId))) {
+					return setId;
+				}
+			}
+		}
+		return null;
 	}
 
 	static String getExtension(Media media) {
@@ -614,14 +563,23 @@ public class FlickrApi {
 		return photosPrivacy.get(photoId);
 	}
 
-	public static Map<String, String> getPhotoSets() {
+	static Map<String, String> cachedPhotoSets = Utils.getMapProperty("cachedPhotoSets");
+
+	public static Map<String, String> getPhotoSets(boolean refresh) {
 		Map<String, String> photoSets = new LinkedHashMap<String, String>();
 		try {
-			// Log.i(TAG, "persisted uploadedPhotos : " + uploadedPhotos);
-			Photosets list = FlickrApi.get().getPhotosetsInterface().getList(Utils.getStringProperty(STR.userId));
-			for (Photoset photoset : list.getPhotosets()) {
-				photoSets.put(photoset.getId(), photoset.getTitle());
+			if (refresh || cachedPhotoSets == null || cachedPhotoSets.isEmpty()) {
+				cachedPhotoSets = new HashMap<String, String>();
+				// Log.i(TAG, "persisted uploadedPhotos : " + uploadedPhotos);
+				Photosets list = FlickrApi.get().getPhotosetsInterface().getList(Utils.getStringProperty(STR.userId));
+				for (Photoset photoset : list.getPhotosets()) {
+					cachedPhotoSets.put(photoset.getId(), photoset.getTitle());
+				}
+				if (!cachedPhotoSets.isEmpty()) {
+					Utils.setMapProperty("cachedPhotoSets", cachedPhotoSets);
+				}
 			}
+			photoSets.putAll(cachedPhotoSets);
 		} catch (Throwable e) {
 			LOG.error(ToolString.stack2string(e));
 		}

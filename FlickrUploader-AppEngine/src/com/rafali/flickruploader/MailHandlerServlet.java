@@ -77,13 +77,13 @@ public class MailHandlerServlet extends HttpServlet {
 							logger.debug("content : " + content);
 							String recipient = message.getAllRecipients()[0].toString();
 							if (recipient.contains("coupon100@")) {
-								updateUser(email, true);
+								setPremium(email, true);
 								content = "Awesome! I've just upgraded your account (" + email + ") to Premium.\n";
 							} else if (recipient.contains("coupon50@")) {
-								updateUserCoupon(email, premiumSkuCoupon50);
+								setDiscount(email, premiumSkuCoupon50);
 								content = "Awesome! I've just applied a 50% discount to your account (" + email + ").\n";
 							} else if (recipient.contains("coupon75@")) {
-								updateUserCoupon(email, premiumSkuCoupon75);
+								setDiscount(email, premiumSkuCoupon75);
 								content = "Awesome! I've just applied a 75% discount to your account (" + email + ").\n";
 							}
 

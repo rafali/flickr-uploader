@@ -22,7 +22,9 @@ import static org.acra.ReportField.USER_CRASH_DATE;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.acra.ACRA;
 import org.acra.ReportingInteractionMode;
@@ -47,7 +49,9 @@ import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 
-@ReportsCrashes(formUri = "http://ra-fa-li.appspot.com/androidCrashReport", formKey = "", mode = ReportingInteractionMode.TOAST, forceCloseDialogAfterToast = false, // optional, default false
+@ReportsCrashes(formUri = "http://ra-fa-li.appspot.com/androidCrashReport", formKey = "", mode = ReportingInteractionMode.TOAST, forceCloseDialogAfterToast = false, // optional,
+// default
+// false
 resToastText = R.string.crash_toast_text, customReportContent = { REPORT_ID, APP_VERSION_CODE, APP_VERSION_NAME, PHONE_MODEL, ANDROID_VERSION, BUILD, BRAND, PRODUCT, TOTAL_MEM_SIZE,
 		AVAILABLE_MEM_SIZE, STACK_TRACE, USER_APP_START_DATE, USER_CRASH_DATE, DEVICE_FEATURES, ENVIRONMENT, SETTINGS_SYSTEM, SETTINGS_SECURE, THREAD_DETAILS, APPLICATION_LOG })
 public class FlickrUploader extends Application {
@@ -73,26 +77,39 @@ public class FlickrUploader extends Application {
 							Mixpanel.track("First install");
 							Utils.setLongProperty(STR.lastNewFilesCheckNotEmpty, System.currentTimeMillis());
 						} else {
-							if (versionCode < 33) {
-								try {
-									String instantCustomAlbumId = Utils.getStringProperty("instantCustomAlbumId");
-									if (instantCustomAlbumId != null) {
-										List<Folder> syncedFolders = Utils.getSyncedFolders();
-										for (Folder folder : syncedFolders) {
-											Utils.setAutoUploaded(folder, true, instantCustomAlbumId);
-										}
-									}
-									Utils.clearProperty("instantCustomAlbumId");
-								} catch (Throwable e) {
-									LOG.error(ToolString.stack2string(e));
-								}
-							}
 							if (versionCode < 34) {
 								try {
 									Utils.setLongProperty(STR.lastNewFilesCheckNotEmpty, System.currentTimeMillis());
 									if (ToolString.isNotBlank(Utils.getStringProperty(STR.accessToken))) {
-									RPC.getRpcService().saveFlickrData(Utils.createAndroidDevice(), Utils.getStringProperty(STR.userId), Utils.getStringProperty(STR.userName),
-											Utils.getStringProperty(STR.accessToken), Utils.getStringProperty(STR.accessTokenSecret));
+										RPC.getRpcService().saveFlickrData(Utils.createAndroidDevice(), Utils.getStringProperty(STR.userId), Utils.getStringProperty(STR.userName),
+												Utils.getStringProperty(STR.accessToken), Utils.getStringProperty(STR.accessTokenSecret));
+									}
+								} catch (Throwable e) {
+									LOG.error(ToolString.stack2string(e));
+								}
+							}
+							if (versionCode < 35) {
+								try {
+									List<String> syncedFolder = Utils.getStringList("syncedFolder", true);
+									Map<String, String> folderSetNames = new HashMap<String, String>();
+									if (syncedFolder != null) {
+										Map<String, String> folderSets = Utils.getMapProperty("folderSets");
+										Map<String, String> photoSets = null;
+										if (!folderSets.isEmpty()) {
+											photoSets = FlickrApi.getPhotoSets(true);
+										}
+										for (String path : syncedFolder) {
+											String uploadSetTitle = STR.instantUpload;
+											String setId = folderSets.get(path);
+											if (ToolString.isNotBlank(setId)) {
+												String setTitle = photoSets.get(setId);
+												if (ToolString.isNotBlank(setTitle)) {
+													uploadSetTitle = setTitle;
+												}
+											}
+											folderSetNames.put(path, uploadSetTitle);
+										}
+										Utils.setMapProperty("folderSetNames", folderSetNames);
 									}
 								} catch (Throwable e) {
 									LOG.error(ToolString.stack2string(e));

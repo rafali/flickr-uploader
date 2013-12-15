@@ -4,6 +4,7 @@ import java.io.File;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -236,14 +237,15 @@ public class UploadService extends Service {
 	boolean running = false;
 
 	private static List<Media> queue = Collections.synchronizedList(new ArrayList<Media>());
-	// private static List<Media> uploaded = Collections.synchronizedList(new ArrayList<Media>());
+	// private static List<Media> uploaded = Collections.synchronizedList(new
+	// ArrayList<Media>());
 	private static Map<Media, Long> uploaded = new ConcurrentHashMap<Media, Long>();
 	private static Map<Media, Long> recentlyUploaded = new ConcurrentHashMap<Media, Long>();
 	private static Map<Media, Long> failed = new ConcurrentHashMap<Media, Long>();
 	private static Map<Media, Long> retryDelay = new ConcurrentHashMap<Media, Long>();
 	private static Map<Integer, Integer> failedCount = new ConcurrentHashMap<Integer, Integer>();
 
-	public static int enqueue(boolean auto, Collection<Media> images, String photoSetId) {
+	public static int enqueue(boolean auto, Collection<Media> images, String photoSetTitle) {
 		int nbQueued = 0;
 		int nbAlreadyQueued = 0;
 		int nbAlreadyUploaded = 0;
@@ -258,7 +260,7 @@ public class UploadService extends Service {
 				nbQueued++;
 				LOG.debug("enqueueing " + image);
 				queue.add(image);
-				mediaPhotosetIds.put(image.path, photoSetId);
+				mediaPhotosetTitles.put(image.path, photoSetTitle);
 			}
 		}
 		for (UploadProgressListener uploadProgressListener : uploadProgressListeners) {
@@ -286,18 +288,18 @@ public class UploadService extends Service {
 			if (queue.contains(image)) {
 				LOG.debug("dequeueing " + image);
 				queue.remove(image);
-				mediaPhotosetIds.remove(image.path);
+				mediaPhotosetTitles.remove(image.path);
 			}
 		}
 		persistQueue();
 		wake();
 	}
 
-	private static Map<String, String> mediaPhotosetIds = Utils.getMapProperty("mediaPhotosetIds");
+	private static Map<String, String> mediaPhotosetTitles = Utils.getMapProperty("mediaPhotosetTitles");
 
 	public static void persistQueue() {
 		Utils.setImages(STR.queueIds, queue);
-		Utils.setMapProperty("mediaPhotosetIds", mediaPhotosetIds);
+		Utils.setMapProperty("mediaPhotosetTitles", mediaPhotosetTitles);
 	}
 
 	public static void persistFailedCount() {
@@ -382,10 +384,11 @@ public class UploadService extends Service {
 							long start = System.currentTimeMillis();
 							mediaCurrentlyUploading = queue.get(queue.size() - 1);
 							onProgress(mediaCurrentlyUploading, 0);
+							String photosetTitle = mediaPhotosetTitles.get(mediaCurrentlyUploading.path);
 							boolean success = FlickrApi.isUploaded(mediaCurrentlyUploading);
 							if (!success) {
 								LOG.debug("Starting upload : " + mediaCurrentlyUploading);
-								success = FlickrApi.upload(mediaCurrentlyUploading, mediaPhotosetIds.get(mediaCurrentlyUploading.path));
+								success = FlickrApi.upload(mediaCurrentlyUploading, photosetTitle);
 							}
 							long time = System.currentTimeMillis() - start;
 							queue.remove(mediaCurrentlyUploading);
@@ -397,17 +400,12 @@ public class UploadService extends Service {
 								LOG.debug("Upload success : " + time + "ms " + mediaCurrentlyUploading);
 								uploaded.put(mediaCurrentlyUploading, System.currentTimeMillis());
 								if (queue.isEmpty()) {
-									if (mediaPhotosetIds.get(mediaCurrentlyUploading.path) != null) {
-										FlickrApi.ensureOrdered(mediaPhotosetIds.get(mediaCurrentlyUploading.path));
-									} else {
-										FlickrApi.ensureOrdered(Utils.getInstantAlbumId());
-									}
 									Mixpanel.increment("photo_uploaded", uploaded.size());
 									Mixpanel.flush();
 								}
 								failed.remove(mediaCurrentlyUploading);
 								failedCount.remove(mediaCurrentlyUploading.id);
-								mediaPhotosetIds.remove(mediaCurrentlyUploading.path);
+								mediaPhotosetTitles.remove(mediaCurrentlyUploading.path);
 							} else {
 								if (FlickrApi.unretryable.contains(mediaCurrentlyUploading)) {
 									failed.remove(mediaCurrentlyUploading);
@@ -435,6 +433,7 @@ public class UploadService extends Service {
 										uploadProgressListener.onFinished(uploaded.size(), failed.size());
 									}
 								}
+								FlickrApi.ensureOrdered(photosetTitle);
 							}
 
 							FlickrUploaderActivity flickrPhotoUploader = FlickrUploaderActivity.getInstance();
@@ -463,13 +462,14 @@ public class UploadService extends Service {
 	}
 
 	public static long isRecentlyUploaded(Media image) {
-		if (uploaded.containsKey(image)) {
-			return uploaded.get(image);
-		} else if (recentlyUploaded.containsKey(image)) {
-			return recentlyUploaded.get(image);
-		} else {
-			return -1;
+		if (image != null) {
+			if (uploaded.containsKey(image)) {
+				return uploaded.get(image);
+			} else if (recentlyUploaded.containsKey(image)) {
+				return recentlyUploaded.get(image);
+			}
 		}
+		return -1;
 	}
 
 	public static int getNbError(Media image) {
@@ -677,7 +677,15 @@ public class UploadService extends Service {
 			if (!not_uploaded.isEmpty()) {
 				Utils.setLongProperty(STR.lastNewFilesCheckNotEmpty, System.currentTimeMillis());
 				LOG.debug("enqueuing " + not_uploaded.size() + " media: " + not_uploaded);
-				enqueue(true, not_uploaded, Utils.getInstantAlbumId());
+				Map<String, String> foldersSetNames = Utils.getFoldersSetNames();
+				for (Media notUploadedMedia : not_uploaded) {
+					File file = new File(notUploadedMedia.path);
+					String uploadSetTitle = foldersSetNames.get(file.getParentFile().getAbsolutePath());
+					if (uploadSetTitle == null) {
+						uploadSetTitle = STR.instantUpload;
+					}
+					enqueue(true, Arrays.asList(notUploadedMedia), uploadSetTitle);
+				}
 				FlickrUploaderActivity.staticRefresh(true);
 			}
 		} catch (Throwable e) {

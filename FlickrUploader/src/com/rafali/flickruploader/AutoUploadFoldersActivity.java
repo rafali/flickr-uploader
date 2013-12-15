@@ -68,6 +68,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 
 	@ViewById(R.id.list_view)
 	ListView listView;
+
 	private Map<String, String> cachedPhotoSets = Utils.getMapProperty("cachedPhotoSets");
 
 	@Background
@@ -80,7 +81,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 			}
 			render();
 		}
-		Map<String, String> photoSets = FlickrApi.getPhotoSets();
+		Map<String, String> photoSets = FlickrApi.getPhotoSets(true);
 		if (photoSets != null && !photoSets.isEmpty()) {
 			Utils.setMapProperty("cachedPhotoSets", photoSets);
 			cachedPhotoSets = photoSets;
@@ -168,7 +169,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 						LOG.debug(item);
 						if (which <= 2) {
 							if (item.equals(DEFAULT_SET)) {
-								setAutoUploaded(folder, true, null);
+								setAutoUploaded(folder, true, STR.instantUpload);
 							} else if (item.equals(NEW_SET)) {
 								FlickrUploaderActivity.showNewSetDialog(activity, folder.name, new Utils.Callback<String>() {
 									@Override
@@ -185,7 +186,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 									public void onResult(String[] result) {
 										previousSet = result;
 										LOG.debug(Arrays.toString(result));
-										setAutoUploaded(folder, true, result[0]);
+										setAutoUploaded(folder, true, result[1]);
 									}
 								}, cachedPhotoSets);
 							} else {
@@ -195,7 +196,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 							if (item.equals(DISABLE_AUTO_UPLOAD)) {
 								setAutoUploaded(folder, false, null);
 							} else if (previousSet != null && item.contains(PREVIOUS_SET) && item.contains(previousSet[1])) {
-								setAutoUploaded(folder, true, previousSet[0]);
+								setAutoUploaded(folder, true, previousSet[1]);
 							} else {
 								LOG.error("unknown item:" + item);
 							}
@@ -217,8 +218,8 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 	}
 
 	@Background
-	void setAutoUploaded(Folder folder, boolean synced, String setId) {
-		Utils.setAutoUploaded(folder, synced, setId);
+	void setAutoUploaded(Folder folder, boolean synced, String setTitle) {
+		Utils.setAutoUploaded(folder, synced, setTitle);
 		refresh();
 	}
 
@@ -244,19 +245,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 
 	@Background
 	void createSetForFolder(Folder folder, String photoSetTitle) {
-		showLoading("Creating set...", "Please wait while your new set '" + photoSetTitle + "' is created");
-		try {
-			final String[] result = FlickrApi.createSet(photoSetTitle);
-			if (result != null && result[0] != null) {
-				if (folder.name.equals(photoSetTitle)) {
-					setAutoUploaded(folder, true, result[0]);
-				}
-			} else {
-				toast("Failed to create an new photoset");
-			}
-		} finally {
-			hideLoading();
-		}
+		setAutoUploaded(folder, true, photoSetTitle);
 	}
 
 	@UiThread
@@ -277,17 +266,9 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 			String summary;
 			TextView subTitle = (TextView) convertView.getTag(R.id.sub_title);
 			if (autoUpload) {
-				String photoSetId = Utils.getFoldersSets().get(folder.path);
-				String photoSetTitle = null;
-				if (cachedPhotoSets != null && photoSetId != null) {
-					photoSetTitle = cachedPhotoSets.get(photoSetId);
-				}
+				String photoSetTitle = Utils.getFoldersSetNames().get(folder.path);
 				if (photoSetTitle == null) {
-					if (photoSetId == null || photoSetId.equals(Utils.getStringProperty(STR.instantAlbumId))) {
-						photoSetTitle = STR.instantUpload;
-					} else {
-						photoSetTitle = "id " + photoSetId;
-					}
+					photoSetTitle = STR.instantUpload;
 				}
 				summary = "⇒ Flickr (" + photoSetTitle + ")";
 				subTitle.setTextColor(Color.WHITE);

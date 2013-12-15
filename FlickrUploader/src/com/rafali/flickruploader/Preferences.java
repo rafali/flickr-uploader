@@ -70,7 +70,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 									editor.remove(STR.userDateCreated);
 									editor.remove(STR.userName);
 									editor.remove(STR.uploadedPhotos);
-									editor.remove(STR.instantAlbumId);
 									editor.apply();
 									editor.commit();
 									render();

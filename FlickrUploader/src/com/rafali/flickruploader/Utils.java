@@ -15,14 +15,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -369,14 +367,21 @@ public final class Utils {
 	}
 
 	public static Map<String, String> getMapProperty(String property) {
-		Map<String, String> map = new LinkedHashMap<String, String>();
+		return getMapProperty(property, false);
+	}
+
+	public static Map<String, String> getMapProperty(String property, boolean returnNull) {
+		Map<String, String> map = null;
 		String str = sp.getString(property, null);
 		if (str != null) {
+			map = new LinkedHashMap<String, String>();
 			String[] entries = str.split("\\|;\\|");
 			for (String entry : entries) {
 				String[] split = entry.split("\\|=\\|");
 				map.put(split[0], split[1]);
 			}
+		} else if (!returnNull) {
+			map = new LinkedHashMap<String, String>();
 		}
 		return map;
 	}
@@ -703,7 +708,8 @@ public final class Utils {
 				options.inPurgeable = true;
 				options.inInputShareable = true;
 				if (image.mediaType == MediaType.video) {
-					// bitmap = ThumbnailUtils.createVideoThumbnail(image.path, Images.Thumbnails.MINI_KIND);
+					// bitmap = ThumbnailUtils.createVideoThumbnail(image.path,
+					// Images.Thumbnails.MINI_KIND);
 					bitmap = Video.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, Video.Thumbnails.MINI_KIND, null);
 					return bitmap;
 				} else if (tab == TAB.photo) {
@@ -711,7 +717,8 @@ public final class Utils {
 				} else if (tab == TAB.folder) {
 					bitmap = Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, Images.Thumbnails.MINI_KIND, options);
 				} else {
-					// First decode with inJustDecodeBounds=true to check dimensions
+					// First decode with inJustDecodeBounds=true to check
+					// dimensions
 					final BitmapFactory.Options opts = new BitmapFactory.Options();
 					opts.inJustDecodeBounds = true;
 					opts.inPurgeable = true;
@@ -735,18 +742,17 @@ public final class Utils {
 		return bitmap;
 	}
 
-	static Set<String> syncedFolder;
-	static Map<String, String> folderSets;
+	static Map<String, String> folderSetNames;
 
 	static boolean isAutoUpload(Folder folder) {
 		if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
 			return false;
 		}
 		ensureSyncedFolder();
-		return syncedFolder.contains(folder.path);
+		return folderSetNames.containsKey(folder.path);
 	}
 
-	static void setAutoUploaded(Folder folder, boolean synced, String setId) {
+	static void setAutoUploaded(Folder folder, boolean synced, String albumTitle) {
 		ensureSyncedFolder();
 		if (synced) {
 			if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
@@ -754,71 +760,53 @@ public final class Utils {
 					Utils.setBooleanProperty(Preferences.AUTOUPLOAD, true);
 				}
 			}
-			syncedFolder.add(folder.path);
-			if (setId == null) {
-				getFoldersSets().remove(folder.path);
+			if (albumTitle == null) {
+				folderSetNames.put(folder.path, STR.instantUpload);
 			} else {
-				getFoldersSets().put(folder.path, setId);
+				folderSetNames.put(folder.path, albumTitle);
 			}
-			setMapProperty("folderSets", folderSets);
 		} else {
-			syncedFolder.remove(folder.path);
+			folderSetNames.remove(folder.path);
 		}
 		Mixpanel.track("Sync Folder", "name", folder.name, "synced", synced);
-		setStringList("syncedFolder", syncedFolder);
+		setMapProperty("folderSetNames", folderSetNames);
 	}
 
-	static void setFolderSetId(Folder folder, String setId) {
-		getFoldersSets().put(folder.path, setId);
-		setMapProperty("folderSets", folderSets);
-	}
-
-	public static Map<String, String> getFoldersSets() {
-		if (folderSets == null) {
-			folderSets = getMapProperty("folderSets");
-		}
-		return folderSets;
+	public static Map<String, String> getFoldersSetNames() {
+		ensureSyncedFolder();
+		return folderSetNames;
 	}
 
 	private static void ensureSyncedFolder() {
-		if (syncedFolder == null) {
-			List<String> persisted = getStringList("syncedFolder", true);
+		if (folderSetNames == null) {
+			Map<String, String> persisted = getMapProperty("folderSetNames", true);
 			if (persisted == null) {
-				persisted = new ArrayList<String>();
+				persisted = new HashMap<String, String>();
 				try {
 					addFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), persisted);
 					addFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), persisted);
 					addFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), persisted);
 					LOG.debug("default synced folders : " + persisted);
-					setStringList("syncedFolder", persisted);
+					setMapProperty("folderSetNames", folderSetNames);
 				} catch (Throwable e) {
 					LOG.error(ToolString.stack2string(e));
 				}
 			}
-			syncedFolder = new HashSet<String>(persisted);
+			folderSetNames = new HashMap<String, String>(persisted);
 		}
 	}
 
-	public static List<String> getAutoUploadFoldersName() {
-		ensureSyncedFolder();
-		List<String> names = new ArrayList<String>();
-		for (String folderPath : syncedFolder) {
-			names.add(new File(folderPath).getName());
-		}
-		return names;
-	}
-
-	static void addFolder(File folder, List<String> persisted) {
+	static void addFolder(File folder, Map<String, String> persisted) {
 		if (folder != null) {
 			File[] listFiles = folder.listFiles();
 			if (listFiles != null) {
 				for (File file : listFiles) {
 					if (file.isDirectory() && !file.isHidden()) {
-						persisted.add(file.getAbsolutePath());
+						persisted.put(file.getAbsolutePath(), STR.instantUpload);
 					}
 				}
 			}
-			persisted.add(folder.getAbsolutePath());
+			persisted.put(folder.getAbsolutePath(), STR.instantUpload);
 		}
 	}
 
@@ -841,12 +829,18 @@ public final class Utils {
 	}
 
 	/**
-	 * Calculate an inSampleSize for use in a {@link BitmapFactory.Options} object when decoding bitmaps using the decode* methods from {@link BitmapFactory}. This implementation calculates the
-	 * closest inSampleSize that will result in the final decoded bitmap having a width and height equal to or larger than the requested width and height. This implementation does not ensure a power
-	 * of 2 is returned for inSampleSize which can be faster when decoding but results in a larger bitmap which isn't as useful for caching purposes.
+	 * Calculate an inSampleSize for use in a {@link BitmapFactory.Options}
+	 * object when decoding bitmaps using the decode* methods from
+	 * {@link BitmapFactory}. This implementation calculates the closest
+	 * inSampleSize that will result in the final decoded bitmap having a width
+	 * and height equal to or larger than the requested width and height. This
+	 * implementation does not ensure a power of 2 is returned for inSampleSize
+	 * which can be faster when decoding but results in a larger bitmap which
+	 * isn't as useful for caching purposes.
 	 * 
 	 * @param options
-	 *            An options object with out* params already populated (run through a decode* method with inJustDecodeBounds==true
+	 *            An options object with out* params already populated (run
+	 *            through a decode* method with inJustDecodeBounds==true
 	 * @param reqWidth
 	 *            The requested width of the resulting bitmap
 	 * @param reqHeight
@@ -886,7 +880,9 @@ public final class Utils {
 		return inSampleSize;
 		// int scale = 1;
 		// if (options.outHeight > reqHeight || options.outWidth > reqWidth) {
-		// scale = (int) Math.pow(2, (int) Math.round(Math.log(options.outHeight / (double) Math.max(options.outHeight, options.outWidth)) / Math.log(0.5)));
+		// scale = (int) Math.pow(2, (int) Math.round(Math.log(options.outHeight
+		// / (double) Math.max(options.outHeight, options.outWidth)) /
+		// Math.log(0.5)));
 		// }
 		// return scale;
 	}
@@ -901,10 +897,6 @@ public final class Utils {
 
 	public static String getString(int stringId, Object... objects) {
 		return FlickrUploader.getAppContext().getResources().getString(stringId, objects);
-	}
-
-	public static String getInstantAlbumId() {
-		return getStringProperty(STR.instantAlbumId);
 	}
 
 	public static final Comparator<Media> MEDIA_COMPARATOR = new Comparator<Media>() {
@@ -1221,7 +1213,8 @@ public final class Utils {
 				}
 			}
 		};
-		// enable debug logging (for a production application, you should set this to false).
+		// enable debug logging (for a production application, you should set
+		// this to false).
 		IabHelper.get().enableDebugLogging(Config.isDebug());
 
 		// Start setup. This is asynchronous and the specified listener
@@ -1269,7 +1262,14 @@ public final class Utils {
 	public static void checkPremium(final boolean force, final Callback<Boolean> callback) {
 		long lastPremiumCheck = getLongProperty(STR.lastPremiumCheck);
 		LOG.debug("isPremium() : " + isPremium() + ", lastPremiumCheck : " + lastPremiumCheck);
-		if (!force && isPremium() && System.currentTimeMillis() - lastPremiumCheck < 24 * 60 * 60 * 1000L) {// check at least everyday Premium status from server
+		if (!force && isPremium() && System.currentTimeMillis() - lastPremiumCheck < 24 * 60 * 60 * 1000L) {// check
+																											// at
+																											// least
+																											// everyday
+																											// Premium
+																											// status
+																											// from
+																											// server
 			callback.onResult(isPremium());
 		} else {
 			BackgroundExecutor.execute(new Runnable() {
