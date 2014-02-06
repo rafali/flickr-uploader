@@ -7,6 +7,7 @@ It works like [Google+ Instant Upload](http://support.google.com/plus/answer/291
 The main benefit of this app over Google+ Instant Upload is the fact that you can upload ONE FREAKING TERABYTE of photos&videos in **high resolution** for free!
 
 ~~You can download it at : https://play.google.com/store/apps/details?id=com.rafali.flickruploader~~
+
 Check out the [FAQ](https://github.com/rafali/flickr-uploader/wiki/FAQ) for more info.
 
 You can fork this project or use the source code for any project. It is licensed under the GPL v2. I just request that you do not blatantly copy the app to republish it on the Play Store.
