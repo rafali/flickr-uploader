@@ -37,7 +37,7 @@ import android.util.Log;
 
 import com.android.vending.billing.IInAppBillingService;
 import com.rafali.flickruploader.FlickrUploader;
-import com.rafali.flickruploader.R;
+import com.rafali.flickruploader2.R;
 import com.rafali.flickruploader.Utils;
 
 

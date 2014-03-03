@@ -1,7 +1,6 @@
 package com.rafali.flickruploader;
 
 import org.slf4j.LoggerFactory;
-
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -9,7 +8,6 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
 import com.googlecode.androidannotations.annotations.AfterViews;
 import com.googlecode.androidannotations.annotations.EViewGroup;
 import com.googlecode.androidannotations.annotations.UiThread;
@@ -20,6 +18,7 @@ import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import com.rafali.flickruploader.UploadService.UploadProgressListener;
 import com.rafali.flickruploader.Utils.CAN_UPLOAD;
+import com.rafali.flickruploader2.R;
 
 @EViewGroup(R.layout.drawer_handle_view)
 public class DrawerHandleView extends LinearLayout implements UploadProgressListener {

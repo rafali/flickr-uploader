@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.rafali.flickruploader"
+    package="com.rafali.flickruploader2"
     android:installLocation="internalOnly"
-    android:versionCode="35"
-    android:versionName="1.8.2" >
+    android:versionCode="36"
+    android:versionName="2.0" >
 
     <uses-sdk
         android:minSdkVersion="14"
@@ -30,15 +30,15 @@
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
 
     <application
-        android:name=".FlickrUploader"
+        android:name="com.rafali.flickruploader.FlickrUploader"
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:logo="@drawable/icon_action_bar"
         android:theme="@style/CustomTheme" >
-        <service android:name=".UploadService" />
+        <service android:name="com.rafali.flickruploader.UploadService" />
 
-        <receiver android:name=".MyBroadcastReceiver" >
+        <receiver android:name="com.rafali.flickruploader.MyBroadcastReceiver" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
@@ -50,7 +50,7 @@
             </intent-filter>
         </receiver>
         <receiver
-            android:name=".AlarmBroadcastReceiver"
+            android:name="com.rafali.flickruploader.AlarmBroadcastReceiver"
             android:process=":remote" >
         </receiver>
 
@@ -66,7 +66,7 @@
         </receiver>
 
         <activity
-            android:name=".FlickrUploaderActivity_"
+            android:name="com.rafali.flickruploader.FlickrUploaderActivity_"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="@string/app_name" >
             <intent-filter>
@@ -90,7 +90,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".Preferences"
+            android:name="com.rafali.flickruploader.Preferences"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:icon="@drawable/empty_shape"
             android:label="Preferences" >
@@ -103,20 +103,20 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".PreferencesNotification"
+            android:name="com.rafali.flickruploader.PreferencesNotification"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="Notifications" />
         <activity
-            android:name=".PreferencesAdvanced"
+            android:name="com.rafali.flickruploader.PreferencesAdvanced"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="Advanced Preferences" />
         <activity
-            android:name=".WebAuth_"
+            android:name="com.rafali.flickruploader.WebAuth_"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:icon="@drawable/empty_shape"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name=".AutoUploadFoldersActivity_"
+            android:name="com.rafali.flickruploader.AutoUploadFoldersActivity_"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="Auto Upload Folders"
             android:windowSoftInputMode="adjustResize" />

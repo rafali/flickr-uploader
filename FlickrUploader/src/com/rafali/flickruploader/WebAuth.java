@@ -1,9 +1,7 @@
 package com.rafali.flickruploader;
 
 import java.net.URL;
-
 import org.slf4j.LoggerFactory;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -23,7 +21,6 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.google.analytics.tracking.android.EasyTracker;
 import com.googlecode.androidannotations.annotations.AfterViews;
 import com.googlecode.androidannotations.annotations.Background;
@@ -36,6 +33,7 @@ import com.googlecode.flickrjandroid.oauth.OAuthInterface;
 import com.googlecode.flickrjandroid.oauth.OAuthToken;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
+import com.rafali.flickruploader2.R;
 
 @EActivity(R.layout.webauth)
 public class WebAuth extends Activity {

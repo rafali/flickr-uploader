@@ -7,8 +7,8 @@ import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.view.MenuItem;
-
 import com.rafali.common.STR;
+import com.rafali.flickruploader2.R;
 
 public class PreferencesNotification extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 

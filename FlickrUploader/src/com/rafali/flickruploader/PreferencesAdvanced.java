@@ -2,9 +2,7 @@ package com.rafali.flickruploader;
 
 import java.util.Arrays;
 import java.util.List;
-
 import org.slf4j.LoggerFactory;
-
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -18,9 +16,9 @@ import android.preference.PreferenceManager;
 import android.text.Html;
 import android.view.MenuItem;
 import android.widget.EditText;
-
 import com.google.common.base.Joiner;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.rafali.flickruploader2.R;
 
 @SuppressWarnings("deprecation")
 public class PreferencesAdvanced extends PreferenceActivity implements OnSharedPreferenceChangeListener {

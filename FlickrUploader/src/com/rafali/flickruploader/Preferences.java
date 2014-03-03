@@ -4,9 +4,7 @@ import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
-
 import org.slf4j.LoggerFactory;
-
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -25,13 +23,13 @@ import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.view.MenuItem;
-
 import com.google.analytics.tracking.android.EasyTracker;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.billing.IabHelper;
+import com.rafali.flickruploader2.R;
 
 public class Preferences extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 

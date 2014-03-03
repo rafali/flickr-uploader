@@ -24,9 +24,7 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import org.slf4j.LoggerFactory;
-
 import uk.co.senab.bitmapcache.BitmapLruCache;
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -57,7 +55,6 @@ import android.provider.Settings.Secure;
 import android.telephony.TelephonyManager;
 import android.util.TypedValue;
 import android.view.WindowManager;
-
 import com.google.common.base.Joiner;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
@@ -73,6 +70,7 @@ import com.rafali.flickruploader.billing.IabHelper.OnIabPurchaseFinishedListener
 import com.rafali.flickruploader.billing.IabResult;
 import com.rafali.flickruploader.billing.Inventory;
 import com.rafali.flickruploader.billing.Purchase;
+import com.rafali.flickruploader2.R;
 
 public final class Utils {
 

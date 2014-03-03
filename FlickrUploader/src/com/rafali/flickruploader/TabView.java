@@ -1,7 +1,6 @@
 package com.rafali.flickruploader;
 
 import java.util.Locale;
-
 import android.content.Context;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -9,7 +8,7 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
-
+import com.rafali.flickruploader2.R;
 import com.viewpagerindicator.TitlePageIndicator;
 
 public abstract class TabView extends LinearLayout implements ViewPager.OnPageChangeListener {

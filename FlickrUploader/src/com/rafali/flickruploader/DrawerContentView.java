@@ -5,9 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import org.slf4j.LoggerFactory;
-
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 import uk.co.senab.bitmapcache.CacheableImageView;
 import android.app.Activity;
@@ -23,7 +21,6 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-
 import com.googlecode.androidannotations.annotations.AfterViews;
 import com.googlecode.androidannotations.annotations.Click;
 import com.googlecode.androidannotations.annotations.EViewGroup;
@@ -34,6 +31,7 @@ import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import com.rafali.flickruploader.UploadService.UploadProgressListener;
+import com.rafali.flickruploader2.R;
 
 @EViewGroup(R.layout.drawer_content)
 public class DrawerContentView extends RelativeLayout implements UploadProgressListener {
