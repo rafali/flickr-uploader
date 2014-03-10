@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 import org.slf4j.LoggerFactory;
+
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 import uk.co.senab.bitmapcache.CacheableImageView;
 import android.app.Activity;
@@ -26,6 +28,7 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.google.common.collect.Lists;
 import com.googlecode.androidannotations.annotations.Background;
 import com.googlecode.androidannotations.annotations.EActivity;
@@ -33,7 +36,6 @@ import com.googlecode.androidannotations.annotations.UiThread;
 import com.googlecode.androidannotations.annotations.ViewById;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
-import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import com.rafali.flickruploader2.R;
 
 @EActivity(R.layout.auto_upload_folders_activity)
@@ -292,7 +294,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 						if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
 							bitmapDrawable = wrapper;
 						} else {
-							Bitmap bitmap = Utils.getBitmap(image, TAB.folder);
+							Bitmap bitmap = Utils.getBitmap(image, 1);
 							if (bitmap != null) {
 								bitmapDrawable = Utils.getCache().put(image.path + "_" + item_layout, bitmap);
 							} else {

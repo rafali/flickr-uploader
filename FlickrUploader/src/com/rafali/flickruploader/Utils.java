@@ -24,7 +24,9 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 import org.slf4j.LoggerFactory;
+
 import uk.co.senab.bitmapcache.BitmapLruCache;
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -55,6 +57,7 @@ import android.provider.Settings.Secure;
 import android.telephony.TelephonyManager;
 import android.util.TypedValue;
 import android.view.WindowManager;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
@@ -63,7 +66,6 @@ import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
-import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import com.rafali.flickruploader.billing.IabException;
 import com.rafali.flickruploader.billing.IabHelper;
 import com.rafali.flickruploader.billing.IabHelper.OnIabPurchaseFinishedListener;
@@ -696,7 +698,7 @@ public final class Utils {
 		return mapE;
 	}
 
-	public static Bitmap getBitmap(Media image, TAB tab) {
+	public static Bitmap getBitmap(Media image, int size) {
 		Bitmap bitmap = null;
 		int retry = 0;
 		while (bitmap == null && retry < 3) {
@@ -710,9 +712,9 @@ public final class Utils {
 					// Images.Thumbnails.MINI_KIND);
 					bitmap = Video.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, Video.Thumbnails.MINI_KIND, null);
 					return bitmap;
-				} else if (tab == TAB.photo) {
+				} else if (size == 1) {
 					bitmap = Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, Images.Thumbnails.MICRO_KIND, options);
-				} else if (tab == TAB.folder) {
+				} else if (size == 2) {
 					bitmap = Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, Images.Thumbnails.MINI_KIND, options);
 				} else {
 					// First decode with inJustDecodeBounds=true to check

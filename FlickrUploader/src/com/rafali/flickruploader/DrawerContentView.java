@@ -5,7 +5,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 import org.slf4j.LoggerFactory;
+
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 import uk.co.senab.bitmapcache.CacheableImageView;
 import android.app.Activity;
@@ -21,6 +23,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+
 import com.googlecode.androidannotations.annotations.AfterViews;
 import com.googlecode.androidannotations.annotations.Click;
 import com.googlecode.androidannotations.annotations.EViewGroup;
@@ -29,7 +32,6 @@ import com.googlecode.androidannotations.annotations.ViewById;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
-import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import com.rafali.flickruploader.UploadService.UploadProgressListener;
 import com.rafali.flickruploader2.R;
 
@@ -350,7 +352,7 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 							if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
 								bitmapDrawable = wrapper;
 							} else {
-								Bitmap bitmap = Utils.getBitmap(image, TAB.photo);
+								Bitmap bitmap = Utils.getBitmap(image, 1);
 								if (bitmap != null) {
 									bitmapDrawable = Utils.getCache().put(image.path + "_" + R.layout.photo_grid_thumb, bitmap);
 								} else {

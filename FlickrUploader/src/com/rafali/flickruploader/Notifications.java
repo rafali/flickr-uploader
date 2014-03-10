@@ -1,6 +1,7 @@
 package com.rafali.flickruploader;
 
 import org.slf4j.LoggerFactory;
+
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 import android.app.Notification;
 import android.app.PendingIntent;
@@ -9,10 +10,10 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
+
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
-import com.rafali.flickruploader.FlickrUploaderActivity.TAB;
 import com.rafali.flickruploader2.R;
 
 public class Notifications {
@@ -74,7 +75,7 @@ public class Notifications {
 				BackgroundExecutor.execute(new Runnable() {
 					@Override
 					public void run() {
-						final Bitmap bitmap = Utils.getBitmap(image, TAB.photo);
+						final Bitmap bitmap = Utils.getBitmap(image, 1);
 						if (bitmap != null) {
 							Utils.getCache().put(image.path + "_" + R.layout.photo_grid_thumb, bitmap);
 						}
