@@ -5,7 +5,38 @@
         android:id="@+id/sort"
         android:icon="@android:drawable/ic_menu_sort_by_size"
         android:showAsAction="always"
-        android:title="Sort"/>
+        android:title="Sort">
+        <menu>
+            <group android:checkableBehavior="all" >
+                <item
+                    android:id="@+id/sort_time_0"
+                    android:icon="@android:drawable/ic_menu_camera"
+                    android:title="Recent to old"/>
+                <item
+                    android:id="@+id/sort_time_1"
+                    android:icon="@android:drawable/ic_menu_sort_alphabetically"
+                    android:title="Old to recent"/>
+            </group>
+        </menu>
+    </item>
+    <item
+        android:id="@+id/filter"
+        android:icon="@android:drawable/ic_menu_agenda"
+        android:showAsAction="always"
+        android:title="Sort">
+        <menu>
+            <group android:checkableBehavior="all" >
+                <item
+                    android:id="@+id/sort_time_0"
+                    android:icon="@android:drawable/ic_menu_camera"
+                    android:title="Recent to old"/>
+                <item
+                    android:id="@+id/sort_time_1"
+                    android:icon="@android:drawable/ic_menu_sort_alphabetically"
+                    android:title="Old to recent"/>
+            </group>
+        </menu>
+    </item>
     <item
         android:id="@+id/preferences"
         android:showAsAction="never"
@@ -18,5 +49,43 @@
         android:id="@+id/trial_info"
         android:showAsAction="never"
         android:title="Trial Info"/>
+    <item
+        android:id="@+id/pick_view"
+        android:icon="@android:drawable/ic_menu_view"
+        android:showAsAction="always"
+        android:title="View">
+        <menu>
+            <group android:checkableBehavior="single" >
+                <item
+                    android:id="@+id/view_size_0"
+                    android:icon="@android:drawable/ic_menu_camera"
+                    android:title="Small"/>
+                <item
+                    android:id="@+id/view_size_1"
+                    android:icon="@android:drawable/ic_menu_sort_alphabetically"
+                    android:title="Medium"/>
+                <item
+                    android:id="@+id/view_size_2"
+                    android:icon="@android:drawable/ic_menu_sort_alphabetically"
+                    android:title="Large"/>
+            </group>
+
+            <item
+                android:enabled="false"
+                android:title="Categories"
+                android:menuCategory="container"/>
+
+            <group android:checkableBehavior="single" >
+                <item
+                    android:id="@+id/categorize_1"
+                    android:icon="@android:drawable/ic_menu_camera"
+                    android:title="Date"/>
+                <item
+                    android:id="@+id/categorize_1"
+                    android:icon="@android:drawable/ic_menu_sort_alphabetically"
+                    android:title="Album"/>
+            </group>
+        </menu>
+    </item>
 
 </menu>

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="32.931499"
+   height="26.59409"
+   id="svg4428"
+   version="1.1"
+   inkscape:version="0.48.2 r9819"
+   sodipodi:docname="expand_on.svg">
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1436"
+     inkscape:window-height="856"
+     id="namedview4450"
+     showgrid="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:zoom="15.56299"
+     inkscape:cx="18.135153"
+     inkscape:cy="7.6234218"
+     inkscape:window-x="4"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg4428" />
+  <title
+     id="title4430">nxt_checkbox_unchecked</title>
+  <defs
+     id="defs4432">
+    <linearGradient
+       id="linearGradient4990">
+      <stop
+         style="stop-color:#737b2d;stop-opacity:1;"
+         offset="0"
+         id="stop4992" />
+      <stop
+         style="stop-color:#eadc06;stop-opacity:1;"
+         offset="1"
+         id="stop4994" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient3996">
+      <stop
+         offset="0"
+         id="stop3998"
+         stop-color="#b8b8b8" />
+      <stop
+         offset="1"
+         id="stop4000"
+         stop-opacity="0"
+         stop-color="#b8b8b8" />
+    </linearGradient>
+    <linearGradient
+       xlink:href="#linearGradient3996"
+       id="linearGradient4027"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.97994177,0,0,1.5038759,-12.092225,-449.52009)"
+       x1="-481.63879"
+       y1="1498.8496"
+       x2="-727.92688"
+       y2="1498.8496" />
+    <linearGradient
+       xlink:href="#linearGradient3996"
+       id="linearGradient4057"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.1726642,0,0,1.2567202,-14.470369,-375.64336)"
+       x1="-481.63879"
+       y1="1498.8496"
+       x2="-727.92688"
+       y2="1498.8496" />
+    <symbol
+       width="320"
+       id="svg_9"
+       height="320">
+      <g
+         id="svg_7">
+        <path
+           id="svg_8"
+           d="M 20,200 120,290 300,110 265,75 120,220 60,160 20,200 z"
+           inkscape:connector-curvature="0"
+           style="fill:#00ee00;fill-rule:evenodd;stroke-width:0.25pt" />
+      </g>
+    </symbol>
+  </defs>
+  <metadata
+     id="metadata7">image/svg+xml<rdf:RDF>
+  <cc:Work
+     rdf:about="">
+    <dc:format>image/svg+xml</dc:format>
+    <dc:type
+       rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+    <dc:title>nxt_checkbox_unchecked</dc:title>
+  </cc:Work>
+</rdf:RDF>
+</metadata>
+  <path
+     style="fill:#383838;fill-opacity:1;fill-rule:nonzero;stroke:#444444;stroke-width:0.83122194;stroke-linejoin:round;stroke-opacity:1"
+     d="M 14.30886,23.211388 24.008698,13.51154 14.319842,3.341986 10.174601,7.487221 15.718229,13.51154 10.163618,19.066153 z"
+     id="rect4963"
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="ccccccc" />
+</svg>

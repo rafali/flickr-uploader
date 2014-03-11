@@ -42,7 +42,6 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
@@ -92,12 +91,12 @@ public class FlickrUploaderActivity extends Activity {
 		LOG.debug("onCreate " + bundle);
 		UploadService.wake();
 		if (Utils.getStringProperty(STR.accessToken) == null) {
-			Utils.confirmSignIn(FlickrUploaderActivity.this);
+			Utils.confirmSignIn(activity);
 		}
 		load();
 		if (instance != null)
 			instance.finish();
-		instance = this;
+		instance = activity;
 		Utils.checkPremium(false, new Utils.Callback<Boolean>() {
 			@Override
 			public void onResult(Boolean result) {
@@ -146,7 +145,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	@UiThread
 	void toast(String message) {
-		Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+		Toast.makeText(activity, message, Toast.LENGTH_LONG).show();
 	}
 
 	SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
@@ -226,14 +225,14 @@ public class FlickrUploaderActivity extends Activity {
 	@Override
 	protected void onStart() {
 		super.onStart();
-		EasyTracker.getInstance().activityStart(this);
+		EasyTracker.getInstance().activityStart(activity);
 	}
 
 	@Override
 	protected void onStop() {
 		Mixpanel.flush();
 		super.onStop();
-		EasyTracker.getInstance().activityStop(this);
+		EasyTracker.getInstance().activityStop(activity);
 	}
 
 	@Override
@@ -286,37 +285,22 @@ public class FlickrUploaderActivity extends Activity {
 
 	boolean destroyed = false;
 
+	PhotoAdapter photoAdapter;
+
 	@UiThread
 	void init() {
 		if (mainTabView == null) {
 			// for (int i = 0; i < TAB.values().length; i++) {
 			{
-				mainTabView = (com.tonicartos.widget.stickygridheaders.StickyGridHeadersGridView) View.inflate(FlickrUploaderActivity.this, R.layout.stickygrid, null);
-				final PhotoAdapter photoAdapter = new PhotoAdapter();
+				mainTabView = (com.tonicartos.widget.stickygridheaders.StickyGridHeadersGridView) View.inflate(activity, R.layout.photo_grid, null);
+				photoAdapter = new PhotoAdapter();
 				mainTabView.setAdapter(photoAdapter);
 				mainTabView.setOnItemClickListener(onItemClickListener);
-				mainTabView.setOnHeaderClickListener(new StickyGridHeadersGridView.OnHeaderClickListener() {
-					@Override
-					public void onHeaderClick(AdapterView<?> arg0, View arg1, long headerPosition) {
-						LOG.debug("onHeaderClick : " + headerPosition);
-						Header header = headers.get((int) headerPosition);
-						header.collapsed = !header.collapsed;
-						photos = new ArrayList<Media>(medias);
-						Iterator<Media> it = photos.iterator();
-						while (it.hasNext()) {
-							Media media = it.next();
-							if (headerMap.get(media).collapsed) {
-								it.remove();
-							}
-						}
-						photoAdapter.notifyDataSetChanged();
-					}
-				});
 			}
 			RelativeLayout relativeLayout = (RelativeLayout) findViewById(R.id.container);
 			relativeLayout.addView(mainTabView, 0);
 		} else {
-			((PhotoAdapter) mainTabView.getAdapter()).notifyDataSetChanged();
+			photoAdapter.notifyDataSetChanged();
 		}
 	}
 
@@ -400,7 +384,7 @@ public class FlickrUploaderActivity extends Activity {
 			shareItem.setVisible(uploadedPhotosSelected);
 			privacyItem.setVisible(uploadedPhotosSelected);
 			if (uploadedPhotosSelected) {
-				Intent shareIntent = ShareCompat.IntentBuilder.from(FlickrUploaderActivity.this).setType("text/*").setText(Joiner.on(" ").join(shortUrls.values())).getIntent();
+				Intent shareIntent = ShareCompat.IntentBuilder.from(activity).setType("text/*").setText(Joiner.on(" ").join(shortUrls.values())).getIntent();
 				shareIntent.putExtra("photoIds", Joiner.on(",").join(shortUrls.keySet()));
 				shareActionProvider.setShareIntent(shareIntent);
 			}
@@ -468,7 +452,7 @@ public class FlickrUploaderActivity extends Activity {
 		/** This is called when an item in the context menu is selected */
 		@Override
 		public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-			Mixpanel.track("UI actionMode " + getResources().getResourceEntryName(item.getItemId()));
+			Mixpanel.track("UI actionMode " + getItemName(item));
 			switch (item.getItemId()) {
 			case R.id.menu_item_select_all: {
 				EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_select_all", 0L);
@@ -481,14 +465,7 @@ public class FlickrUploaderActivity extends Activity {
 			case R.id.menu_item_privacy: {
 				EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_privacy", 0L);
 				Collection<Media> selectedImages;
-				// if (isFolderTab()) {
-				// selectedImages = new ArrayList<Media>();
-				// for (Media image : selectedMedia) {
-				// selectedImages.addAll(foldersMap.get(image).images);
-				// }
-				// } else {
 				selectedImages = selectedMedia;
-				// }
 				PRIVACY privacy = null;
 				for (Media image : selectedImages) {
 					if (privacy == null) {
@@ -500,7 +477,7 @@ public class FlickrUploaderActivity extends Activity {
 						}
 					}
 				}
-				Utils.dialogPrivacy(FlickrUploaderActivity.this, privacy, new Utils.Callback<FlickrApi.PRIVACY>() {
+				Utils.dialogPrivacy(activity, privacy, new Utils.Callback<FlickrApi.PRIVACY>() {
 					@Override
 					public void onResult(PRIVACY result) {
 						if (result != null) {
@@ -532,7 +509,7 @@ public class FlickrUploaderActivity extends Activity {
 					});
 				} else {
 					// Notifications.notify(40, selection.get(0), 1, 1);
-					Utils.confirmSignIn(FlickrUploaderActivity.this);
+					Utils.confirmSignIn(activity);
 				}
 			}
 				break;
@@ -566,7 +543,7 @@ public class FlickrUploaderActivity extends Activity {
 	@UiThread
 	void confirmUpload(final List<Media> selection, boolean isFolderTab) {
 		if (isFolderTab) {
-			new AlertDialog.Builder(this).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
+			new AlertDialog.Builder(activity).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
 					.setItems(new String[] { "Default set (" + STR.instantUpload + ")", "One set per folder", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
 						@Override
 						public void onClick(DialogInterface dialog, int which) {
@@ -611,7 +588,7 @@ public class FlickrUploaderActivity extends Activity {
 
 					}).show();
 		} else {
-			new AlertDialog.Builder(this).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
+			new AlertDialog.Builder(activity).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
 					.setItems(new String[] { "Default set (" + STR.instantUpload + ")", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
 						@Override
 						public void onClick(DialogInterface dialog, int which) {
@@ -644,7 +621,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	@UiThread
 	void showExistingSetDialog(final List<Media> selection) {
-		showExistingSetDialog(this, new Callback<String[]>() {
+		showExistingSetDialog(activity, new Callback<String[]>() {
 			@Override
 			public void onResult(String[] result) {
 				String photoSetTitle = result[1];
@@ -713,7 +690,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	@UiThread
 	void showNewSetDialog(final Folder folder, final List<Media> selection) {
-		showNewSetDialog(this, folder == null ? null : folder.name, new Callback<String>() {
+		showNewSetDialog(activity, folder == null ? null : folder.name, new Callback<String>() {
 			@Override
 			public void onResult(final String value) {
 				if (ToolString.isBlank(value)) {
@@ -737,7 +714,7 @@ public class FlickrUploaderActivity extends Activity {
 	@UiThread
 	void showLoading(String title, String message) {
 		if (progressDialog == null) {
-			progressDialog = new ProgressDialog(this);
+			progressDialog = new ProgressDialog(activity);
 		}
 		progressDialog.setTitle(title);
 		progressDialog.setMessage(message);
@@ -829,8 +806,9 @@ public class FlickrUploaderActivity extends Activity {
 		if (headerView != null && headerView.getTag() instanceof Header) {
 			Header header = (Header) headerView.getTag();
 			// LOG.debug("rendering : " + header + " on " + headerView);
-			CheckBox checkbox = (CheckBox) headerView.getTag(R.id.checkbox);
-			checkbox.setChecked(header.selected);
+			TextView count = (TextView) headerView.getTag(R.id.count);
+			count.setCompoundDrawablesWithIntrinsicBounds(0, 0, header.selected ? R.drawable.checkbox_on : R.drawable.checkbox_off, 0);
+			count.setTextColor(getResources().getColor(header.selected ? R.color.litegray : R.color.gray));
 			// checkbox.setText("" + header.selected);
 		}
 	}
@@ -867,8 +845,8 @@ public class FlickrUploaderActivity extends Activity {
 		public View getView(int position, View convertView, ViewGroup parent) {
 			Object item = getItem(position);
 			if (convertView == null) {
-				convertView = getLayoutInflater().inflate(R.layout.photo_feed_thumb, parent, false);
-				convertView.setLayoutParams(new GridView.LayoutParams(GridView.LayoutParams.MATCH_PARENT, 500));
+				convertView = getLayoutInflater().inflate(R.layout.photo_grid_thumb, parent, false);
+				convertView.setLayoutParams(new GridView.LayoutParams(GridView.LayoutParams.MATCH_PARENT, mainTabView.getColumnWidth() * 3 / 4));
 				convertView.setTag(R.id.check_image, convertView.findViewById(R.id.check_image));
 				convertView.setTag(R.id.uploading, convertView.findViewById(R.id.uploading));
 				convertView.setTag(R.id.image_view, convertView.findViewById(R.id.image_view));
@@ -884,16 +862,15 @@ public class FlickrUploaderActivity extends Activity {
 
 		@Override
 		public View getHeaderView(int position, View convertView, ViewGroup arg2) {
-			final CheckBox checkBox;
-			final TextView textView;
+			final TextView title;
+			final TextView count;
 			if (convertView == null) {
-				convertView = View.inflate(activity, R.layout.grid_header, null);
-				checkBox = (CheckBox) convertView.findViewById(R.id.checkbox);
-				checkBox.setOnClickListener(new View.OnClickListener() {
+				convertView = View.inflate(activity, R.layout.photo_grid_header, null);
+				convertView.findViewById(R.id.count).setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
 						Header header = (Header) v.getTag();
-						header.selected = checkBox.isChecked();
+						header.selected = !header.selected;
 						Iterator<Entry<Media, Header>> it = headerMap.entrySet().iterator();
 						while (it.hasNext()) {
 							Map.Entry<Media, Header> entry = it.next();
@@ -908,9 +885,46 @@ public class FlickrUploaderActivity extends Activity {
 						renderSelection();
 					}
 				});
-				convertView.setTag(R.id.checkbox, checkBox);
-				textView = (TextView) convertView.findViewById(R.id.title);
-				convertView.setTag(R.id.title, textView);
+				title = (TextView) convertView.findViewById(R.id.title);
+				convertView.setTag(R.id.title, title);
+				count = (TextView) convertView.findViewById(R.id.count);
+				convertView.setTag(R.id.count, count);
+				convertView.findViewById(R.id.expand).setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						final Header header = (Header) title.getTag();
+						header.collapsed = !header.collapsed;
+						photos = new ArrayList<Media>(medias);
+						Iterator<Media> it = photos.iterator();
+						while (it.hasNext()) {
+							Media media = it.next();
+							if (headerMap.get(media).collapsed) {
+								it.remove();
+							}
+						}
+						photoAdapter.notifyDataSetChanged();
+						
+						if (header.collapsed) {
+							//hack to make sure the collapsed do not disappear
+							mainTabView.postDelayed(new Runnable() {
+								@Override
+								public void run() {
+									int realIndex = getRealIndex(header);
+									if (mainTabView.getFirstVisiblePosition() > realIndex) {
+										mainTabView.setSelection(realIndex);
+									}
+								}
+							}, 100);
+						}
+					}
+				});
+				title.setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						Header header = (Header) v.getTag();
+						mainTabView.setSelection(getRealIndex(header));
+					}
+				});
 				convertView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
 					@Override
 					public void onViewDetachedFromWindow(View v) {
@@ -924,14 +938,17 @@ public class FlickrUploaderActivity extends Activity {
 					}
 				});
 			} else {
-				checkBox = (CheckBox) convertView.getTag(R.id.checkbox);
-				textView = (TextView) convertView.getTag(R.id.title);
+				title = (TextView) convertView.getTag(R.id.title);
+				count = (TextView) convertView.getTag(R.id.count);
 			}
 			Header header = headers.get(position);
 			convertView.setTag(header);
-			checkBox.setTag(header);
+			count.setTag(header);
+			title.setTag(header);
 
-			textView.setText((header.collapsed ? "> " : "v ") + " " + position + " : " + header.title);
+			title.setText(header.title);
+			count.setText("" + header.count);
+			title.setCompoundDrawablesWithIntrinsicBounds(header.collapsed ? R.drawable.expand_off : R.drawable.expand_on, 0, 0, 0);
 			renderHeaderSelection(convertView);
 
 			// LOG.debug(header + " : convertView = " + convertView);
@@ -951,6 +968,19 @@ public class FlickrUploaderActivity extends Activity {
 		public int getNumHeaders() {
 			return headers.size();
 		}
+	}
+
+	int getRealIndex(Header header) {
+		int nbColumn = mainTabView.getNumColumns();
+		int realIndex = 0;
+		for (Header currentHeader : headers) {
+			if (currentHeader == header) {
+				break;
+			} else {
+				realIndex += (int) ((Math.ceil(Double.valueOf(currentHeader.collapsed ? 0 : currentHeader.count) / nbColumn) + 1) * nbColumn);
+			}
+		}
+		return realIndex;
 	}
 
 	Set<View> attachedHeaderViews = new HashSet<View>();
@@ -1047,7 +1077,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	private Menu menu;
 
-	private com.tonicartos.widget.stickygridheaders.StickyGridHeadersGridView mainTabView;
+	private StickyGridHeadersGridView mainTabView;
 
 	private boolean paused = false;
 
@@ -1083,10 +1113,10 @@ public class FlickrUploaderActivity extends Activity {
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		Mixpanel.track("UI actionBar " + getResources().getResourceEntryName(item.getItemId()));
+		Mixpanel.track("UI actionBar " + getItemName(item));
 		switch (item.getItemId()) {
 		case R.id.trial_info:
-			Utils.showPremiumDialog(this, new Utils.Callback<Boolean>() {
+			Utils.showPremiumDialog(activity, new Utils.Callback<Boolean>() {
 				@Override
 				public void onResult(Boolean result) {
 					renderPremium();
@@ -1094,7 +1124,7 @@ public class FlickrUploaderActivity extends Activity {
 			});
 			break;
 		case R.id.preferences:
-			startActivity(new Intent(this, Preferences.class));
+			startActivity(new Intent(activity, Preferences.class));
 			break;
 		case R.id.faq:
 			String url = "https://github.com/rafali/flickr-uploader/wiki/FAQ";
@@ -1102,18 +1132,45 @@ public class FlickrUploaderActivity extends Activity {
 			i.setData(Uri.parse(url));
 			startActivity(i);
 			break;
-		case R.id.sort:
-			showSortDialog();
+		case R.id.sort_time_0:
+			Utils.setLongProperty("sort_type", 0L);
+			Mixpanel.track("Sort", "type", getSort());
+			load();
+			break;
+		case R.id.sort_time_1:
+			Utils.setLongProperty("sort_type", 1L);
+			Mixpanel.track("Sort", "type", getSort());
+			load();
+			break;
+		case R.id.view_size_0:
+			mainTabView.setNumColumns(4);
+			item.setChecked(true);
+			break;
+		case R.id.view_size_1:
+			mainTabView.setNumColumns(2);
+			item.setChecked(true);
+			break;
+		case R.id.view_size_2:
+			mainTabView.setNumColumns(1);
+			item.setChecked(true);
 			break;
 		}
 
 		return (super.onOptionsItemSelected(item));
 	}
 
+	private String getItemName(MenuItem item) {
+		try {
+			return getResources().getResourceEntryName(item.getItemId());
+		} catch (Throwable e) {
+		}
+		return "unknown";
+	}
+
 	@UiThread
 	void showSortDialog() {
 		final CharSequence[] modes = { "Recent to old", "Old to recent" };
-		AlertDialog.Builder alt_bld = new AlertDialog.Builder(this);
+		AlertDialog.Builder alt_bld = new AlertDialog.Builder(activity);
 		alt_bld.setTitle("Sort");
 		final int sort_type = (int) Utils.getLongProperty("sort_type");
 		alt_bld.setSingleChoiceItems(modes, sort_type, new OnClickListener() {
@@ -1145,7 +1202,7 @@ public class FlickrUploaderActivity extends Activity {
 	@UiThread
 	void confirmSync() {
 		final CharSequence[] modes = { "Auto-upload new photos", "Auto-upload new videos" };
-		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
 		builder.setTitle("Auto-upload (7-days Trial)");
 		builder.setMultiChoiceItems(modes, new boolean[] { true, true }, null);
 		builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
@@ -1162,7 +1219,7 @@ public class FlickrUploaderActivity extends Activity {
 				ListView lw = ((AlertDialog) dialog).getListView();
 				Utils.setBooleanProperty(Preferences.AUTOUPLOAD, lw.isItemChecked(0));
 				Utils.setBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, lw.isItemChecked(1));
-				startActivity(new Intent(FlickrUploaderActivity.this, Preferences.class));
+				startActivity(new Intent(activity, Preferences.class));
 			}
 		});
 		builder.setCancelable(false);

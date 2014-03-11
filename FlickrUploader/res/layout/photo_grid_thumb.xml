@@ -7,13 +7,16 @@
         android:id="@+id/image_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/midgray" />
+        android:background="@color/midgray"
+        android:scaleType="centerCrop" />
 
     <ImageView
         android:id="@+id/check_image"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_centerInParent="true"
+        android:background="@color/transparentblack50"
+        android:scaleType="centerInside"
         android:src="@drawable/checkbox_on"
         android:visibility="gone" />
 
