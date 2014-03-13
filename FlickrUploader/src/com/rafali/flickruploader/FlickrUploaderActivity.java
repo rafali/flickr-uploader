@@ -24,27 +24,29 @@ import uk.co.senab.bitmapcache.CacheableImageView;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Point;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore.Images;
 import android.support.v4.app.ShareCompat;
 import android.util.SparseArray;
-import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
+import android.view.WindowManager;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
-import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.ShareActionProvider;
@@ -66,10 +68,9 @@ import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.Utils.Callback;
 import com.rafali.flickruploader.Utils.MediaType;
+import com.rafali.flickruploader.Utils.VIEW_SIZE;
 import com.rafali.flickruploader.billing.IabHelper;
 import com.rafali.flickruploader2.R;
-import com.tonicartos.widget.stickygridheaders.StickyGridHeadersBaseAdapter;
-import com.tonicartos.widget.stickygridheaders.StickyGridHeadersGridView;
 
 @EActivity(R.layout.flickr_uploader_slider_activity)
 public class FlickrUploaderActivity extends Activity {
@@ -78,8 +79,6 @@ public class FlickrUploaderActivity extends Activity {
 
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrUploaderActivity.class);
 
-	ActionMode mMode;
-
 	private static FlickrUploaderActivity instance;
 	private FlickrUploaderActivity activity;
 
@@ -87,13 +86,12 @@ public class FlickrUploaderActivity extends Activity {
 	public void onCreate(Bundle bundle) {
 		activity = this;
 		super.onCreate(bundle);
-		getActionBar().setTitle("Flickr Uploader");
+		load();
 		LOG.debug("onCreate " + bundle);
 		UploadService.wake();
 		if (Utils.getStringProperty(STR.accessToken) == null) {
 			Utils.confirmSignIn(activity);
 		}
-		load();
 		if (instance != null)
 			instance.finish();
 		instance = activity;
@@ -150,41 +148,107 @@ public class FlickrUploaderActivity extends Activity {
 
 	SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
 
+	List<Object> thumbItems;
+	List<Media> medias;
+
 	@Background
 	void load() {
-		medias = Utils.loadImages(null, MediaType.photo);
-		photos = new ArrayList<Media>(medias);
-		videos = Utils.loadImages(null, MediaType.video);
 
-		if (getSort() == SORT.old_to_recent) {
-			Collections.reverse(photos);
-			Collections.reverse(videos);
+		medias = new ArrayList<Media>();
+		if (Utils.getShowPhotos()) {
+			medias.addAll(Utils.loadImages(null, MediaType.photo));
+		}
+		if (Utils.getShowVideos()) {
+			medias.addAll(Utils.loadImages(null, MediaType.video));
 		}
 
+		Collections.sort(medias, Utils.MEDIA_COMPARATOR);
+
+		computeHeaders();
+
+		init();
+		// test();
+	}
+
+	@Background
+	void test() {
+		int size = medias.size();
+		for (int i = 0; i < size; i++) {
+			Media media = medias.get(i);
+
+			Bitmap bitmap = null;
+			// try {
+			// ExifInterface exif = new ExifInterface(media.path);
+			// if (exif.hasThumbnail()) {
+			// byte[] thumbnail = exif.getThumbnail();
+			// bitmap = BitmapFactory.decodeByteArray(thumbnail, 0,
+			// thumbnail.length);
+			// LOG.info(i + "/" + size + " EXIF : " + bitmap.getWidth() + "x" +
+			// bitmap.getHeight());
+			// }
+			// } catch (Throwable e) {
+			// LOG.error(ToolString.stack2string(e));
+			// }
+
+			if (bitmap == null) {
+				BitmapFactory.Options options = new BitmapFactory.Options();
+				options.inSampleSize = 1;
+				options.inPurgeable = true;
+				options.inInputShareable = true;
+				bitmap = Images.Thumbnails.getThumbnail(getContentResolver(), media.id, Images.Thumbnails.MINI_KIND, options);
+				LOG.info(i + "/" + size + " MINI_KIND : " + bitmap.getWidth() + "x" + bitmap.getHeight());
+			}
+
+			// final BitmapFactory.Options opts = new BitmapFactory.Options();
+			// opts.inJustDecodeBounds = true;
+			// opts.inPurgeable = true;
+			// opts.inInputShareable = true;
+			// BitmapFactory.decodeFile(media.path, opts);
+			// // BitmapFactory.decodeFileDescriptor(file., null,
+			// // opts);
+			//
+			// // Calculate inSampleSize
+			// opts.inJustDecodeBounds = false;
+			// opts.inSampleSize = Utils.calculateInSampleSize(opts, 800, 600);
+			// Bitmap bitmap = BitmapFactory.decodeFile(media.path, opts);
+
+		}
+	}
+
+	@UiThread
+	void computeHeaders() {
 		headers = new ArrayList<Header>();
 		headerMap = new HashMap<Media, Header>();
 		headerIds = new HashMap<String, Header>();
+		thumbItems = new ArrayList<Object>();
+		computeNbColumn();
 
-		for (Media media : photos) {
+		Media[] mediaRow = null;
+		int currentIndex = 0;
+
+		for (Media media : medias) {
 			String id = format.format(new Date(media.date));
 			Header header = headerIds.get(id);
 			if (header == null) {
 				header = new Header(id, id);
 				headerIds.put(id, header);
 				headers.add(header);
+				thumbItems.add(header);
+				mediaRow = null;
 			} else {
 				header.count++;
 			}
 			headerMap.put(media, header);
+			if (mediaRow == null || currentIndex >= mediaRow.length) {
+				mediaRow = new Media[computed_nb_column];
+				currentIndex = 0;
+				thumbItems.add(mediaRow);
+			}
+			mediaRow[currentIndex] = media;
+			currentIndex++;
 		}
 
-		List<Media> all = new ArrayList<Media>(photos);
-		all.addAll(videos);
-		folders = Utils.getFolders(all);
-		for (Folder folder : folders) {
-			foldersMap.put(folder.images.get(0), folder);
-		}
-		init();
+		photoAdapter.notifyDataSetChanged();
 	}
 
 	Map<Media, Header> headerMap;
@@ -209,19 +273,6 @@ public class FlickrUploaderActivity extends Activity {
 		}
 	}
 
-	enum SORT {
-		recent_to_old, old_to_recent
-	}
-
-	SORT getSort() {
-		long sort_type = Utils.getLongProperty("sort_type");
-		if (sort_type == 1) {
-			return SORT.old_to_recent;
-		} else {
-			return SORT.recent_to_old;
-		}
-	}
-
 	@Override
 	protected void onStart() {
 		super.onStart();
@@ -230,7 +281,6 @@ public class FlickrUploaderActivity extends Activity {
 
 	@Override
 	protected void onStop() {
-		Mixpanel.flush();
 		super.onStop();
 		EasyTracker.getInstance().activityStop(activity);
 	}
@@ -246,7 +296,7 @@ public class FlickrUploaderActivity extends Activity {
 	public void onConfigurationChanged(Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
 		LOG.debug("onConfigurationChanged");
-		refresh(false);
+		computeHeaders();
 	}
 
 	public static FlickrUploaderActivity getInstance() {
@@ -255,7 +305,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	void testNotification() {
 		BackgroundExecutor.execute(new Runnable() {
-			Media image = photos.get(0);
+			Media image = medias.get(0);
 
 			@Override
 			public void run() {
@@ -285,20 +335,18 @@ public class FlickrUploaderActivity extends Activity {
 
 	boolean destroyed = false;
 
-	PhotoAdapter photoAdapter;
+	PhotoAdapter photoAdapter = new PhotoAdapter();
 
 	@UiThread
 	void init() {
-		if (mainTabView == null) {
-			// for (int i = 0; i < TAB.values().length; i++) {
-			{
-				mainTabView = (com.tonicartos.widget.stickygridheaders.StickyGridHeadersGridView) View.inflate(activity, R.layout.photo_grid, null);
-				photoAdapter = new PhotoAdapter();
-				mainTabView.setAdapter(photoAdapter);
-				mainTabView.setOnItemClickListener(onItemClickListener);
-			}
-			RelativeLayout relativeLayout = (RelativeLayout) findViewById(R.id.container);
-			relativeLayout.addView(mainTabView, 0);
+		if (listView == null) {
+			final RelativeLayout relativeLayout = (RelativeLayout) findViewById(R.id.container);
+			listView = (ListView) View.inflate(activity, R.layout.grid, null);
+			listView.setDividerHeight(0);
+			listView.setAdapter(photoAdapter);
+			listView.setFastScrollEnabled(true);
+			listView.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT));
+			relativeLayout.addView(listView, 0);
 		} else {
 			photoAdapter.notifyDataSetChanged();
 		}
@@ -320,50 +368,37 @@ public class FlickrUploaderActivity extends Activity {
 		renderPremium();
 	}
 
-	OnItemClickListener onItemClickListener = new OnItemClickListener() {
-		@Override
-		public void onItemClick(AdapterView<?> arg0, View convertView, int arg2, long arg3) {
-			Media media = (Media) convertView.getTag();
-			Header header = headerMap.get(media);
-			if (selectedMedia.contains(media)) {
-				convertView.findViewById(R.id.check_image).setVisibility(View.GONE);
-				selectedMedia.remove(media);
-				if (header.selected) {
-					header.selected = false;
-				}
-			} else {
-				convertView.findViewById(R.id.check_image).setVisibility(View.VISIBLE);
-				selectedMedia.add(media);
-				if (!header.selected) {
-					List<Media> headerMedias = new ArrayList<Media>();
-					Iterator<Entry<Media, Header>> it = headerMap.entrySet().iterator();
-					while (it.hasNext()) {
-						Map.Entry<Media, Header> entry = it.next();
-						if (entry.getValue() == header) {
-							headerMedias.add(entry.getKey());
-						}
-					}
-					if (selectedMedia.containsAll(headerMedias)) {
-						header.selected = true;
-					}
-				}
-			}
-			renderSelection();
+	void computeNbColumn() {
+		Point size = new Point();
+		WindowManager wm = (WindowManager) FlickrUploader.getAppContext().getSystemService(Context.WINDOW_SERVICE);
+		wm.getDefaultDisplay().getSize(size);
+		int screenWidthPx = size.x;
+		VIEW_SIZE view_size = Utils.getViewSize();
+		final int req_width;
+		final int nb_column;
+		if (view_size == VIEW_SIZE.small) {
+			req_width = Utils.getScaledSize(64);
+			nb_column = Math.max(4, screenWidthPx / req_width);
+		} else if (view_size == VIEW_SIZE.large) {
+			req_width = Utils.getScaledSize(192);
+			nb_column = Math.max(2, screenWidthPx / req_width);
+		} else {
+			req_width = Utils.getScaledSize(128);
+			nb_column = Math.max(3, screenWidthPx / req_width);
 		}
-	};
-
-	void updateCount() {
-		int size = 0;
-		size = selectedMedia.size();
-		if (size > 0) {
-			if (mMode == null)
-				mMode = startActionMode(mCallback);
-			if (mMode != null)
-				mMode.setTitle(size + "");
-		} else if (size == 0 && mMode != null) {
-			mMode.finish();
+		if (view_size == VIEW_SIZE.small) {
+			computed_req_height = screenWidthPx / nb_column;
+		} else {
+			computed_req_height = screenWidthPx / nb_column * 3 / 4;
 		}
+		computed_req_width = screenWidthPx / nb_column;
+		computed_nb_column = nb_column;
+		LOG.info(view_size + ", nb_column : " + nb_column + ", screenWidthPx : " + screenWidthPx);
 	}
+
+	int computed_req_height = 100;
+	int computed_req_width = 100;
+	int computed_nb_column = 2;
 
 	private MenuItem shareItem;
 	private ShareActionProvider shareActionProvider;
@@ -392,201 +427,214 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	private MenuItem privacyItem;
-	final ActionMode.Callback mCallback = new ActionMode.Callback() {
 
-		/**
-		 * Invoked whenever the action mode is shown. This is invoked
-		 * immediately after onCreateActionMode
-		 */
-		@Override
-		public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-			return false;
-		}
-
-		/** Called when user exits action mode */
-		@Override
-		public void onDestroyActionMode(ActionMode mode) {
-			mMode = null;
-			selectedMedia.clear();
-			for (Header header : headers) {
-				header.selected = false;
-			}
-			renderSelection();
-		}
-
-		/**
-		 * This is called when the action mode is created. This is called by
-		 * startActionMode()
-		 */
-		@Override
-		public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-			getMenuInflater().inflate(R.menu.context_menu, menu);
-			shareItem = menu.findItem(R.id.menu_item_share);
-			// shareItem.setVisible(!isFolderTab());
-			privacyItem = menu.findItem(R.id.menu_item_privacy);
-
-			shareActionProvider = (ShareActionProvider) shareItem.getActionProvider();
-			shareActionProvider.setOnShareTargetSelectedListener(new ShareActionProvider.OnShareTargetSelectedListener() {
-				@Override
-				public boolean onShareTargetSelected(ShareActionProvider shareActionProvider, Intent intent) {
-					LOG.debug("intent : " + intent);
-					if (intent.hasExtra("photoIds")) {
-						List<String> privatePhotoIds = new ArrayList<String>();
-						String[] photoIds = intent.getStringExtra("photoIds").split(",");
-						for (String photoId : photoIds) {
-							if (FlickrApi.getPrivacy(photoId) != PRIVACY.PUBLIC) {
-								privatePhotoIds.add(photoId);
-							}
-						}
-						if (privatePhotoIds.size() > 0) {
-							FlickrApi.setPrivacy(PRIVACY.PUBLIC, privatePhotoIds);
-						}
-						Mixpanel.increment("photos_shared", photoIds.length);
-					}
-					return false;
-				}
-			});
-			return true;
-		}
-
-		/** This is called when an item in the context menu is selected */
-		@Override
-		public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-			Mixpanel.track("UI actionMode " + getItemName(item));
-			switch (item.getItemId()) {
-			case R.id.menu_item_select_all: {
-				EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_select_all", 0L);
-				selectedMedia.clear();
-				selectedMedia.addAll(photos);
-
-				renderSelection();
-			}
-				break;
-			case R.id.menu_item_privacy: {
-				EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_privacy", 0L);
-				Collection<Media> selectedImages;
-				selectedImages = selectedMedia;
-				PRIVACY privacy = null;
-				for (Media image : selectedImages) {
-					if (privacy == null) {
-						privacy = FlickrApi.getPrivacy(image);
-					} else {
-						if (privacy != FlickrApi.getPrivacy(image)) {
-							privacy = null;
-							break;
-						}
-					}
-				}
-				Utils.dialogPrivacy(activity, privacy, new Utils.Callback<FlickrApi.PRIVACY>() {
-					@Override
-					public void onResult(PRIVACY result) {
-						if (result != null) {
-							List<String> photoIds = new ArrayList<String>();
-							for (Media image : selectedMedia) {
-								String photoId = FlickrApi.getPhotoId(image);
-								if (photoId != null && FlickrApi.getPrivacy(photoId) != result) {
-									photoIds.add(photoId);
-								}
-							}
-							if (!photoIds.isEmpty()) {
-								FlickrApi.setPrivacy(result, photoIds);
-							}
-						}
-					}
-				});
-			}
-				break;
-			case R.id.menu_item_upload: {
-				EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_upload", 0L);
-				final List<Media> selection = new ArrayList<Media>(selectedMedia);
-				if (FlickrApi.isAuthentified()) {
-					// foldersMap.clear();
-					BackgroundExecutor.execute(new Runnable() {
-						@Override
-						public void run() {
-							confirmUpload(selection, false);
-						}
-					});
-				} else {
-					// Notifications.notify(40, selection.get(0), 1, 1);
-					Utils.confirmSignIn(activity);
-				}
-			}
-				break;
-			case R.id.menu_item_dequeue: {
-				EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_dequeue", 0L);
-				final List<Media> selection = new ArrayList<Media>(selectedMedia);
-				BackgroundExecutor.execute(new Runnable() {
-					@Override
-					public void run() {
-						// if (isFolderTab()) {
-						// for (Media image : selection) {
-						// Folder folder = foldersMap.get(image);
-						// UploadService.dequeue(folder.images);
-						// }
-						// } else {
-						UploadService.dequeue(selection);
-						// }
-						refresh(false);
-					}
-				});
-				mMode.finish();
-			}
-				break;
-
-			}
-			return false;
-		}
-
-	};
+	// final ActionMode.Callback mCallback = new ActionMode.Callback() {
+	//
+	// /**
+	// * Invoked whenever the action mode is shown. This is invoked
+	// * immediately after onCreateActionMode
+	// */
+	// @Override
+	// public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+	// return false;
+	// }
+	//
+	// /** Called when user exits action mode */
+	// @Override
+	// public void onDestroyActionMode(ActionMode mode) {
+	// mMode = null;
+	// selectedMedia.clear();
+	// for (Header header : headers) {
+	// header.selected = false;
+	// }
+	// renderSelection();
+	// }
+	//
+	// /**
+	// * This is called when the action mode is created. This is called by
+	// * startActionMode()
+	// */
+	// @Override
+	// public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+	// getMenuInflater().inflate(R.menu.context_menu, menu);
+	// shareItem = menu.findItem(R.id.menu_item_share);
+	// // shareItem.setVisible(!isFolderTab());
+	// privacyItem = menu.findItem(R.id.menu_item_privacy);
+	//
+	// shareActionProvider = (ShareActionProvider)
+	// shareItem.getActionProvider();
+	// shareActionProvider.setOnShareTargetSelectedListener(new
+	// ShareActionProvider.OnShareTargetSelectedListener() {
+	// @Override
+	// public boolean onShareTargetSelected(ShareActionProvider
+	// shareActionProvider, Intent intent) {
+	// LOG.debug("intent : " + intent);
+	// if (intent.hasExtra("photoIds")) {
+	// List<String> privatePhotoIds = new ArrayList<String>();
+	// String[] photoIds = intent.getStringExtra("photoIds").split(",");
+	// for (String photoId : photoIds) {
+	// if (FlickrApi.getPrivacy(photoId) != PRIVACY.PUBLIC) {
+	// privatePhotoIds.add(photoId);
+	// }
+	// }
+	// if (privatePhotoIds.size() > 0) {
+	// FlickrApi.setPrivacy(PRIVACY.PUBLIC, privatePhotoIds);
+	// }
+	// Mixpanel.increment("photos_shared", photoIds.length);
+	// }
+	// return false;
+	// }
+	// });
+	// return true;
+	// }
+	//
+	// /** This is called when an item in the context menu is selected */
+	// @Override
+	// public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+	// Mixpanel.track("UI actionMode " + getItemName(item));
+	// switch (item.getItemId()) {
+	// case R.id.menu_item_select_all: {
+	// EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_select_all",
+	// 0L);
+	// selectedMedia.clear();
+	// selectedMedia.addAll(photos);
+	//
+	// renderSelection();
+	// }
+	// break;
+	// case R.id.menu_item_privacy: {
+	// EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_privacy",
+	// 0L);
+	// Collection<Media> selectedImages;
+	// selectedImages = selectedMedia;
+	// PRIVACY privacy = null;
+	// for (Media image : selectedImages) {
+	// if (privacy == null) {
+	// privacy = FlickrApi.getPrivacy(image);
+	// } else {
+	// if (privacy != FlickrApi.getPrivacy(image)) {
+	// privacy = null;
+	// break;
+	// }
+	// }
+	// }
+	// Utils.dialogPrivacy(activity, privacy, new
+	// Utils.Callback<FlickrApi.PRIVACY>() {
+	// @Override
+	// public void onResult(PRIVACY result) {
+	// if (result != null) {
+	// List<String> photoIds = new ArrayList<String>();
+	// for (Media image : selectedMedia) {
+	// String photoId = FlickrApi.getPhotoId(image);
+	// if (photoId != null && FlickrApi.getPrivacy(photoId) != result) {
+	// photoIds.add(photoId);
+	// }
+	// }
+	// if (!photoIds.isEmpty()) {
+	// FlickrApi.setPrivacy(result, photoIds);
+	// }
+	// }
+	// }
+	// });
+	// }
+	// break;
+	// case R.id.menu_item_upload: {
+	// EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_upload",
+	// 0L);
+	// final List<Media> selection = new ArrayList<Media>(selectedMedia);
+	// if (FlickrApi.isAuthentified()) {
+	// // foldersMap.clear();
+	// BackgroundExecutor.execute(new Runnable() {
+	// @Override
+	// public void run() {
+	// confirmUpload(selection, false);
+	// }
+	// });
+	// } else {
+	// // Notifications.notify(40, selection.get(0), 1, 1);
+	// Utils.confirmSignIn(activity);
+	// }
+	// }
+	// break;
+	// case R.id.menu_item_dequeue: {
+	// EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_dequeue",
+	// 0L);
+	// final List<Media> selection = new ArrayList<Media>(selectedMedia);
+	// BackgroundExecutor.execute(new Runnable() {
+	// @Override
+	// public void run() {
+	// // if (isFolderTab()) {
+	// // for (Media image : selection) {
+	// // Folder folder = foldersMap.get(image);
+	// // UploadService.dequeue(folder.images);
+	// // }
+	// // } else {
+	// UploadService.dequeue(selection);
+	// // }
+	// refresh(false);
+	// }
+	// });
+	// mMode.finish();
+	// }
+	// break;
+	//
+	// }
+	// return false;
+	// }
+	//
+	// };
 
 	@UiThread
 	void confirmUpload(final List<Media> selection, boolean isFolderTab) {
 		if (isFolderTab) {
-			new AlertDialog.Builder(activity).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
-					.setItems(new String[] { "Default set (" + STR.instantUpload + ")", "One set per folder", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							switch (which) {
-							case 0:
-								for (Media image : selection) {
-									Folder folder = foldersMap.get(image);
-									enqueue(folder.images, STR.instantUpload);
-								}
-								clearSelection();
-								break;
-							case 1: {
-								List<Folder> folders = new ArrayList<Folder>();
-								for (Media image : selection) {
-									Folder folder = foldersMap.get(image);
-									folders.add(folder);
-								}
-								createOneSetPerFolder(folders);
-							}
-								break;
-							case 2: {
-								List<Folder> folders = new ArrayList<Folder>();
-								for (Media image : selection) {
-									Folder folder = foldersMap.get(image);
-									folders.add(folder);
-								}
-								if (folders.size() == 1) {
-									showNewSetDialog(folders.get(0), selection);
-								} else {
-									showNewSetDialog(null, selection);
-								}
-							}
-								break;
-							case 3:
-								showExistingSetDialog(selection);
-								break;
-							default:
-								break;
-							}
-							LOG.debug("which : " + which);
-						}
-
-					}).show();
+			// new
+			// AlertDialog.Builder(activity).setTitle("Upload to").setPositiveButton(null,
+			// null).setNegativeButton(null, null).setCancelable(true)
+			// .setItems(new String[] { "Default set (" + STR.instantUpload +
+			// ")", "One set per folder", "New set...", "Existing set..." }, new
+			// DialogInterface.OnClickListener() {
+			// @Override
+			// public void onClick(DialogInterface dialog, int which) {
+			// switch (which) {
+			// case 0:
+			// for (Media image : selection) {
+			// Folder folder = foldersMap.get(image);
+			// enqueue(folder.images, STR.instantUpload);
+			// }
+			// clearSelection();
+			// break;
+			// case 1: {
+			// List<Folder> folders = new ArrayList<Folder>();
+			// for (Media image : selection) {
+			// Folder folder = foldersMap.get(image);
+			// folders.add(folder);
+			// }
+			// createOneSetPerFolder(folders);
+			// }
+			// break;
+			// case 2: {
+			// List<Folder> folders = new ArrayList<Folder>();
+			// for (Media image : selection) {
+			// Folder folder = foldersMap.get(image);
+			// folders.add(folder);
+			// }
+			// if (folders.size() == 1) {
+			// showNewSetDialog(folders.get(0), selection);
+			// } else {
+			// showNewSetDialog(null, selection);
+			// }
+			// }
+			// break;
+			// case 3:
+			// showExistingSetDialog(selection);
+			// break;
+			// default:
+			// break;
+			// }
+			// LOG.debug("which : " + which);
+			// }
+			//
+			// }).show();
 		} else {
 			new AlertDialog.Builder(activity).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
 					.setItems(new String[] { "Default set (" + STR.instantUpload + ")", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
@@ -615,8 +663,11 @@ public class FlickrUploaderActivity extends Activity {
 
 	@UiThread
 	void clearSelection() {
-		if (mMode != null)
-			mMode.finish();
+		selectedMedia.clear();
+		for (Header header : headers) {
+			header.selected = false;
+		}
+		refresh(false);
 	}
 
 	@UiThread
@@ -774,33 +825,25 @@ public class FlickrUploaderActivity extends Activity {
 		}
 	}
 
-	@UiThread
-	void renderSelection() {
-		int childCount = mainTabView.getChildCount();
-		for (int i = 0; i < childCount; i++) {
-			View view = mainTabView.getChildAt(i);
-			View check_image = view.findViewById(R.id.check_image);
-			if (check_image == null) {
-				// if (view.getTag() instanceof View) {
-				// View headerView = (View) view.getTag();
-				// renderHeaderSelection(headerView);
-				// }
-			} else {
-				check_image.setVisibility(selectedMedia.contains(view.getTag()) ? View.VISIBLE : View.GONE);
-			}
-		}
-		for (View headerView : attachedHeaderViews) {
-			renderHeaderSelection(headerView);
-		}
-		// for (int i = 0; i < headers.size(); i++) {
-		// renderHeaderSelection(mainTabView.getHeaderAt(i));
-		// }
-		// renderHeaderSelection(mainTabView.getStickiedHeader());
-		// PhotoAdapter adapter = (PhotoAdapter) mainTabView.getAdapter();
-		// adapter.notifyDataSetChanged();
-		mainTabView.requestLayout();
-		updateCount();
-	}
+	// @UiThread
+	// void renderThumbs() {
+	// int childCount = mainTabView.getChildCount();
+	// for (int i = 0; i < childCount; i++) {
+	// View view = mainTabView.getChildAt(i);
+	// View check_image = view.findViewById(R.id.check_image);
+	// if (check_image != null) {
+	// view.setLayoutParams(new
+	// GridView.LayoutParams(GridView.LayoutParams.MATCH_PARENT,
+	// computed_req_height));
+	// check_image.setVisibility(selectedMedia.contains(view.getTag()) ?
+	// View.VISIBLE : View.GONE);
+	// }
+	// }
+	// for (View headerView : attachedHeaderViews) {
+	// renderHeaderSelection(headerView);
+	// }
+	// mainTabView.requestLayout();
+	// }
 
 	void renderHeaderSelection(View headerView) {
 		if (headerView != null && headerView.getTag() instanceof Header) {
@@ -815,25 +858,19 @@ public class FlickrUploaderActivity extends Activity {
 
 	Set<Media> selectedMedia = new HashSet<Media>();
 
-	List<Media> medias;
-	List<Media> photos;
-	List<Media> videos;
-	List<Folder> folders;
-	Map<Media, Folder> foldersMap = new HashMap<Media, Folder>();
-
-	class PhotoAdapter extends BaseAdapter implements StickyGridHeadersBaseAdapter {
+	class PhotoAdapter extends BaseAdapter {
 
 		public PhotoAdapter() {
 		}
 
 		@Override
 		public int getCount() {
-			return photos.size();
+			return thumbItems.size();
 		}
 
 		@Override
 		public Object getItem(int position) {
-			return photos.get(position);
+			return thumbItems.get(position);
 		}
 
 		@Override
@@ -841,31 +878,99 @@ public class FlickrUploaderActivity extends Activity {
 			return arg0;
 		}
 
+		static final int VIEW_HEADER = 0;
+		static final int VIEW_THUMB = 1;
+
 		@Override
-		public View getView(int position, View convertView, ViewGroup parent) {
-			Object item = getItem(position);
-			if (convertView == null) {
-				convertView = getLayoutInflater().inflate(R.layout.photo_grid_thumb, parent, false);
-				convertView.setLayoutParams(new GridView.LayoutParams(GridView.LayoutParams.MATCH_PARENT, mainTabView.getColumnWidth() * 3 / 4));
-				convertView.setTag(R.id.check_image, convertView.findViewById(R.id.check_image));
-				convertView.setTag(R.id.uploading, convertView.findViewById(R.id.uploading));
-				convertView.setTag(R.id.image_view, convertView.findViewById(R.id.image_view));
-				convertView.setTag(R.id.uploaded, convertView.findViewById(R.id.uploaded));
+		public int getItemViewType(int position) {
+			if (thumbItems.get(position) instanceof Header) {
+				return VIEW_HEADER;
 			}
-			final Media image = (Media) item;
-			if (convertView.getTag() != image) {
-				convertView.setTag(image);
-				renderImageView(convertView);
-			}
-			return convertView;
+			return VIEW_THUMB;
 		}
 
 		@Override
+		public int getViewTypeCount() {
+			return 2;
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			Object item = getItem(position);
+			if (item instanceof Header) {
+				return getHeaderView(position, convertView, parent);
+			} else {
+				final Media[] mediaRow = (Media[]) item;
+				LinearLayout linearLayout;
+				if (convertView == null) {
+					linearLayout = new LinearLayout(activity);
+					linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+				} else {
+					linearLayout = (LinearLayout) convertView;
+				}
+				if (linearLayout.getChildCount() != mediaRow.length) {
+					linearLayout.removeAllViews();
+					for (int i = 0; i < mediaRow.length; i++) {
+						View thumbView = getLayoutInflater().inflate(R.layout.grid_thumb, linearLayout, false);
+						thumbView.setTag(R.id.check_image, thumbView.findViewById(R.id.check_image));
+						thumbView.setTag(R.id.uploading, thumbView.findViewById(R.id.uploading));
+						thumbView.setTag(R.id.image_view, thumbView.findViewById(R.id.image_view));
+						thumbView.setTag(R.id.uploaded, thumbView.findViewById(R.id.uploaded));
+						thumbView.setTag(R.id.type, thumbView.findViewById(R.id.type));
+						linearLayout.addView(thumbView);
+
+						thumbView.setOnClickListener(new View.OnClickListener() {
+							@Override
+							public void onClick(View v) {
+								Media media = (Media) v.getTag();
+								Header header = headerMap.get(media);
+								if (selectedMedia.contains(media)) {
+									v.findViewById(R.id.check_image).setVisibility(View.GONE);
+									selectedMedia.remove(media);
+									if (header.selected) {
+										header.selected = false;
+									}
+								} else {
+									v.findViewById(R.id.check_image).setVisibility(View.VISIBLE);
+									selectedMedia.add(media);
+									if (!header.selected) {
+										List<Media> headerMedias = new ArrayList<Media>();
+										Iterator<Entry<Media, Header>> it = headerMap.entrySet().iterator();
+										while (it.hasNext()) {
+											Map.Entry<Media, Header> entry = it.next();
+											if (entry.getValue() == header) {
+												headerMedias.add(entry.getKey());
+											}
+										}
+										if (selectedMedia.containsAll(headerMedias)) {
+											header.selected = true;
+										}
+									}
+								}
+								refresh(false);
+							}
+						});
+					}
+				}
+				if (linearLayout.getTag() != mediaRow) {
+					linearLayout.setTag(mediaRow);
+
+					for (int i = 0; i < mediaRow.length; i++) {
+						View thumbView = linearLayout.getChildAt(i);
+						thumbView.setTag(mediaRow[i]);
+						renderImageView(thumbView, true);
+					}
+
+				}
+				return linearLayout;
+			}
+		}
+
 		public View getHeaderView(int position, View convertView, ViewGroup arg2) {
 			final TextView title;
 			final TextView count;
 			if (convertView == null) {
-				convertView = View.inflate(activity, R.layout.photo_grid_header, null);
+				convertView = View.inflate(activity, R.layout.grid_header, null);
 				convertView.findViewById(R.id.count).setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
@@ -882,7 +987,7 @@ public class FlickrUploaderActivity extends Activity {
 								}
 							}
 						}
-						renderSelection();
+						refresh(false);
 					}
 				});
 				title = (TextView) convertView.findViewById(R.id.title);
@@ -892,37 +997,38 @@ public class FlickrUploaderActivity extends Activity {
 				convertView.findViewById(R.id.expand).setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
-						final Header header = (Header) title.getTag();
-						header.collapsed = !header.collapsed;
-						photos = new ArrayList<Media>(medias);
-						Iterator<Media> it = photos.iterator();
-						while (it.hasNext()) {
-							Media media = it.next();
-							if (headerMap.get(media).collapsed) {
-								it.remove();
-							}
-						}
-						photoAdapter.notifyDataSetChanged();
-						
-						if (header.collapsed) {
-							//hack to make sure the collapsed do not disappear
-							mainTabView.postDelayed(new Runnable() {
-								@Override
-								public void run() {
-									int realIndex = getRealIndex(header);
-									if (mainTabView.getFirstVisiblePosition() > realIndex) {
-										mainTabView.setSelection(realIndex);
-									}
-								}
-							}, 100);
-						}
+						// final Header header = (Header) title.getTag();
+						// header.collapsed = !header.collapsed;
+						// photos = new ArrayList<Media>(medias);
+						// Iterator<Media> it = photos.iterator();
+						// while (it.hasNext()) {
+						// Media media = it.next();
+						// if (headerMap.get(media).collapsed) {
+						// it.remove();
+						// }
+						// }
+						// photoAdapter.notifyDataSetChanged();
+						//
+						// if (header.collapsed) {
+						// // hack to make sure the collapsed do not disappear
+						// mainTabView.postDelayed(new Runnable() {
+						// @Override
+						// public void run() {
+						// int realIndex = getRealIndex(header);
+						// if (mainTabView.getFirstVisiblePosition() >
+						// realIndex) {
+						// mainTabView.setSelection(realIndex);
+						// }
+						// }
+						// }, 100);
+						// }
 					}
 				});
 				title.setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
 						Header header = (Header) v.getTag();
-						mainTabView.setSelection(getRealIndex(header));
+						listView.setSelection(getRealIndex(header));
 					}
 				});
 				convertView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
@@ -941,7 +1047,7 @@ public class FlickrUploaderActivity extends Activity {
 				title = (TextView) convertView.getTag(R.id.title);
 				count = (TextView) convertView.getTag(R.id.count);
 			}
-			Header header = headers.get(position);
+			Header header = (Header) thumbItems.get(position);
 			convertView.setTag(header);
 			count.setTag(header);
 			title.setTag(header);
@@ -956,7 +1062,6 @@ public class FlickrUploaderActivity extends Activity {
 			return convertView;
 		}
 
-		@Override
 		public int getCountForHeader(int headerPosition) {
 			Header header = headers.get(headerPosition);
 			if (header.collapsed)
@@ -964,14 +1069,13 @@ public class FlickrUploaderActivity extends Activity {
 			return header.count;
 		}
 
-		@Override
 		public int getNumHeaders() {
 			return headers.size();
 		}
 	}
 
 	int getRealIndex(Header header) {
-		int nbColumn = mainTabView.getNumColumns();
+		int nbColumn = 1;// mainTabView.getNumColumns();
 		int realIndex = 0;
 		for (Header currentHeader : headers) {
 			if (currentHeader == header) {
@@ -987,89 +1091,83 @@ public class FlickrUploaderActivity extends Activity {
 
 	ExecutorService executorService = Executors.newSingleThreadExecutor();
 
-	private void renderImageView(final View convertView) {
+	private void renderImageView(final View convertView, boolean reset) {
 		if (convertView.getTag() instanceof Media) {
-			final Media image = (Media) convertView.getTag();
+			convertView.setVisibility(View.VISIBLE);
+			convertView.setLayoutParams(new LinearLayout.LayoutParams(computed_req_width, computed_req_height));
+			final Media media = (Media) convertView.getTag();
 			final CacheableImageView imageView = (CacheableImageView) convertView.getTag(R.id.image_view);
-
-			imageView.setTag(image);
+			imageView.setTag(media);
 			final View check_image = (View) convertView.getTag(R.id.check_image);
-			check_image.setVisibility(View.GONE);
 			final ImageView uploadedImageView = (ImageView) convertView.getTag(R.id.uploaded);
-			uploadedImageView.setVisibility(View.GONE);
+			if (reset) {
+				check_image.setVisibility(View.GONE);
+				uploadedImageView.setVisibility(View.GONE);
+			}
 
-			final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(image.path + "_size");
-			final int reqWidth = mainTabView.getColumnWidth();
-			int reqHeight = reqWidth * 3 / 4;
+			View type = (View) convertView.getTag(R.id.type);
+			type.setVisibility(media.mediaType == MediaType.video ? View.VISIBLE : View.GONE);
+
+			final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(media.path + "_" + Utils.getViewSize());
 			if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
 				// The cache has it, so just display it
 				imageView.setImageDrawable(wrapper);
-				int width = wrapper.getBitmap().getWidth();
-				int height = wrapper.getBitmap().getHeight();
-				// int reqHeight = height * reqWidth / width;
-				reqHeight = width > height ? reqWidth * 3 / 4 : reqWidth * 3 / 2;
 			} else {
 				imageView.setImageDrawable(null);
 			}
-			// convertView.setLayoutParams(new
-			// ViewGroup.MarginLayoutParams(reqWidth, reqHeight));
 
 			executorService.submit(new Runnable() {
 				@Override
 				public void run() {
-					if (imageView.getTag() == image) {
-						final boolean isUploaded;
-						final boolean isUploading;
-						isUploaded = FlickrApi.isUploaded(image);
-						isUploading = UploadService.isUploading(image);
-						final int privacyResource;
-						if (isUploaded) {
-							privacyResource = getPrivacyResource(FlickrApi.getPrivacy(image));
-						} else {
-							privacyResource = 0;
-						}
-						// LOG.debug(tab + ", isUploaded=" + isUploaded);
-						final CacheableBitmapDrawable bitmapDrawable;
-						if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
-							bitmapDrawable = wrapper;
-						} else {
-							Bitmap bitmap = Utils.getBitmap(image, 2);
-							if (bitmap != null) {
-								bitmapDrawable = Utils.getCache().put(image.path + "_size", bitmap);
+					try {
+						if (imageView.getTag() == media) {
+							final boolean isUploaded;
+							final boolean isUploading;
+							isUploaded = FlickrApi.isUploaded(media);
+							isUploading = UploadService.isUploading(media);
+							final int privacyResource;
+							if (isUploaded) {
+								privacyResource = getPrivacyResource(FlickrApi.getPrivacy(media));
 							} else {
-								bitmapDrawable = null;
+								privacyResource = 0;
 							}
-						}
-						final boolean isChecked = selectedMedia.contains(image);
-
-						runOnUiThread(new Runnable() {
-							@Override
-							public void run() {
-								if (imageView.getTag() == image) {
-									check_image.setVisibility(isChecked ? View.VISIBLE : View.GONE);
-									uploadedImageView.setVisibility(isUploaded ? View.VISIBLE : View.GONE);
-									((View) convertView.getTag(R.id.uploading)).setVisibility(isUploading ? View.VISIBLE : View.GONE);
-									if (wrapper != bitmapDrawable) {
-										imageView.setImageDrawable(bitmapDrawable);
-										int width = bitmapDrawable.getBitmap().getWidth();
-										int height = bitmapDrawable.getBitmap().getHeight();
-										int reqWidth = mainTabView.getColumnWidth();
-										// int reqHeight = height * reqWidth /
-										// width;
-										int reqHeight = width > height ? reqWidth * 3 / 4 : reqWidth * 3 / 2;
-										// convertView.setLayoutParams(new
-										// ViewGroup.MarginLayoutParams(reqWidth,
-										// reqHeight));
-									}
-									if (privacyResource != 0) {
-										uploadedImageView.setImageResource(privacyResource);
-									}
+							// LOG.debug(tab + ", isUploaded=" + isUploaded);
+							final CacheableBitmapDrawable bitmapDrawable;
+							if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
+								bitmapDrawable = wrapper;
+							} else {
+								Bitmap bitmap = Utils.getBitmap(media, Utils.getViewSize());
+								if (bitmap != null) {
+									bitmapDrawable = Utils.getCache().put(media.path + "_" + Utils.getViewSize(), bitmap);
+								} else {
+									bitmapDrawable = null;
 								}
 							}
-						});
+							runOnUiThread(new Runnable() {
+								@Override
+								public void run() {
+									if (imageView.getTag() == media) {
+										check_image.setVisibility(selectedMedia.contains(media) ? View.VISIBLE : View.GONE);
+										uploadedImageView.setVisibility(isUploaded ? View.VISIBLE : View.GONE);
+										((View) convertView.getTag(R.id.uploading)).setVisibility(isUploading ? View.VISIBLE : View.GONE);
+										if (wrapper != bitmapDrawable) {
+											imageView.setImageDrawable(bitmapDrawable);
+										}
+										if (privacyResource != 0) {
+											uploadedImageView.setImageResource(privacyResource);
+										}
+									}
+								}
+							});
+						}
+					} catch (Throwable e) {
+						LOG.error("FINAL ERROR\n" + ToolString.stack2string(e));
 					}
+
 				}
 			});
+		} else {
+			convertView.setVisibility(View.GONE);
 		}
 	}
 
@@ -1077,7 +1175,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	private Menu menu;
 
-	private StickyGridHeadersGridView mainTabView;
+	private ListView listView;
 
 	private boolean paused = false;
 
@@ -1108,12 +1206,26 @@ public class FlickrUploaderActivity extends Activity {
 	private void renderMenu() {
 		if (menu != null) {
 			menu.findItem(R.id.trial_info).setVisible(!Utils.isPremium());
+			switch (Utils.getViewSize()) {
+			case small:
+				menu.findItem(R.id.view_size_small).setChecked(true);
+				break;
+			case medium:
+				menu.findItem(R.id.view_size_medium).setChecked(true);
+				break;
+			case large:
+				menu.findItem(R.id.view_size_large).setChecked(true);
+				break;
+			default:
+				break;
+			}
+			menu.findItem(R.id.filter_photos).setChecked(Utils.getShowPhotos());
+			menu.findItem(R.id.filter_videos).setChecked(Utils.getShowVideos());
 		}
 	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		Mixpanel.track("UI actionBar " + getItemName(item));
 		switch (item.getItemId()) {
 		case R.id.trial_info:
 			Utils.showPremiumDialog(activity, new Utils.Callback<Boolean>() {
@@ -1132,28 +1244,32 @@ public class FlickrUploaderActivity extends Activity {
 			i.setData(Uri.parse(url));
 			startActivity(i);
 			break;
-		case R.id.sort_time_0:
-			Utils.setLongProperty("sort_type", 0L);
-			Mixpanel.track("Sort", "type", getSort());
+		case R.id.view_size_small:
+			Utils.setViewSize(VIEW_SIZE.small);
+			computeHeaders();
+			item.setChecked(true);
+			break;
+		case R.id.view_size_medium:
+			Utils.setViewSize(VIEW_SIZE.medium);
+			computeHeaders();
+			item.setChecked(true);
+			break;
+		case R.id.view_size_large:
+			Utils.setViewSize(VIEW_SIZE.large);
+			computeHeaders();
+			item.setChecked(true);
+			break;
+		case R.id.filter_photos:
+			item.setChecked(!item.isChecked());
+			Utils.setShowPhotos(item.isChecked());
 			load();
 			break;
-		case R.id.sort_time_1:
-			Utils.setLongProperty("sort_type", 1L);
-			Mixpanel.track("Sort", "type", getSort());
+		case R.id.filter_videos:
+			item.setChecked(!item.isChecked());
+			Utils.setShowVideos(item.isChecked());
 			load();
 			break;
-		case R.id.view_size_0:
-			mainTabView.setNumColumns(4);
-			item.setChecked(true);
-			break;
-		case R.id.view_size_1:
-			mainTabView.setNumColumns(2);
-			item.setChecked(true);
-			break;
-		case R.id.view_size_2:
-			mainTabView.setNumColumns(1);
-			item.setChecked(true);
-			break;
+
 		}
 
 		return (super.onOptionsItemSelected(item));
@@ -1180,7 +1296,6 @@ public class FlickrUploaderActivity extends Activity {
 				if (sort_type != which) {
 					LOG.debug("clicked : " + modes[which]);
 					Utils.setLongProperty("sort_type", (long) which);
-					Mixpanel.track("Sort", "type", getSort());
 					load();
 				}
 			}
@@ -1245,17 +1360,25 @@ public class FlickrUploaderActivity extends Activity {
 		if (reload) {
 			load();
 		} else {
-			if (mainTabView != null) {
+			if (listView != null) {
 				renderMenu();
-				ViewGroup grid = (ViewGroup) mainTabView;
-				int childCount = grid.getChildCount();
+				int childCount = listView.getChildCount();
 				for (int i = 0; i < childCount; i++) {
-					View convertView = grid.getChildAt(i);
-					Media image = (Media) convertView.getTag();
-					if (image != null) {
-						renderImageView(convertView);
+					View convertView = listView.getChildAt(i);
+					if (convertView.getTag() instanceof Media) {
+						renderImageView(convertView, false);
 					}
 				}
+				// mainTabView.postDelayed(new Runnable() {
+				// @Override
+				// public void run() {
+				// mainTabView.requestLayout();
+				// }
+				// }, 1000);
+				for (View headerView : attachedHeaderViews) {
+					renderHeaderSelection(headerView);
+				}
+
 			}
 		}
 	}
@@ -1297,6 +1420,8 @@ public class FlickrUploaderActivity extends Activity {
 		if (!destroyed) {
 			getActionBar().setSubtitle(null);
 			getActionBar().setTitle(null);
+			getActionBar().setIcon(null);
+			getActionBar().setDisplayShowHomeEnabled(false);
 			// if (Utils.isPremium()) {
 			// getActionBar().setSubtitle(null);
 			// } else {

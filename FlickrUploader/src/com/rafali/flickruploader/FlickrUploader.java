@@ -71,7 +71,6 @@ public class FlickrUploader extends Application {
 					long versionCode = Utils.getLongProperty(STR.versionCode);
 					if (Config.VERSION != versionCode) {
 						if (versionCode == 0) {
-							Mixpanel.track("First install");
 							Utils.setLongProperty(STR.lastNewFilesCheckNotEmpty, System.currentTimeMillis());
 						} else {
 							if (versionCode < 34) {

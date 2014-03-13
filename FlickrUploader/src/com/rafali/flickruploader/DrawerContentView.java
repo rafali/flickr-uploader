@@ -33,6 +33,7 @@ import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.UploadService.UploadProgressListener;
+import com.rafali.flickruploader.Utils.VIEW_SIZE;
 import com.rafali.flickruploader2.R;
 
 @EViewGroup(R.layout.drawer_content)
@@ -338,7 +339,7 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 				}
 				subTitleView.setText(text);
 			}
-			final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(image.path + "_" + R.layout.photo_grid_thumb);
+			final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(image.path + "_" + VIEW_SIZE.small);
 			if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
 				// The cache has it, so just display it
 				imageView.setImageDrawable(wrapper);
@@ -352,9 +353,9 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 							if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
 								bitmapDrawable = wrapper;
 							} else {
-								Bitmap bitmap = Utils.getBitmap(image, 1);
+								Bitmap bitmap = Utils.getBitmap(image, VIEW_SIZE.small);
 								if (bitmap != null) {
-									bitmapDrawable = Utils.getCache().put(image.path + "_" + R.layout.photo_grid_thumb, bitmap);
+									bitmapDrawable = Utils.getCache().put(image.path + "_" + R.layout.grid_thumb, bitmap);
 								} else {
 									bitmapDrawable = null;
 								}

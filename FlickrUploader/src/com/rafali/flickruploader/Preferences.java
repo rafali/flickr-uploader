@@ -60,7 +60,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 							.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 								@Override
 								public void onClick(DialogInterface dialog, int which) {
-									Mixpanel.track("Sign out");
 									Editor editor = sp.edit();
 									editor.remove(STR.userId);
 									editor.remove(STR.accessToken);
@@ -97,7 +96,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
 				activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.rafali.flickruploader")));
-				Mixpanel.track("Rate");
 				Utils.setBooleanProperty(STR.hasRated, true);
 				return false;
 			}
@@ -121,7 +119,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		findPreference("pictarine").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
-				Mixpanel.track("Pictarine");
 				activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.pictarine.android")));
 				return false;
 			}
@@ -129,7 +126,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		findPreference("faq").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
-				Mixpanel.track("FAQ");
 				activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/rafali/flickr-uploader/wiki/FAQ")));
 				return false;
 			}
@@ -138,7 +134,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		findPreference("feedback").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
-				Mixpanel.track("Feedback");
 				Utils.showEmailActivity(activity, "Feedback on Flickr Instant Upload", "Here are some feedback to improve this app:", true);
 				return false;
 			}
@@ -199,7 +194,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 
 	@Override
 	public void onSharedPreferenceChanged(SharedPreferences sp, String key) {
-		Mixpanel.track("Preference Change", key, sp.getAll().get(key));
 		render();
 	}
 

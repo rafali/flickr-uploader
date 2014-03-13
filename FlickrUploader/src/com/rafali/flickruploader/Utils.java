@@ -44,6 +44,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Point;
+import android.media.ExifInterface;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -84,7 +85,6 @@ public final class Utils {
 		context.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				Mixpanel.track("Sign in dialog");
 				AlertDialog alertDialog = new AlertDialog.Builder(context).setTitle("Sign into Flickr").setMessage("A Flickr account is required to upload photos.")
 						.setPositiveButton("Sign in now", new DialogInterface.OnClickListener() {
 							@Override
@@ -132,6 +132,61 @@ public final class Utils {
 			screenWidthPx = Math.min(size.x, size.y);
 		}
 		return screenWidthPx;
+	}
+
+	public static int getScaledSize(float f) {
+		return (int) (f * FlickrUploader.getAppContext().getResources().getDisplayMetrics().scaledDensity);
+	}
+
+	static VIEW_SIZE view_size;
+
+	public static VIEW_SIZE getViewSize() {
+		if (view_size == null) {
+			try {
+				view_size = VIEW_SIZE.valueOf(Utils.getStringProperty("view_size", VIEW_SIZE.medium.toString()));
+			} catch (Throwable e) {
+				LOG.error(ToolString.stack2string(e));
+				view_size = VIEW_SIZE.medium;
+			}
+		}
+		return view_size;
+	}
+
+	static Boolean show_photos;
+
+	public static boolean getShowPhotos() {
+		if (show_photos == null) {
+			show_photos = getBooleanProperty("show_photos", true);
+		}
+		return show_photos;
+	}
+
+	public static void setShowPhotos(Boolean show_photos) {
+		Utils.show_photos = show_photos;
+		setBooleanProperty("show_photos", show_photos);
+	}
+
+	static Boolean show_videos;
+
+	public static boolean getShowVideos() {
+		if (show_videos == null) {
+			show_videos = getBooleanProperty("show_videos", true);
+		}
+		return show_videos;
+	}
+
+	public static void setShowVideos(Boolean show_videos) {
+		Utils.show_videos = show_videos;
+		setBooleanProperty("show_videos", show_videos);
+	}
+
+	public static void setViewSize(VIEW_SIZE view_size) {
+		Utils.view_size = view_size;
+		Utils.setStringProperty("view_size", view_size == null ? null : view_size.toString());
+	}
+
+	enum VIEW_SIZE {
+		small, medium, large
 	}
 
 	public static void dialogPrivacy(final Activity context, final PRIVACY privacy, final Callback<PRIVACY> callback) {
@@ -698,7 +753,7 @@ public final class Utils {
 		return mapE;
 	}
 
-	public static Bitmap getBitmap(Media image, int size) {
+	public static Bitmap getBitmap(Media media, VIEW_SIZE view_size) {
 		Bitmap bitmap = null;
 		int retry = 0;
 		while (bitmap == null && retry < 3) {
@@ -707,15 +762,26 @@ public final class Utils {
 				options.inSampleSize = 1;
 				options.inPurgeable = true;
 				options.inInputShareable = true;
-				if (image.mediaType == MediaType.video) {
-					// bitmap = ThumbnailUtils.createVideoThumbnail(image.path,
-					// Images.Thumbnails.MINI_KIND);
-					bitmap = Video.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, Video.Thumbnails.MINI_KIND, null);
+				if (media.mediaType == MediaType.video) {
+					bitmap = Video.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), media.id, Video.Thumbnails.MINI_KIND, null);
 					return bitmap;
-				} else if (size == 1) {
-					bitmap = Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, Images.Thumbnails.MICRO_KIND, options);
-				} else if (size == 2) {
-					bitmap = Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), image.id, Images.Thumbnails.MINI_KIND, options);
+				} else if (view_size == VIEW_SIZE.small) {
+					bitmap = Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), media.id, Images.Thumbnails.MICRO_KIND, options);
+
+				} else if (view_size == VIEW_SIZE.medium || view_size == VIEW_SIZE.large) {
+					try {
+						ExifInterface exif = new ExifInterface(media.path);
+						if (exif.hasThumbnail()) {
+							byte[] thumbnail = exif.getThumbnail();
+							bitmap = BitmapFactory.decodeByteArray(thumbnail, 0, thumbnail.length);
+						}
+					} catch (Throwable e) {
+						LOG.error(ToolString.stack2string(e));
+					}
+
+					if (bitmap == null) {
+						bitmap = Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), media.id, Images.Thumbnails.MINI_KIND, options);
+					}
 				} else {
 					// First decode with inJustDecodeBounds=true to check
 					// dimensions
@@ -723,13 +789,13 @@ public final class Utils {
 					opts.inJustDecodeBounds = true;
 					opts.inPurgeable = true;
 					opts.inInputShareable = true;
-					BitmapFactory.decodeFile(image.path, opts);
+					BitmapFactory.decodeFile(media.path, opts);
 					// BitmapFactory.decodeFileDescriptor(file., null, opts);
 
 					// Calculate inSampleSize
 					opts.inJustDecodeBounds = false;
 					opts.inSampleSize = calculateInSampleSize(opts, getScreenWidthPx(), getScreenWidthPx()) + retry;
-					bitmap = BitmapFactory.decodeFile(image.path, opts);
+					bitmap = BitmapFactory.decodeFile(media.path, opts);
 				}
 			} catch (OutOfMemoryError e) {
 				LOG.warn("retry : " + retry + ", " + e.getMessage(), e);
@@ -768,7 +834,6 @@ public final class Utils {
 		} else {
 			folderSetNames.remove(folder.path);
 		}
-		Mixpanel.track("Sync Folder", "name", folder.name, "synced", synced);
 		setMapProperty("folderSetNames", folderSetNames);
 	}
 
@@ -847,7 +912,7 @@ public final class Utils {
 	 *            The requested height of the resulting bitmap
 	 * @return The value to be used for inSampleSize
 	 */
-	private static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
+	static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
 		// Raw height and width of image
 		final int height = options.outHeight;
 		final int width = options.outWidth;
@@ -1046,7 +1111,6 @@ public final class Utils {
 		activity.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				Mixpanel.track("ThankYou");
 				AlertDialog.Builder builder = new AlertDialog.Builder(activity);
 				builder.setMessage("Thank you!\n\nThanks to users like you, I can work on improving the app. If you have any suggestion, feel free to send me an email!\n\nMaxime");
 				builder.setPositiveButton("Reply", new OnClickListener() {
@@ -1133,7 +1197,6 @@ public final class Utils {
 	}
 
 	public static void showCouponInfoDialog(final Activity activity) {
-		Mixpanel.track("CouponInfoShow");
 		setBooleanProperty(STR.couponInfo, true);
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
@@ -1142,13 +1205,11 @@ public final class Utils {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				LOG.debug("coupon for later then");
-				Mixpanel.track("CouponInfoLater");
 			}
 		});
 		builder.setPositiveButton("More info", new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-				Mixpanel.track("CouponInfoOk");
 				String url = "https://github.com/rafali/flickr-uploader/wiki/Coupons";
 				Intent i = new Intent(Intent.ACTION_VIEW);
 				i.setData(Uri.parse(url));
@@ -1159,8 +1220,6 @@ public final class Utils {
 	}
 
 	public static void showPremiumDialog(final Activity activity, final Callback<Boolean> callback) {
-		Mixpanel.track("PremiumShow");
-
 		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
 		String message = "Support this open-source app. Get the premium today and enjoy the automatic uploads and the next app improvements for life.";
 		if (!isTrial()) {
@@ -1170,7 +1229,6 @@ public final class Utils {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				LOG.debug("premium for later then");
-				Mixpanel.track("PremiumLater");
 			}
 		}).setPositiveButton("Get Premium Now", new OnClickListener() {
 			@Override
@@ -1190,17 +1248,14 @@ public final class Utils {
 					LOG.debug("result : " + result + ", purchase:" + purchase);
 					if (result.isFailure()) {
 						if (result.getResponse() == IabHelper.IABHELPER_USER_CANCELLED) {
-							Mixpanel.track("PremiumCancelPayment");
 							showCouponInfoDialog(activity);
 						} else {
-							Mixpanel.track("PremiumError", "type", result.getResponse());
 						}
 						callback.onResult(false);
 						return;
 					}
 					setPremium(true);
 					callback.onResult(true);
-					Mixpanel.track("PremiumSuccess");
 					thankYou(activity);
 
 					long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;

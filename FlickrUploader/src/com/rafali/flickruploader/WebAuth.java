@@ -55,7 +55,6 @@ public class WebAuth extends Activity {
 		requestWindowFeature(Window.FEATURE_PROGRESS);
 		getActionBar().setDisplayHomeAsUpEnabled(true);
 		super.onCreate(savedInstanceState);
-		Mixpanel.track("Web authentication");
 	}
 
 	@SuppressLint({ "SetJavaScriptEnabled", "NewApi" })
@@ -133,7 +132,6 @@ public class WebAuth extends Activity {
 
 	@Override
 	protected void onStop() {
-		Mixpanel.flush();
 		super.onStop();
 		EasyTracker.getInstance().activityStop(this);
 	}
@@ -235,8 +233,6 @@ public class WebAuth extends Activity {
 				Utils.setStringProperty(STR.userId, accessToken.getUser().getId());
 				Utils.setStringProperty(STR.userName, accessToken.getUser().getUsername());
 				Utils.setLongProperty(STR.userDateCreated, System.currentTimeMillis());
-				Mixpanel.reset();
-				Mixpanel.track("Sign in success");
 				FlickrApi.reset();
 				FlickrApi.syncUploadedPhotosMap(true);
 				setResult(RESULT_CODE_AUTH);
@@ -292,7 +288,6 @@ public class WebAuth extends Activity {
 	@UiThread
 	void askUserIssue() {
 		userIssueAsked = true;
-		Mixpanel.track("LoginIssueDialogShow");
 		LOG.debug("diplaying login issue dialog");
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setTitle("Login Issues").setMessage(
@@ -301,7 +296,6 @@ public class WebAuth extends Activity {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				LOG.debug("cancelling login issue dialog");
-				Mixpanel.track("LoginIssueDialogCancel");
 				finish();
 			}
 		});
@@ -309,7 +303,6 @@ public class WebAuth extends Activity {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				LOG.debug("opening the FAQ");
-				Mixpanel.track("LoginIssueDialogFAQ");
 				String url = "https://github.com/rafali/flickr-uploader/wiki/FAQ";
 				Intent i = new Intent(Intent.ACTION_VIEW);
 				i.setData(Uri.parse(url));

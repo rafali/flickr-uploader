@@ -105,7 +105,6 @@ public class PreferencesAdvanced extends PreferenceActivity implements OnSharedP
 
 		@Override
 		public boolean onPreferenceClick(Preference preference) {
-			Mixpanel.track("UploadDescription", "premium", Utils.isPremium());
 			AlertDialog.Builder alert = new AlertDialog.Builder(PreferencesAdvanced.this);
 			alert.setTitle(findPreference(prefKey).getTitle());
 			if (Utils.isPremium()) {
@@ -133,11 +132,10 @@ public class PreferencesAdvanced extends PreferenceActivity implements OnSharedP
 				alert.setPositiveButton("Get Premium Now", new OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						Mixpanel.track("UploadDescriptionPremium");
 						Utils.startPayment(PreferencesAdvanced.this, new Utils.Callback<Boolean>() {
 							@Override
 							public void onResult(Boolean result) {
-								Mixpanel.track("UploadDescriptionPremiumOk");
+								//FIXME
 							}
 						});
 					}
@@ -173,7 +171,6 @@ public class PreferencesAdvanced extends PreferenceActivity implements OnSharedP
 
 	@Override
 	public void onSharedPreferenceChanged(SharedPreferences sp, String key) {
-		Mixpanel.track("Preference Change", key, sp.getAll().get(key));
 		render();
 	}
 

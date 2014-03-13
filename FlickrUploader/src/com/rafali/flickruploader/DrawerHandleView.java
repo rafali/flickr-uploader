@@ -19,6 +19,7 @@ import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.UploadService.UploadProgressListener;
 import com.rafali.flickruploader.Utils.CAN_UPLOAD;
+import com.rafali.flickruploader.Utils.VIEW_SIZE;
 import com.rafali.flickruploader2.R;
 
 @EViewGroup(R.layout.drawer_handle_view)
@@ -62,14 +63,14 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 			title.setText(image.name);
 			subTitle.setText(progress + "% - " + currentPosition + " / " + total);
 
-			CacheableBitmapDrawable bitmapDrawable = Utils.getCache().getFromMemoryCache(image.path + "_" + R.layout.photo_grid_thumb);
+			CacheableBitmapDrawable bitmapDrawable = Utils.getCache().getFromMemoryCache(image.path + "_" + VIEW_SIZE.small);
 			if (bitmapDrawable == null || bitmapDrawable.getBitmap().isRecycled()) {
 				BackgroundExecutor.execute(new Runnable() {
 					@Override
 					public void run() {
-						final Bitmap bitmap = Utils.getBitmap(image, 1);
+						final Bitmap bitmap = Utils.getBitmap(image, VIEW_SIZE.small);
 						if (bitmap != null) {
-							Utils.getCache().put(image.path + "_" + R.layout.photo_grid_thumb, bitmap);
+							Utils.getCache().put(image.path + "_" + R.layout.grid_thumb, bitmap);
 						}
 					}
 				});

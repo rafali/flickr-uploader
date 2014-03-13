@@ -19,7 +19,6 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
 	public void onReceive(Context context, Intent intent) {
 		LOG.info("intent : " + intent);
 		if ("com.rafali.intent.SHARE_PHOTO".equals(intent.getAction())) {
-			Mixpanel.track("Share in notification");
 			LOG.debug("share intent : " + intent);
 			int imageId = intent.getIntExtra("imageId", -1);
 			if (imageId > 0) {

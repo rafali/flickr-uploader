@@ -399,10 +399,6 @@ public class UploadService extends Service {
 								nbFail = 0;
 								LOG.debug("Upload success : " + time + "ms " + mediaCurrentlyUploading);
 								uploaded.put(mediaCurrentlyUploading, System.currentTimeMillis());
-								if (queue.isEmpty()) {
-									Mixpanel.increment("photo_uploaded", uploaded.size());
-									Mixpanel.flush();
-								}
 								failed.remove(mediaCurrentlyUploading);
 								failedCount.remove(mediaCurrentlyUploading.id);
 								mediaPhotosetTitles.remove(mediaCurrentlyUploading.path);

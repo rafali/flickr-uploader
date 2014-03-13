@@ -36,6 +36,7 @@ import com.googlecode.androidannotations.annotations.UiThread;
 import com.googlecode.androidannotations.annotations.ViewById;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
+import com.rafali.flickruploader.Utils.VIEW_SIZE;
 import com.rafali.flickruploader2.R;
 
 @EActivity(R.layout.auto_upload_folders_activity)
@@ -294,7 +295,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 						if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
 							bitmapDrawable = wrapper;
 						} else {
-							Bitmap bitmap = Utils.getBitmap(image, 1);
+							Bitmap bitmap = Utils.getBitmap(image, VIEW_SIZE.small);
 							if (bitmap != null) {
 								bitmapDrawable = Utils.getCache().put(image.path + "_" + item_layout, bitmap);
 							} else {

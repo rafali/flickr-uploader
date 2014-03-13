@@ -27,7 +27,6 @@ public class PreferencesNotification extends PreferenceActivity implements OnSha
 
 	@Override
 	public void onSharedPreferenceChanged(SharedPreferences sp, String key) {
-		Mixpanel.track("Preference Change", key, sp.getAll().get(key));
 	}
 
 	@Override

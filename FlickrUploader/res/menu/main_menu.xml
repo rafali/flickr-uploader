@@ -2,89 +2,120 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <item
-        android:id="@+id/sort"
-        android:icon="@android:drawable/ic_menu_sort_by_size"
+        android:id="@+id/upload"
+        android:icon="@drawable/upload"
         android:showAsAction="always"
-        android:title="Sort">
+        android:title="Upload">
         <menu>
-            <group android:checkableBehavior="all" >
-                <item
-                    android:id="@+id/sort_time_0"
-                    android:icon="@android:drawable/ic_menu_camera"
-                    android:title="Recent to old"/>
-                <item
-                    android:id="@+id/sort_time_1"
-                    android:icon="@android:drawable/ic_menu_sort_alphabetically"
-                    android:title="Old to recent"/>
-            </group>
+            <item
+                android:id="@+id/upload_add"
+                android:icon="@drawable/add"
+                android:title="Upload"/>
+            <item
+                android:id="@+id/upload_remove"
+                android:icon="@drawable/remove"
+                android:title="Cancel upload"/>
+            <item
+                android:id="@+id/upload_forbid"
+                android:icon="@drawable/forbidden"
+                android:title="Never upload"/>
+        </menu>
+    </item>
+    <item
+        android:id="@+id/select"
+        android:icon="@drawable/select_all"
+        android:showAsAction="always"
+        android:title="Select">
+        <menu>
+            <item
+                android:id="@+id/select_all"
+                android:icon="@drawable/select_all"
+                android:title="Select all"/>
+            <item
+                android:id="@+id/select_none"
+                android:icon="@drawable/select_none"
+                android:title="Select none"/>
         </menu>
     </item>
     <item
         android:id="@+id/filter"
-        android:icon="@android:drawable/ic_menu_agenda"
+        android:icon="@drawable/filter"
         android:showAsAction="always"
-        android:title="Sort">
+        android:title="Filter">
         <menu>
             <group android:checkableBehavior="all" >
                 <item
-                    android:id="@+id/sort_time_0"
-                    android:icon="@android:drawable/ic_menu_camera"
-                    android:title="Recent to old"/>
+                    android:id="@+id/filter_photos"
+                    android:icon="@drawable/photo"
+                    android:title="Photos"/>
                 <item
-                    android:id="@+id/sort_time_1"
-                    android:icon="@android:drawable/ic_menu_sort_alphabetically"
-                    android:title="Old to recent"/>
+                    android:id="@+id/filter_videos"
+                    android:icon="@drawable/video"
+                    android:title="Videos"/>
             </group>
         </menu>
     </item>
     <item
-        android:id="@+id/preferences"
-        android:showAsAction="never"
-        android:title="Preferences"/>
-    <item
-        android:id="@+id/faq"
-        android:showAsAction="never"
-        android:title="FAQ"/>
-    <item
-        android:id="@+id/trial_info"
-        android:showAsAction="never"
-        android:title="Trial Info"/>
-    <item
         android:id="@+id/pick_view"
-        android:icon="@android:drawable/ic_menu_view"
+        android:icon="@drawable/grid_small"
         android:showAsAction="always"
         android:title="View">
         <menu>
+            <item
+                android:enabled="false"
+                android:title="View size"/>
+
             <group android:checkableBehavior="single" >
                 <item
-                    android:id="@+id/view_size_0"
-                    android:icon="@android:drawable/ic_menu_camera"
+                    android:id="@+id/view_size_small"
+                    android:icon="@drawable/grid_small"
                     android:title="Small"/>
                 <item
-                    android:id="@+id/view_size_1"
-                    android:icon="@android:drawable/ic_menu_sort_alphabetically"
+                    android:id="@+id/view_size_medium"
+                    android:icon="@drawable/grid_medium"
                     android:title="Medium"/>
                 <item
-                    android:id="@+id/view_size_2"
-                    android:icon="@android:drawable/ic_menu_sort_alphabetically"
+                    android:id="@+id/view_size_large"
+                    android:icon="@drawable/grid_large"
                     android:title="Large"/>
             </group>
 
             <item
                 android:enabled="false"
-                android:title="Categories"
-                android:menuCategory="container"/>
+                android:title="Group by"/>
 
             <group android:checkableBehavior="single" >
                 <item
-                    android:id="@+id/categorize_1"
-                    android:icon="@android:drawable/ic_menu_camera"
+                    android:id="@+id/group_by_date"
+                    android:icon="@drawable/calendar"
                     android:title="Date"/>
                 <item
-                    android:id="@+id/categorize_1"
-                    android:icon="@android:drawable/ic_menu_sort_alphabetically"
-                    android:title="Album"/>
+                    android:id="@+id/group_by_folder"
+                    android:icon="@drawable/folder"
+                    android:title="Folder"/>
             </group>
+        </menu>
+    </item>
+    <item
+        android:id="@+id/menu_more"
+        android:icon="@drawable/menu_more"
+        android:showAsAction="always"
+        android:title="Menu">
+        <menu>
+            <item
+                android:id="@+id/faq"
+                android:icon="@drawable/help"
+                android:showAsAction="never"
+                android:title="Help"/>
+            <item
+                android:id="@+id/preferences"
+                android:icon="@drawable/preferences"
+                android:showAsAction="never"
+                android:title="Preferences"/>
+            <item
+                android:id="@+id/trial_info"
+                android:showAsAction="never"
+                android:title="Trial Info"/>
         </menu>
     </item>
 

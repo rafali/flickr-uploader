@@ -58,6 +58,39 @@
        x2="664.68835"
        y2="704.44586"
        gradientUnits="userSpaceOnUse" />
+    <filter
+       id="filter5334"
+       inkscape:label="Drop shadow"
+       width="1.5"
+       height="1.5"
+       x="-.25"
+       y="-.25">
+      <feGaussianBlur
+         id="feGaussianBlur5336"
+         in="SourceAlpha"
+         stdDeviation="1.3"
+         result="blur" />
+      <feColorMatrix
+         id="feColorMatrix5338"
+         result="bluralpha"
+         type="matrix"
+         values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.85 0 " />
+      <feOffset
+         id="feOffset5340"
+         in="bluralpha"
+         dx="1.4"
+         dy="1.5"
+         result="offsetBlur" />
+      <feMerge
+         id="feMerge5342">
+        <feMergeNode
+           id="feMergeNode5344"
+           in="offsetBlur" />
+        <feMergeNode
+           id="feMergeNode5346"
+           in="SourceGraphic" />
+      </feMerge>
+    </filter>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -67,10 +100,10 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="11.98"
-     inkscape:cx="8.2895846"
+     inkscape:cx="13.548349"
      inkscape:cy="23.429181"
      inkscape:document-units="px"
-     inkscape:current-layer="g3034"
+     inkscape:current-layer="g4818"
      showgrid="false"
      fit-margin-top="2"
      fit-margin-left="0"
@@ -89,7 +122,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -101,18 +134,25 @@
     <g
        id="g3034"
        transform="translate(44.740145,-27.387107)">
-      <rect
-         y="734.89209"
-         x="644.9408"
-         height="6.0752325"
-         width="39.825798"
-         id="rect3025"
-         style="fill:url(#linearGradient5499);fill-opacity:1;fill-rule:evenodd;stroke:#638933;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;opacity:1" />
-      <path
-         id="rect3027"
-         d="m 664.79023,701.50088 -10.59375,14.15625 c 3.79253,0.0117 5.09109,0.0133 6.625,0.0312 l 0,13.90625 7.3125,0 0,-13.84375 c 0.79574,-0.009 0.0657,0.008 7.15625,-0.0937 l -10.5,-14.15625 z"
-         style="fill:url(#linearGradient5501);fill-opacity:1;fill-rule:evenodd;stroke:#638933;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1;opacity:1"
-         inkscape:connector-curvature="0" />
+      <g
+         id="g4818">
+        <g
+           id="g5330"
+           style="stroke:#638933;stroke-opacity:1;stroke-width:0.50000000000000000;stroke-miterlimit:4;stroke-dasharray:none;filter:url(#filter5334)">
+          <rect
+             y="734.89209"
+             x="644.9408"
+             height="6.0752325"
+             width="39.825798"
+             id="rect3025"
+             style="fill:url(#linearGradient5499);fill-opacity:1;fill-rule:evenodd;stroke:#638933;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none;opacity:1" />
+          <path
+             id="rect3027"
+             d="m 664.79023,701.50088 -10.59375,14.15625 c 3.79253,0.0117 5.09109,0.0133 6.625,0.0312 l 0,13.90625 7.3125,0 0,-13.84375 c 0.79574,-0.009 0.0657,0.008 7.15625,-0.0937 l -10.5,-14.15625 z"
+             style="fill:url(#linearGradient5501);fill-opacity:1;fill-rule:evenodd;stroke:#638933;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1;opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+             inkscape:connector-curvature="0" />
+        </g>
+      </g>
     </g>
   </g>
 </svg>

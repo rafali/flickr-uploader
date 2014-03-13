@@ -14,6 +14,7 @@ import android.support.v4.app.NotificationCompat.Builder;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
+import com.rafali.flickruploader.Utils.VIEW_SIZE;
 import com.rafali.flickruploader2.R;
 
 public class Notifications {
@@ -70,14 +71,14 @@ public class Notifications {
 			builder.setContentText(image.name);
 			builder.setContentInfo(currentPosition + " / " + total);
 
-			CacheableBitmapDrawable bitmapDrawable = Utils.getCache().getFromMemoryCache(image.path + "_" + R.layout.photo_grid_thumb);
+			CacheableBitmapDrawable bitmapDrawable = Utils.getCache().getFromMemoryCache(image.path + "_" + VIEW_SIZE.small);
 			if (bitmapDrawable == null || bitmapDrawable.getBitmap().isRecycled()) {
 				BackgroundExecutor.execute(new Runnable() {
 					@Override
 					public void run() {
-						final Bitmap bitmap = Utils.getBitmap(image, 1);
+						final Bitmap bitmap = Utils.getBitmap(image, VIEW_SIZE.small);
 						if (bitmap != null) {
-							Utils.getCache().put(image.path + "_" + R.layout.photo_grid_thumb, bitmap);
+							Utils.getCache().put(image.path + "_" + R.layout.grid_thumb, bitmap);
 						}
 					}
 				});

@@ -392,7 +392,6 @@ public class FlickrApi {
 						authentified = false;
 					} else if ("5".equals(fe.getErrorCode())) {
 						addUnsupportedExtension(getExtension(image));
-						Mixpanel.track("UnsupportedFileType", "extension", getExtension(image));
 					}
 				}
 				LOG.error(ToolString.stack2string(e));
