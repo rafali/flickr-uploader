@@ -152,6 +152,30 @@ public final class Utils {
 		return view_size;
 	}
 
+	public static void setViewSize(VIEW_SIZE view_size) {
+		Utils.view_size = view_size;
+		Utils.setStringProperty("view_size", view_size == null ? null : view_size.toString());
+	}
+
+	static VIEW_GROUP_TYPE view_group_type;
+
+	public static VIEW_GROUP_TYPE getViewGroupType() {
+		if (view_group_type == null) {
+			try {
+				view_group_type = VIEW_GROUP_TYPE.valueOf(Utils.getStringProperty("view_group_type", VIEW_GROUP_TYPE.date.toString()));
+			} catch (Throwable e) {
+				LOG.error(ToolString.stack2string(e));
+				view_group_type = VIEW_GROUP_TYPE.date;
+			}
+		}
+		return view_group_type;
+	}
+
+	public static void setViewGroupType(VIEW_GROUP_TYPE view_group_type) {
+		Utils.view_group_type = view_group_type;
+		Utils.setStringProperty("view_group_type", view_group_type == null ? null : view_group_type.toString());
+	}
+
 	static Boolean show_photos;
 
 	public static boolean getShowPhotos() {
@@ -180,13 +204,12 @@ public final class Utils {
 		setBooleanProperty("show_videos", show_videos);
 	}
 
-	public static void setViewSize(VIEW_SIZE view_size) {
-		Utils.view_size = view_size;
-		Utils.setStringProperty("view_size", view_size == null ? null : view_size.toString());
-	}
-
 	enum VIEW_SIZE {
 		small, medium, large
+	}
+
+	enum VIEW_GROUP_TYPE {
+		date, folder
 	}
 
 	public static void dialogPrivacy(final Activity context, final PRIVACY privacy, final Callback<PRIVACY> callback) {
@@ -976,6 +999,7 @@ public final class Utils {
 			}
 		}
 	};
+	
 
 	private static boolean charging = false;
 

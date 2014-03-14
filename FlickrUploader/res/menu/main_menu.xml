@@ -35,6 +35,14 @@
                 android:id="@+id/select_none"
                 android:icon="@drawable/select_none"
                 android:title="Select none"/>
+            <item
+                android:id="@+id/expand_all"
+                android:icon="@drawable/expand_all"
+                android:title="Expand all"/>
+            <item
+                android:id="@+id/collapse_all"
+                android:icon="@drawable/collapse_all"
+                android:title="Collapse all"/>
         </menu>
     </item>
     <item
@@ -65,7 +73,9 @@
                 android:enabled="false"
                 android:title="View size"/>
 
-            <group android:checkableBehavior="single" >
+            <group
+                android:id="@+id/view_size_group"
+                android:checkableBehavior="single" >
                 <item
                     android:id="@+id/view_size_small"
                     android:icon="@drawable/grid_small"
@@ -84,7 +94,9 @@
                 android:enabled="false"
                 android:title="Group by"/>
 
-            <group android:checkableBehavior="single" >
+            <group
+                android:id="@+id/group_by_group"
+                android:checkableBehavior="single" >
                 <item
                     android:id="@+id/group_by_date"
                     android:icon="@drawable/calendar"

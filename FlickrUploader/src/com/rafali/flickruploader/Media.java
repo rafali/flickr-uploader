@@ -38,4 +38,22 @@ public class Media {
 		}
 		return super.equals(o);
 	}
+
+	public String getFolderPath() {
+		int lastIndexOf = path.lastIndexOf("/");
+		if (lastIndexOf > 0) {
+			return path.substring(0, lastIndexOf);
+		}
+		return "/";
+	}
+
+	public String getFolderName() {
+		String folderPath = getFolderPath();
+		int lastIndexOf = folderPath.lastIndexOf("/");
+		if (lastIndexOf > 0) {
+			return folderPath.substring(lastIndexOf);
+		}
+		return "";
+	}
+
 }

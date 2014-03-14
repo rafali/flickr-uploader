@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -68,6 +69,7 @@ import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.Utils.Callback;
 import com.rafali.flickruploader.Utils.MediaType;
+import com.rafali.flickruploader.Utils.VIEW_GROUP_TYPE;
 import com.rafali.flickruploader.Utils.VIEW_SIZE;
 import com.rafali.flickruploader.billing.IabHelper;
 import com.rafali.flickruploader.widget.SlidingDrawer;
@@ -150,7 +152,7 @@ public class FlickrUploaderActivity extends Activity {
 		Toast.makeText(activity, message, Toast.LENGTH_LONG).show();
 	}
 
-	SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+	SimpleDateFormat format = new SimpleDateFormat("MMMM, yyyy", Locale.US);
 
 	List<Object> thumbItems;
 	List<Media> medias;
@@ -166,7 +168,24 @@ public class FlickrUploaderActivity extends Activity {
 			medias.addAll(Utils.loadImages(null, MediaType.video));
 		}
 
-		Collections.sort(medias, Utils.MEDIA_COMPARATOR);
+		if (Utils.getViewGroupType() == VIEW_GROUP_TYPE.date) {
+			Collections.sort(medias, Utils.MEDIA_COMPARATOR);
+		} else {
+			Comparator<Media> folderComparator = new Comparator<Media>() {
+				@Override
+				public int compare(Media arg0, Media arg1) {
+					int compareTo = arg0.getFolderName().compareTo(arg1.getFolderName());
+					if (compareTo == 0) {
+						compareTo = arg0.getFolderPath().compareTo(arg1.getFolderPath());
+						if (compareTo == 0) {
+							return Utils.MEDIA_COMPARATOR.compare(arg0, arg1);
+						}
+					}
+					return compareTo;
+				}
+			};
+			Collections.sort(medias, folderComparator);
+		}
 
 		computeHeaders(true);
 
@@ -232,12 +251,24 @@ public class FlickrUploaderActivity extends Activity {
 		Media[] mediaRow = null;
 		int currentIndex = 0;
 
+		LOG.info("Utils.getViewGroupType() : " + Utils.getViewGroupType());
+
 		for (Media media : medias) {
-			String id = format.format(new Date(media.date));
-			Header header = headerIds.get(id);
-			if (header == null) {
-				header = new Header(id, id);
-				headerIds.put(id, header);
+			Header header;
+			if (Utils.getViewGroupType() == VIEW_GROUP_TYPE.date) {
+				String id = format.format(new Date(media.date));
+				header = headerIds.get(id);
+				if (header == null) {
+					header = new Header(id, id);
+					headerIds.put(id, header);
+				}
+			} else {
+				String id = media.getFolderPath();
+				header = headerIds.get(id);
+				if (header == null) {
+					header = new Header(id, media.getFolderName());
+					headerIds.put(id, header);
+				}
 			}
 
 			if (!headers.contains(header)) {
@@ -262,9 +293,10 @@ public class FlickrUploaderActivity extends Activity {
 			mediaRow[currentIndex] = media;
 			currentIndex++;
 		}
-
-		renderHeader(listView.getFloatingSectionHeader());
-		photoAdapter.notifyDataSetChanged();
+		if (listView != null) {
+			renderHeader(listView.getFloatingSectionHeader());
+			photoAdapter.notifyDataSetChanged();
+		}
 	}
 
 	Map<Media, Header> headerMap;
@@ -1005,6 +1037,7 @@ public class FlickrUploaderActivity extends Activity {
 						computeHeaders(false);
 					}
 				});
+
 				convertView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
 					@Override
 					public void onViewDetachedFromWindow(View v) {
@@ -1180,6 +1213,17 @@ public class FlickrUploaderActivity extends Activity {
 			}
 			menu.findItem(R.id.filter_photos).setChecked(Utils.getShowPhotos());
 			menu.findItem(R.id.filter_videos).setChecked(Utils.getShowVideos());
+			switch (Utils.getViewGroupType()) {
+			case date:
+				menu.findItem(R.id.group_by_date).setChecked(true);
+				break;
+			case folder:
+				menu.findItem(R.id.group_by_folder).setChecked(true);
+				break;
+			default:
+				break;
+
+			}
 		}
 	}
 
@@ -1241,6 +1285,29 @@ public class FlickrUploaderActivity extends Activity {
 			}
 			selectedMedia.clear();
 			refresh(false);
+			break;
+		case R.id.group_by_date:
+			item.setChecked(true);
+			Utils.setViewGroupType(VIEW_GROUP_TYPE.date);
+			load();
+			break;
+		case R.id.group_by_folder:
+			item.setChecked(true);
+			Utils.setViewGroupType(VIEW_GROUP_TYPE.folder);
+			load();
+			break;
+
+		case R.id.expand_all:
+			for (Header header : headers) {
+				header.collapsed = false;
+			}
+			computeHeaders(false);
+			break;
+		case R.id.collapse_all:
+			for (Header header : headers) {
+				header.collapsed = true;
+			}
+			computeHeaders(false);
 			break;
 		}
 
