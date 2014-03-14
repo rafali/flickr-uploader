@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:padding="5dp" >
 
-    <com.rafali.flickruploader.CustomImageView
+    <com.rafali.flickruploader.widget.CustomImageView
         android:id="@+id/image_view"
         android:layout_width="50dp"
         android:layout_height="50dp"

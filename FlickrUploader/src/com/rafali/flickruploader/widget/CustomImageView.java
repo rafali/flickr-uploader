@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.widget;
 
 import org.slf4j.LoggerFactory;
 

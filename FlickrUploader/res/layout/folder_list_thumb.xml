@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content" >
 
-    <com.rafali.flickruploader.CustomImageView
+    <com.rafali.flickruploader.widget.CustomImageView
         android:id="@+id/image_view"
         android:layout_width="60dp"
         android:layout_height="60dp"

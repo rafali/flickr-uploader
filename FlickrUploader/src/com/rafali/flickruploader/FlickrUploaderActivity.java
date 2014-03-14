@@ -70,6 +70,10 @@ import com.rafali.flickruploader.Utils.Callback;
 import com.rafali.flickruploader.Utils.MediaType;
 import com.rafali.flickruploader.Utils.VIEW_SIZE;
 import com.rafali.flickruploader.billing.IabHelper;
+import com.rafali.flickruploader.widget.SlidingDrawer;
+import com.rafali.flickruploader.widget.StickyHeaderListView;
+import com.rafali.flickruploader.widget.StickyHeaderListView.Header;
+import com.rafali.flickruploader.widget.StickyHeaderListView.HeaderAdapter;
 import com.rafali.flickruploader2.R;
 
 @EActivity(R.layout.flickr_uploader_slider_activity)
@@ -164,7 +168,7 @@ public class FlickrUploaderActivity extends Activity {
 
 		Collections.sort(medias, Utils.MEDIA_COMPARATOR);
 
-		computeHeaders();
+		computeHeaders(true);
 
 		init();
 		// test();
@@ -216,10 +220,12 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	@UiThread
-	void computeHeaders() {
+	void computeHeaders(boolean clearHeaders) {
 		headers = new ArrayList<Header>();
-		headerMap = new HashMap<Media, Header>();
-		headerIds = new HashMap<String, Header>();
+		if (clearHeaders) {
+			headerMap = new HashMap<Media, Header>();
+			headerIds = new HashMap<String, Header>();
+		}
 		thumbItems = new ArrayList<Object>();
 		computeNbColumn();
 
@@ -232,12 +238,21 @@ public class FlickrUploaderActivity extends Activity {
 			if (header == null) {
 				header = new Header(id, id);
 				headerIds.put(id, header);
+			}
+
+			if (!headers.contains(header)) {
 				headers.add(header);
 				thumbItems.add(header);
 				mediaRow = null;
+				header.count = 1;
 			} else {
 				header.count++;
 			}
+
+			if (header.collapsed) {
+				continue;
+			}
+
 			headerMap.put(media, header);
 			if (mediaRow == null || currentIndex >= mediaRow.length) {
 				mediaRow = new Media[computed_nb_column];
@@ -248,30 +263,13 @@ public class FlickrUploaderActivity extends Activity {
 			currentIndex++;
 		}
 
+		renderHeader(listView.getFloatingSectionHeader());
 		photoAdapter.notifyDataSetChanged();
 	}
 
 	Map<Media, Header> headerMap;
 	List<Header> headers;
 	Map<String, Header> headerIds;
-
-	class Header {
-		String id;
-		String title;
-		int count = 1;
-		boolean collapsed = false;
-		boolean selected = false;
-
-		Header(String id, String title) {
-			this.id = id;
-			this.title = title;
-		}
-
-		@Override
-		public String toString() {
-			return id + ":" + count + ":" + title + ":collapsed=" + collapsed + ":selected=" + selected;
-		}
-	}
 
 	@Override
 	protected void onStart() {
@@ -296,7 +294,7 @@ public class FlickrUploaderActivity extends Activity {
 	public void onConfigurationChanged(Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
 		LOG.debug("onConfigurationChanged");
-		computeHeaders();
+		computeHeaders(false);
 	}
 
 	public static FlickrUploaderActivity getInstance() {
@@ -341,7 +339,7 @@ public class FlickrUploaderActivity extends Activity {
 	void init() {
 		if (listView == null) {
 			final RelativeLayout relativeLayout = (RelativeLayout) findViewById(R.id.container);
-			listView = (ListView) View.inflate(activity, R.layout.grid, null);
+			listView = (StickyHeaderListView) View.inflate(activity, R.layout.grid, null);
 			listView.setDividerHeight(0);
 			listView.setAdapter(photoAdapter);
 			listView.setFastScrollEnabled(true);
@@ -845,20 +843,24 @@ public class FlickrUploaderActivity extends Activity {
 	// mainTabView.requestLayout();
 	// }
 
-	void renderHeaderSelection(View headerView) {
-		if (headerView != null && headerView.getTag() instanceof Header) {
-			Header header = (Header) headerView.getTag();
+	void renderHeader(View headerView) {
+		if (headerView != null && headerView.getTag(Header.class.hashCode()) instanceof Header) {
+			Header header = (Header) headerView.getTag(Header.class.hashCode());
 			// LOG.debug("rendering : " + header + " on " + headerView);
 			TextView count = (TextView) headerView.getTag(R.id.count);
 			count.setCompoundDrawablesWithIntrinsicBounds(0, 0, header.selected ? R.drawable.checkbox_on : R.drawable.checkbox_off, 0);
 			count.setTextColor(getResources().getColor(header.selected ? R.color.litegray : R.color.gray));
+			count.setText("" + header.count);
 			// checkbox.setText("" + header.selected);
+			TextView title = (TextView) headerView.getTag(R.id.title);
+			title.setCompoundDrawablesWithIntrinsicBounds(header.collapsed ? R.drawable.expand_off : R.drawable.expand_on, 0, 0, 0);
+			title.setText(header.title);
 		}
 	}
 
 	Set<Media> selectedMedia = new HashSet<Media>();
 
-	class PhotoAdapter extends BaseAdapter {
+	class PhotoAdapter extends BaseAdapter implements HeaderAdapter {
 
 		public PhotoAdapter() {
 		}
@@ -902,7 +904,7 @@ public class FlickrUploaderActivity extends Activity {
 			} else {
 				final Media[] mediaRow = (Media[]) item;
 				LinearLayout linearLayout;
-				if (convertView == null) {
+				if (convertView == null || !(convertView instanceof LinearLayout)) {
 					linearLayout = new LinearLayout(activity);
 					linearLayout.setOrientation(LinearLayout.HORIZONTAL);
 				} else {
@@ -971,6 +973,7 @@ public class FlickrUploaderActivity extends Activity {
 			final TextView count;
 			if (convertView == null) {
 				convertView = View.inflate(activity, R.layout.grid_header, null);
+				convertView.setTag(Header.class);
 				convertView.findViewById(R.id.count).setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
@@ -997,38 +1000,9 @@ public class FlickrUploaderActivity extends Activity {
 				convertView.findViewById(R.id.expand).setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
-						// final Header header = (Header) title.getTag();
-						// header.collapsed = !header.collapsed;
-						// photos = new ArrayList<Media>(medias);
-						// Iterator<Media> it = photos.iterator();
-						// while (it.hasNext()) {
-						// Media media = it.next();
-						// if (headerMap.get(media).collapsed) {
-						// it.remove();
-						// }
-						// }
-						// photoAdapter.notifyDataSetChanged();
-						//
-						// if (header.collapsed) {
-						// // hack to make sure the collapsed do not disappear
-						// mainTabView.postDelayed(new Runnable() {
-						// @Override
-						// public void run() {
-						// int realIndex = getRealIndex(header);
-						// if (mainTabView.getFirstVisiblePosition() >
-						// realIndex) {
-						// mainTabView.setSelection(realIndex);
-						// }
-						// }
-						// }, 100);
-						// }
-					}
-				});
-				title.setOnClickListener(new View.OnClickListener() {
-					@Override
-					public void onClick(View v) {
-						Header header = (Header) v.getTag();
-						listView.setSelection(getRealIndex(header));
+						final Header header = (Header) title.getTag();
+						header.collapsed = !header.collapsed;
+						computeHeaders(false);
 					}
 				});
 				convertView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
@@ -1040,7 +1014,7 @@ public class FlickrUploaderActivity extends Activity {
 					@Override
 					public void onViewAttachedToWindow(View v) {
 						attachedHeaderViews.add(v);
-						renderHeaderSelection(v);
+						renderHeader(v);
 					}
 				});
 			} else {
@@ -1048,43 +1022,28 @@ public class FlickrUploaderActivity extends Activity {
 				count = (TextView) convertView.getTag(R.id.count);
 			}
 			Header header = (Header) thumbItems.get(position);
-			convertView.setTag(header);
+			convertView.setTag(Header.class.hashCode(), header);
 			count.setTag(header);
 			title.setTag(header);
 
-			title.setText(header.title);
-			count.setText("" + header.count);
-			title.setCompoundDrawablesWithIntrinsicBounds(header.collapsed ? R.drawable.expand_off : R.drawable.expand_on, 0, 0, 0);
-			renderHeaderSelection(convertView);
+			renderHeader(convertView);
 
 			// LOG.debug(header + " : convertView = " + convertView);
 
 			return convertView;
 		}
 
-		public int getCountForHeader(int headerPosition) {
-			Header header = headers.get(headerPosition);
-			if (header.collapsed)
-				return 0;
-			return header.count;
-		}
-
-		public int getNumHeaders() {
-			return headers.size();
-		}
-	}
-
-	int getRealIndex(Header header) {
-		int nbColumn = 1;// mainTabView.getNumColumns();
-		int realIndex = 0;
-		for (Header currentHeader : headers) {
-			if (currentHeader == header) {
-				break;
+		@Override
+		public int getHeaderPosition(int firstVisibleItem) {
+			Object thumbObject = thumbItems.get(firstVisibleItem);
+			if (thumbObject instanceof Header) {
+				return firstVisibleItem;
 			} else {
-				realIndex += (int) ((Math.ceil(Double.valueOf(currentHeader.collapsed ? 0 : currentHeader.count) / nbColumn) + 1) * nbColumn);
+				Media[] mediaRow = (Media[]) thumbObject;
+				return thumbItems.indexOf(headerMap.get(mediaRow[0]));
 			}
 		}
-		return realIndex;
+
 	}
 
 	Set<View> attachedHeaderViews = new HashSet<View>();
@@ -1175,7 +1134,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	private Menu menu;
 
-	private ListView listView;
+	private StickyHeaderListView listView;
 
 	private boolean paused = false;
 
@@ -1246,17 +1205,17 @@ public class FlickrUploaderActivity extends Activity {
 			break;
 		case R.id.view_size_small:
 			Utils.setViewSize(VIEW_SIZE.small);
-			computeHeaders();
+			computeHeaders(false);
 			item.setChecked(true);
 			break;
 		case R.id.view_size_medium:
 			Utils.setViewSize(VIEW_SIZE.medium);
-			computeHeaders();
+			computeHeaders(false);
 			item.setChecked(true);
 			break;
 		case R.id.view_size_large:
 			Utils.setViewSize(VIEW_SIZE.large);
-			computeHeaders();
+			computeHeaders(false);
 			item.setChecked(true);
 			break;
 		case R.id.filter_photos:
@@ -1269,18 +1228,23 @@ public class FlickrUploaderActivity extends Activity {
 			Utils.setShowVideos(item.isChecked());
 			load();
 			break;
-
+		case R.id.select_all:
+			for (Header header : headers) {
+				header.selected = true;
+			}
+			selectedMedia.addAll(medias);
+			refresh(false);
+			break;
+		case R.id.select_none:
+			for (Header header : headers) {
+				header.selected = false;
+			}
+			selectedMedia.clear();
+			refresh(false);
+			break;
 		}
 
 		return (super.onOptionsItemSelected(item));
-	}
-
-	private String getItemName(MenuItem item) {
-		try {
-			return getResources().getResourceEntryName(item.getItemId());
-		} catch (Throwable e) {
-		}
-		return "unknown";
 	}
 
 	@UiThread
@@ -1365,19 +1329,17 @@ public class FlickrUploaderActivity extends Activity {
 				int childCount = listView.getChildCount();
 				for (int i = 0; i < childCount; i++) {
 					View convertView = listView.getChildAt(i);
-					if (convertView.getTag() instanceof Media) {
-						renderImageView(convertView, false);
+					if (convertView instanceof LinearLayout && convertView.getTag() instanceof Media[]) {
+						LinearLayout linearLayout = (LinearLayout) convertView;
+						for (int j = 0; j < linearLayout.getChildCount(); j++) {
+							renderImageView(linearLayout.getChildAt(j), false);
+						}
 					}
 				}
-				// mainTabView.postDelayed(new Runnable() {
-				// @Override
-				// public void run() {
-				// mainTabView.requestLayout();
-				// }
-				// }, 1000);
 				for (View headerView : attachedHeaderViews) {
-					renderHeaderSelection(headerView);
+					renderHeader(headerView);
 				}
+				renderHeader(listView.getFloatingSectionHeader());
 
 			}
 		}

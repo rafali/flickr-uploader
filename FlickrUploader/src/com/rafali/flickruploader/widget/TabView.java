@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.widget;
 
 import java.util.Locale;
 import android.content.Context;
@@ -38,7 +38,7 @@ public abstract class TabView extends LinearLayout implements ViewPager.OnPageCh
 
 	protected ViewPager pager;
 
-	final View[] gridViewsArray;
+	protected final View[] gridViewsArray;
 
 	private FeedPagerAdapter feedPagerAdapter;
 

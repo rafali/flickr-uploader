@@ -34,6 +34,7 @@ import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.UploadService.UploadProgressListener;
 import com.rafali.flickruploader.Utils.VIEW_SIZE;
+import com.rafali.flickruploader.widget.TabView;
 import com.rafali.flickruploader2.R;
 
 @EViewGroup(R.layout.drawer_content)

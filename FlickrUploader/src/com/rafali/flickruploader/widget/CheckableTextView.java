@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.widget;
 
 /*******************************************************************************
  * Copyright 2013 Chris Banes.

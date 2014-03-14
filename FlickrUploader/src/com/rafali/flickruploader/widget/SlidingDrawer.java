@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.widget;
 
 /*
  * Copyright (C) 2008 The Android Open Source Project
