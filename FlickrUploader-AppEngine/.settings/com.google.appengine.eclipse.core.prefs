@@ -3,5 +3,7 @@ filesCopiedToWebInfLib=appengine-api-1.0-sdk-1.9.0.jar|appengine-api-labs.jar|ap
 gaeDatanucleusVersion=v1
 gaeDeployDialogSettings=
 gaeHrdEnabled=true
+gaeLaunchAppInBrowser=true
 googleCloudSqlEnabled=false
 localDevMySqlEnabled=true
+validationExclusions=src/com/rafali/flickruploader/SecurePrompt.java

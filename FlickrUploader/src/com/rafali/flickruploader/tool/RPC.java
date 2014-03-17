@@ -186,7 +186,7 @@ public final class RPC {
 
 	private static String JSESSIONID;
 
-	public static String makeRequest(HttpUriRequest request, boolean isPictarineRpc) throws IOException {
+	public static String makeRequest(HttpUriRequest request, boolean isRpc) throws IOException {
 		HttpResponse response;
 
 		boolean retry = true;
@@ -194,14 +194,14 @@ public final class RPC {
 		int executionCount = 0;
 		while (retry) {
 			try {
-				if (isPictarineRpc) {
+				if (isRpc) {
 					response = httpClient.execute(request, rafaliHttpContext);
 				} else {
 					response = httpClient.execute(request);
 				}
 
 				String responseStr = null;
-				if (isPictarineRpc) {
+				if (isRpc) {
 					for (Cookie cookie : httpClient.getCookieStore().getCookies()) {
 						if ("JSESSIONID".equals(cookie.getName())) {
 							JSESSIONID = cookie.getValue();
@@ -239,13 +239,13 @@ public final class RPC {
 				return responseStr;
 			} catch (IOException e) {
 				cause = e;
-				retry = retryRequest(request, cause, ++executionCount, isPictarineRpc ? rafaliHttpContext : null);
+				retry = retryRequest(request, cause, ++executionCount, isRpc ? rafaliHttpContext : null);
 			} catch (NullPointerException e) {
 				// there's a bug in HttpClient 4.0.x that on some occasions causes
 				// DefaultRequestExecutor to throw an NPE, see
 				// http://code.google.com/p/android/issues/detail?id=5255
 				cause = new IOException("NPE in HttpClient" + e.getMessage());
-				retry = retryRequest(request, cause, ++executionCount, isPictarineRpc ? rafaliHttpContext : null);
+				retry = retryRequest(request, cause, ++executionCount, isRpc ? rafaliHttpContext : null);
 			}
 		}
 
@@ -314,17 +314,6 @@ public final class RPC {
 			Utils.toast("Network error, retrying...");
 		}
 	}
-
-	// private static String getHttp(String url, boolean isPictarineRpc) {
-	// String responseStr = null;
-	// try {
-	// HttpGet get = new HttpGet(url);
-	// responseStr = makeRequest(get, isPictarineRpc);
-	// } catch (Throwable e) {
-	// LOG.error(ToolString.stack2string(e));
-	// }
-	// return responseStr;
-	// }
 
 	private static final AndroidRpcInterface rpcService = (AndroidRpcInterface) Proxy.newProxyInstance(RpcHandler.class.getClassLoader(), new Class<?>[] { AndroidRpcInterface.class },
 			new RpcHandler());

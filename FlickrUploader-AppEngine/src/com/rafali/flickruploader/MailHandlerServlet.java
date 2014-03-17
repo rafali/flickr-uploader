@@ -77,7 +77,7 @@ public class MailHandlerServlet extends HttpServlet {
 							logger.debug("content : " + content);
 							String recipient = message.getAllRecipients()[0].toString();
 							if (recipient.contains("coupon100@")) {
-								setPremium(email, true);
+								setPremium(email, true, false);
 								content = "Awesome! I've just upgraded your account (" + email + ") to Premium.\n";
 							} else if (recipient.contains("coupon50@")) {
 								setDiscount(email, premiumSkuCoupon50);
@@ -111,7 +111,7 @@ public class MailHandlerServlet extends HttpServlet {
 		}
 	}
 
-	static void setPremium(String email, boolean premium) {
+	static void setPremium(String email, boolean premium, boolean purchased) {
 		logger.debug("email:" + email + ", premium:" + premium);
 		PersistenceManager pm = PMF.get().getPersistenceManager();
 		try {
@@ -123,10 +123,12 @@ public class MailHandlerServlet extends HttpServlet {
 				logger.debug("no coupon with email = " + email + ", creating one");
 				Coupon coupon = new Coupon(email);
 				coupon.setPremium(premium);
+				coupon.setPurchased(purchased);
 				pm.makePersistent(coupon);
 			} else {
 				for (Coupon coupon : results) {
 					coupon.setPremium(premium);
+					coupon.setPurchased(purchased);
 					logger.debug("updated : " + coupon);
 				}
 			}

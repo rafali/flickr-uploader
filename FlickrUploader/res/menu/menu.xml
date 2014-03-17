@@ -18,7 +18,8 @@
             <item
                 android:id="@+id/upload_forbid"
                 android:icon="@drawable/forbidden"
-                android:title="Never upload"/>
+                android:title="Never upload"
+                android:visible="false"/>
         </menu>
     </item>
     <item

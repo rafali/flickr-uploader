@@ -9,7 +9,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -36,7 +35,6 @@ import android.graphics.Point;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore.Images;
-import android.support.v4.app.ShareCompat;
 import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -50,12 +48,10 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
-import android.widget.ShareActionProvider;
 import android.widget.TextView;
 
 import com.google.analytics.tracking.android.EasyTracker;
 import com.google.common.base.Functions;
-import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
@@ -91,8 +87,6 @@ import com.rafali.flickruploader2.R;
 @EActivity(R.layout.flickr_uploader_slider_activity)
 public class FlickrUploaderActivity extends Activity {
 
-	private static final int MAX_LINK_SHARE = 5;
-
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrUploaderActivity.class);
 
 	private static FlickrUploaderActivity instance;
@@ -114,7 +108,7 @@ public class FlickrUploaderActivity extends Activity {
 		Utils.checkPremium(false, new Utils.Callback<Boolean>() {
 			@Override
 			public void onResult(Boolean result) {
-				renderPremium();
+
 			}
 		});
 		handleIntent(getIntent());
@@ -168,7 +162,6 @@ public class FlickrUploaderActivity extends Activity {
 
 	@Background
 	void load() {
-
 		medias = new ArrayList<Media>();
 		if (Utils.getShowPhotos()) {
 			medias.addAll(Utils.loadImages(null, MediaType.photo));
@@ -404,7 +397,9 @@ public class FlickrUploaderActivity extends Activity {
 	void afterViews() {
 		UploadService.register(drawerHandleView);
 		UploadService.register(drawerContentView);
-		renderPremium();
+		getActionBar().setTitle(null);
+		getActionBar().setIcon(null);
+		getActionBar().setDisplayShowHomeEnabled(false);
 	}
 
 	void computeNbColumn() {
@@ -438,190 +433,6 @@ public class FlickrUploaderActivity extends Activity {
 	int computed_req_height = 100;
 	int computed_req_width = 100;
 	int computed_nb_column = 2;
-
-	private MenuItem shareItem;
-	private ShareActionProvider shareActionProvider;
-
-	@UiThread(delay = 200)
-	void setShareIntent() {
-		if (!selectedMedia.isEmpty() && shareItem != null) {
-			Map<String, String> shortUrls = new LinkedHashMap<String, String>();
-			for (Media image : selectedMedia) {
-				String photoId = FlickrApi.getPhotoId(image);
-				if (photoId != null) {
-					shortUrls.put(photoId, FlickrApi.getShortUrl(photoId));
-				}
-				if (shortUrls.size() >= MAX_LINK_SHARE)
-					break;
-			}
-			boolean uploadedPhotosSelected = !shortUrls.isEmpty();
-			shareItem.setVisible(uploadedPhotosSelected);
-			privacyItem.setVisible(uploadedPhotosSelected);
-			if (uploadedPhotosSelected) {
-				Intent shareIntent = ShareCompat.IntentBuilder.from(activity).setType("text/*").setText(Joiner.on(" ").join(shortUrls.values())).getIntent();
-				shareIntent.putExtra("photoIds", Joiner.on(",").join(shortUrls.keySet()));
-				shareActionProvider.setShareIntent(shareIntent);
-			}
-		}
-	}
-
-	private MenuItem privacyItem;
-
-	// final ActionMode.Callback mCallback = new ActionMode.Callback() {
-	//
-	// /**
-	// * Invoked whenever the action mode is shown. This is invoked
-	// * immediately after onCreateActionMode
-	// */
-	// @Override
-	// public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-	// return false;
-	// }
-	//
-	// /** Called when user exits action mode */
-	// @Override
-	// public void onDestroyActionMode(ActionMode mode) {
-	// mMode = null;
-	// selectedMedia.clear();
-	// for (Header header : headers) {
-	// header.selected = false;
-	// }
-	// renderSelection();
-	// }
-	//
-	// /**
-	// * This is called when the action mode is created. This is called by
-	// * startActionMode()
-	// */
-	// @Override
-	// public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-	// getMenuInflater().inflate(R.menu.context_menu, menu);
-	// shareItem = menu.findItem(R.id.menu_item_share);
-	// // shareItem.setVisible(!isFolderTab());
-	// privacyItem = menu.findItem(R.id.menu_item_privacy);
-	//
-	// shareActionProvider = (ShareActionProvider)
-	// shareItem.getActionProvider();
-	// shareActionProvider.setOnShareTargetSelectedListener(new
-	// ShareActionProvider.OnShareTargetSelectedListener() {
-	// @Override
-	// public boolean onShareTargetSelected(ShareActionProvider
-	// shareActionProvider, Intent intent) {
-	// LOG.debug("intent : " + intent);
-	// if (intent.hasExtra("photoIds")) {
-	// List<String> privatePhotoIds = new ArrayList<String>();
-	// String[] photoIds = intent.getStringExtra("photoIds").split(",");
-	// for (String photoId : photoIds) {
-	// if (FlickrApi.getPrivacy(photoId) != PRIVACY.PUBLIC) {
-	// privatePhotoIds.add(photoId);
-	// }
-	// }
-	// if (privatePhotoIds.size() > 0) {
-	// FlickrApi.setPrivacy(PRIVACY.PUBLIC, privatePhotoIds);
-	// }
-	// Mixpanel.increment("photos_shared", photoIds.length);
-	// }
-	// return false;
-	// }
-	// });
-	// return true;
-	// }
-	//
-	// /** This is called when an item in the context menu is selected */
-	// @Override
-	// public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-	// Mixpanel.track("UI actionMode " + getItemName(item));
-	// switch (item.getItemId()) {
-	// case R.id.menu_item_select_all: {
-	// EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_select_all",
-	// 0L);
-	// selectedMedia.clear();
-	// selectedMedia.addAll(photos);
-	//
-	// renderSelection();
-	// }
-	// break;
-	// case R.id.menu_item_privacy: {
-	// EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_privacy",
-	// 0L);
-	// Collection<Media> selectedImages;
-	// selectedImages = selectedMedia;
-	// PRIVACY privacy = null;
-	// for (Media image : selectedImages) {
-	// if (privacy == null) {
-	// privacy = FlickrApi.getPrivacy(image);
-	// } else {
-	// if (privacy != FlickrApi.getPrivacy(image)) {
-	// privacy = null;
-	// break;
-	// }
-	// }
-	// }
-	// Utils.dialogPrivacy(activity, privacy, new
-	// Utils.Callback<FlickrApi.PRIVACY>() {
-	// @Override
-	// public void onResult(PRIVACY result) {
-	// if (result != null) {
-	// List<String> photoIds = new ArrayList<String>();
-	// for (Media image : selectedMedia) {
-	// String photoId = FlickrApi.getPhotoId(image);
-	// if (photoId != null && FlickrApi.getPrivacy(photoId) != result) {
-	// photoIds.add(photoId);
-	// }
-	// }
-	// if (!photoIds.isEmpty()) {
-	// FlickrApi.setPrivacy(result, photoIds);
-	// }
-	// }
-	// }
-	// });
-	// }
-	// break;
-	// case R.id.menu_item_upload: {
-	// EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_upload",
-	// 0L);
-	// final List<Media> selection = new ArrayList<Media>(selectedMedia);
-	// if (FlickrApi.isAuthentified()) {
-	// // foldersMap.clear();
-	// BackgroundExecutor.execute(new Runnable() {
-	// @Override
-	// public void run() {
-	// confirmUpload(selection, false);
-	// }
-	// });
-	// } else {
-	// // Notifications.notify(40, selection.get(0), 1, 1);
-	// Utils.confirmSignIn(activity);
-	// }
-	// }
-	// break;
-	// case R.id.menu_item_dequeue: {
-	// EasyTracker.getTracker().sendEvent("ui", "click", "menu_item_dequeue",
-	// 0L);
-	// final List<Media> selection = new ArrayList<Media>(selectedMedia);
-	// BackgroundExecutor.execute(new Runnable() {
-	// @Override
-	// public void run() {
-	// // if (isFolderTab()) {
-	// // for (Media image : selection) {
-	// // Folder folder = foldersMap.get(image);
-	// // UploadService.dequeue(folder.images);
-	// // }
-	// // } else {
-	// UploadService.dequeue(selection);
-	// // }
-	// refresh(false);
-	// }
-	// });
-	// mMode.finish();
-	// }
-	// break;
-	//
-	// }
-	// return false;
-	// }
-	//
-	// };
 
 	@UiThread
 	void confirmUpload() {
@@ -803,26 +614,6 @@ public class FlickrUploaderActivity extends Activity {
 			drawerContentView.setCurrentTab(DrawerContentView.TAB_QUEUED_INDEX);
 		}
 	}
-
-	// @UiThread
-	// void renderThumbs() {
-	// int childCount = mainTabView.getChildCount();
-	// for (int i = 0; i < childCount; i++) {
-	// View view = mainTabView.getChildAt(i);
-	// View check_image = view.findViewById(R.id.check_image);
-	// if (check_image != null) {
-	// view.setLayoutParams(new
-	// GridView.LayoutParams(GridView.LayoutParams.MATCH_PARENT,
-	// computed_req_height));
-	// check_image.setVisibility(selectedMedia.contains(view.getTag()) ?
-	// View.VISIBLE : View.GONE);
-	// }
-	// }
-	// for (View headerView : attachedHeaderViews) {
-	// renderHeaderSelection(headerView);
-	// }
-	// mainTabView.requestLayout();
-	// }
 
 	void renderHeader(View headerView) {
 		if (headerView != null && headerView.getTag(Header.class.hashCode()) instanceof Header) {
@@ -1183,7 +974,7 @@ public class FlickrUploaderActivity extends Activity {
 			Utils.showPremiumDialog(activity, new Utils.Callback<Boolean>() {
 				@Override
 				public void onResult(Boolean result) {
-					renderPremium();
+
 				}
 			});
 			break;
@@ -1245,7 +1036,6 @@ public class FlickrUploaderActivity extends Activity {
 			Utils.setViewGroupType(VIEW_GROUP_TYPE.folder);
 			load();
 			break;
-
 		case R.id.expand_all:
 			for (Header header : headers) {
 				header.collapsed = false;
@@ -1265,6 +1055,14 @@ public class FlickrUploaderActivity extends Activity {
 				confirmUpload();
 			}
 			break;
+		case R.id.upload_remove:
+			if (selectedMedia.isEmpty()) {
+				Utils.toast("Select at least one file");
+			} else {
+				UploadService.dequeue(selectedMedia);
+				clearSelection();
+			}
+			break;
 		}
 
 		return (super.onOptionsItemSelected(item));
@@ -1272,11 +1070,12 @@ public class FlickrUploaderActivity extends Activity {
 
 	@Override
 	protected void onResume() {
+		if (paused) {
+			refresh(true);
+		}
 		paused = false;
 		super.onResume();
-		refresh(false);
 		UploadService.wake();
-		renderPremium();
 		drawerHandleView.onResume();
 	}
 
@@ -1312,7 +1111,7 @@ public class FlickrUploaderActivity extends Activity {
 		if (IabHelper.get(false) != null && IabHelper.get(false).handleActivityResult(requestCode, resultCode, data)) {
 			return;
 		}
-		if (resultCode == WebAuthActivity.RESULT_CODE_AUTH) {
+		if (resultCode == FlickrWebAuthActivity.RESULT_CODE_AUTH) {
 			if (FlickrApi.isAuthentified()) {
 				confirmSync();
 			}
@@ -1342,8 +1141,12 @@ public class FlickrUploaderActivity extends Activity {
 					renderHeader(headerView);
 				}
 				renderHeader(listView.getFloatingSectionHeader());
-
 			}
+		}
+		if (selectedMedia.isEmpty()) {
+			getActionBar().setTitle(null);
+		} else {
+			getActionBar().setTitle("" + selectedMedia.size());
 		}
 	}
 
@@ -1377,33 +1180,6 @@ public class FlickrUploaderActivity extends Activity {
 
 	public boolean isPaused() {
 		return paused;
-	}
-
-	@UiThread
-	void renderPremium() {
-		if (!destroyed) {
-			getActionBar().setSubtitle(null);
-			getActionBar().setTitle(null);
-			getActionBar().setIcon(null);
-			getActionBar().setDisplayShowHomeEnabled(false);
-			// if (Utils.isPremium()) {
-			// getActionBar().setSubtitle(null);
-			// } else {
-			// if (Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false) ||
-			// Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
-			// if (Utils.isTrial()) {
-			// getActionBar().setSubtitle("Auto-Upload Trial");
-			// } else {
-			// getActionBar().setSubtitle("Trial Expired");
-			// }
-			// } else {
-			// getActionBar().setSubtitle(null);
-			// if (!Utils.isTrial()) {
-			// // FIXME
-			// }
-			// }
-			// }
-		}
 	}
 
 }

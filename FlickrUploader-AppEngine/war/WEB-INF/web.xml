@@ -40,6 +40,14 @@
 		<servlet-name>RemoteApiServlet</servlet-name>
 		<url-pattern>/remote_api</url-pattern>
 	</servlet-mapping>
+	<servlet>
+		<servlet-name>FlickrAuth</servlet-name>
+		<servlet-class>com.rafali.flickruploader.FlickrAuth</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>FlickrAuth</servlet-name>
+		<url-pattern>/flickr</url-pattern>
+	</servlet-mapping>
 
 	<servlet>
 		<servlet-name>mailhandler</servlet-name>

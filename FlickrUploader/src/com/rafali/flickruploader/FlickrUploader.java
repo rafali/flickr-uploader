@@ -22,9 +22,6 @@ import static org.acra.ReportField.USER_CRASH_DATE;
 
 import java.io.File;
 import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.acra.ACRA;
 import org.acra.ReportingInteractionMode;
@@ -48,16 +45,12 @@ import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
-import com.rafali.flickruploader.api.FlickrApi;
-import com.rafali.flickruploader.tool.RPC;
 import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader2.R;
 
-@ReportsCrashes(formUri = "http://ra-fa-li.appspot.com/androidCrashReport", formKey = "", mode = ReportingInteractionMode.TOAST, forceCloseDialogAfterToast = false, // optional,
-// default
-// false
-resToastText = R.string.crash_toast_text, customReportContent = { REPORT_ID, APP_VERSION_CODE, APP_VERSION_NAME, PHONE_MODEL, ANDROID_VERSION, BUILD, BRAND, PRODUCT, TOTAL_MEM_SIZE,
-		AVAILABLE_MEM_SIZE, STACK_TRACE, USER_APP_START_DATE, USER_CRASH_DATE, DEVICE_FEATURES, ENVIRONMENT, SETTINGS_SYSTEM, SETTINGS_SECURE, THREAD_DETAILS, APPLICATION_LOG })
+@ReportsCrashes(formUri = "http://ra-fa-li.appspot.com/androidCrashReport", formKey = "", mode = ReportingInteractionMode.TOAST, forceCloseDialogAfterToast = false, resToastText = R.string.crash_toast_text, customReportContent = {
+		REPORT_ID, APP_VERSION_CODE, APP_VERSION_NAME, PHONE_MODEL, ANDROID_VERSION, BUILD, BRAND, PRODUCT, TOTAL_MEM_SIZE, AVAILABLE_MEM_SIZE, STACK_TRACE, USER_APP_START_DATE, USER_CRASH_DATE,
+		DEVICE_FEATURES, ENVIRONMENT, SETTINGS_SYSTEM, SETTINGS_SECURE, THREAD_DETAILS, APPLICATION_LOG })
 public class FlickrUploader extends Application {
 
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrUploader.class);
@@ -80,44 +73,6 @@ public class FlickrUploader extends Application {
 						if (versionCode == 0) {
 							Utils.setLongProperty(STR.lastNewFilesCheckNotEmpty, System.currentTimeMillis());
 						} else {
-							if (versionCode < 34) {
-								try {
-									Utils.setLongProperty(STR.lastNewFilesCheckNotEmpty, System.currentTimeMillis());
-									if (ToolString.isNotBlank(Utils.getStringProperty(STR.accessToken))) {
-										RPC.getRpcService().saveFlickrData(Utils.createAndroidDevice(), Utils.getStringProperty(STR.userId), Utils.getStringProperty(STR.userName),
-												Utils.getStringProperty(STR.accessToken), Utils.getStringProperty(STR.accessTokenSecret));
-									}
-								} catch (Throwable e) {
-									LOG.error(ToolString.stack2string(e));
-								}
-							}
-							if (versionCode < 35) {
-								try {
-									List<String> syncedFolder = Utils.getStringList("syncedFolder", true);
-									Map<String, String> folderSetNames = new HashMap<String, String>();
-									if (syncedFolder != null) {
-										Map<String, String> folderSets = Utils.getMapProperty("folderSets");
-										Map<String, String> photoSets = null;
-										if (!folderSets.isEmpty()) {
-											photoSets = FlickrApi.getPhotoSets(true);
-										}
-										for (String path : syncedFolder) {
-											String uploadSetTitle = STR.instantUpload;
-											String setId = folderSets.get(path);
-											if (ToolString.isNotBlank(setId)) {
-												String setTitle = photoSets.get(setId);
-												if (ToolString.isNotBlank(setTitle)) {
-													uploadSetTitle = setTitle;
-												}
-											}
-											folderSetNames.put(path, uploadSetTitle);
-										}
-										Utils.setMapProperty("folderSetNames", folderSetNames);
-									}
-								} catch (Throwable e) {
-									LOG.error(ToolString.stack2string(e));
-								}
-							}
 						}
 						Utils.saveAndroidDevice();
 						Utils.setLongProperty(STR.versionCode, (long) Config.VERSION);
@@ -214,7 +169,7 @@ public class FlickrUploader extends Application {
 			appender.stop();
 			appender.start();
 		} catch (Throwable e) {
-			Log.e("Pictarine", e.getMessage(), e);
+			Log.e("Flickr Uploader", e.getMessage(), e);
 		}
 	}
 
@@ -236,7 +191,7 @@ public class FlickrUploader extends Application {
 				}
 			}
 		} catch (Throwable e) {
-			Log.e("Pictarine", e.getMessage(), e);
+			Log.e("Flickr Uploader", e.getMessage(), e);
 		}
 	}
 

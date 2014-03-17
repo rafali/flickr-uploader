@@ -24,6 +24,9 @@ public class Coupon implements Serializable {
 	private Boolean premium;
 
 	@Persistent
+	private Boolean purchased;
+
+	@Persistent
 	private String sku;
 
 	@Persistent
@@ -47,7 +50,7 @@ public class Coupon implements Serializable {
 
 	@Override
 	public String toString() {
-		return email + "-" + dateCreation + " : premium=" + premium + " : sku=" + getSku();
+		return email + "-" + dateCreation + " : premium=" + premium+ " : purchased=" + purchased + " : sku=" + getSku();
 	}
 
 	public void setDateCreation(Date dateCreation) {
@@ -74,5 +77,15 @@ public class Coupon implements Serializable {
 
 	public void setSku(String sku) {
 		this.sku = sku;
+	}
+
+	public boolean getPurchased() {
+		if (purchased == null)
+			return false;
+		return purchased;
+	}
+
+	public void setPurchased(boolean purchased) {
+		this.purchased = purchased;
 	}
 }

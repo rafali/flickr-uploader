@@ -101,9 +101,10 @@
             android:label="Advanced Preferences"
             android:logo="@drawable/preferences" />
         <activity
-            android:name="com.rafali.flickruploader.ui.activity.WebAuthActivity_"
+            android:name="com.rafali.flickruploader.ui.activity.FlickrWebAuthActivity_"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:icon="@drawable/empty_shape"
+            android:label="Flickr Authentication"
+            android:logo="@drawable/upload"
             android:windowSoftInputMode="adjustResize" />
         <activity
             android:name="com.rafali.flickruploader.ui.activity.AutoUploadFoldersActivity_"

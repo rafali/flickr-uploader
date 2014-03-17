@@ -31,7 +31,7 @@ import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.ui.activity.AutoUploadFoldersActivity_;
-import com.rafali.flickruploader.ui.activity.WebAuthActivity_;
+import com.rafali.flickruploader.ui.activity.FlickrWebAuthActivity_;
 import com.rafali.flickruploader.api.FlickrApi;
 import com.rafali.flickruploader.api.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.billing.IabHelper;
@@ -85,7 +85,7 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 								}
 							}).setNegativeButton("Cancel", null).show();
 				} else {
-					WebAuthActivity_.intent(activity).start();
+					FlickrWebAuthActivity_.intent(activity).start();
 				}
 				return false;
 			}
@@ -126,13 +126,6 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 			}
 		});
 
-		findPreference("pictarine").setOnPreferenceClickListener(new OnPreferenceClickListener() {
-			@Override
-			public boolean onPreferenceClick(Preference preference) {
-				activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.pictarine.android")));
-				return false;
-			}
-		});
 		findPreference("faq").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {

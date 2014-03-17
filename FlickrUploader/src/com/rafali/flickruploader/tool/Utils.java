@@ -72,7 +72,7 @@ import com.rafali.common.ToolString;
 import com.rafali.flickruploader.AndroidDevice;
 import com.rafali.flickruploader.Config;
 import com.rafali.flickruploader.FlickrUploader;
-import com.rafali.flickruploader.ui.activity.WebAuthActivity_;
+import com.rafali.flickruploader.ui.activity.FlickrWebAuthActivity_;
 import com.rafali.flickruploader.api.FlickrApi;
 import com.rafali.flickruploader.api.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.billing.IabException;
@@ -101,7 +101,7 @@ public final class Utils {
 						.setPositiveButton("Sign in now", new DialogInterface.OnClickListener() {
 							@Override
 							public void onClick(DialogInterface dialog, int which) {
-								context.startActivityForResult(WebAuthActivity_.intent(context).get(), 14);
+								context.startActivityForResult(FlickrWebAuthActivity_.intent(context).get(), 14);
 							}
 						}).setNegativeButton("Later", null).setCancelable(false).show();
 				setButtonSize(alertDialog);
@@ -1064,7 +1064,7 @@ public final class Utils {
 		try {
 			long lastServerDeviceSaved = Utils.getLongProperty(STR.lastServerDeviceSaved);
 			if (lastServerDeviceSaved <= 0 || System.currentTimeMillis() - lastServerDeviceSaved > 5 * 24 * 3600 * 1000L) {
-				RPC.getRpcService().createOrUpdate(createAndroidDevice());
+				RPC.getRpcService().ensureInstall(createAndroidDevice());
 				Utils.setLongProperty(STR.lastServerDeviceSaved, System.currentTimeMillis());
 			}
 		} catch (Throwable e) {
@@ -1287,17 +1287,17 @@ public final class Utils {
 						} else {
 						}
 						callback.onResult(false);
-						return;
+					} else {
+						setPremium(true, true, true);
+						callback.onResult(true);
+						thankYou(activity);
+
+						long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;
+						long timeSinceInstall = System.currentTimeMillis() - firstInstallTime;
+
+						Utils.sendMail("[FlickrUploader] PremiumSuccess " + ToolString.formatDuration(timeSinceInstall) + " - " + getCountryCode(), Utils.getDeviceId() + " - " + Utils.getEmail()
+								+ " - " + Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
 					}
-					setPremium(true);
-					callback.onResult(true);
-					thankYou(activity);
-
-					long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;
-					long timeSinceInstall = System.currentTimeMillis() - firstInstallTime;
-
-					Utils.sendMail("[FlickrUploader] PremiumSuccess " + ToolString.formatDuration(timeSinceInstall) + " - " + getCountryCode(), Utils.getDeviceId() + " - " + Utils.getEmail() + " - "
-							+ Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
 				} catch (Throwable e) {
 					LOG.error(ToolString.stack2string(e));
 				}
@@ -1330,15 +1330,15 @@ public final class Utils {
 		return "premium.5";
 	}
 
-	public static void setPremium(final boolean premium) {
+	public static void setPremium(final boolean notifyServer, final boolean premium, final boolean purchased) {
 		LOG.debug("premium : " + premium);
 		setBooleanProperty(STR.premium, premium);
-		if (premium) {
+		if (notifyServer) {
 			BackgroundExecutor.execute(new Runnable() {
 				@Override
 				public void run() {
 					try {
-						RPC.getRpcService().setPremium(premium, getAccountEmails());
+						RPC.getRpcService().setPremium(premium, purchased, getAccountEmails());
 					} catch (Throwable e) {
 						LOG.error(ToolString.stack2string(e));
 					}
@@ -1352,14 +1352,8 @@ public final class Utils {
 	public static void checkPremium(final boolean force, final Callback<Boolean> callback) {
 		long lastPremiumCheck = getLongProperty(STR.lastPremiumCheck);
 		LOG.debug("isPremium() : " + isPremium() + ", lastPremiumCheck : " + lastPremiumCheck);
-		if (!force && isPremium() && System.currentTimeMillis() - lastPremiumCheck < 24 * 60 * 60 * 1000L) {// check
-																											// at
-																											// least
-																											// everyday
-																											// Premium
-																											// status
-																											// from
-																											// server
+		// check at least everyday Premium status from server
+		if (!force && isPremium() && System.currentTimeMillis() - lastPremiumCheck < 24 * 60 * 60 * 1000L) {
 			callback.onResult(isPremium());
 		} else {
 			BackgroundExecutor.execute(new Runnable() {
@@ -1373,7 +1367,7 @@ public final class Utils {
 								premium = (Boolean) checkPremium[0];
 								customSku = (String) checkPremium[1];
 								if (premium) {
-									setPremium(premium);
+									setPremium(false, premium, (Boolean) checkPremium[2]);
 								}
 								LOG.debug("server premium check: " + Arrays.toString(checkPremium));
 							}
@@ -1388,11 +1382,10 @@ public final class Utils {
 										if (result.isSuccess()) {
 											Inventory queryInventory = IabHelper.get().queryInventory(true, Lists.newArrayList(Utils.getPremiumSku()));
 											LOG.debug("queryInventory : " + Utils.getPremiumSku() + " : " + queryInventory.hasPurchase(Utils.getPremiumSku()));
-											for (String sku : Arrays.asList("flickruploader.donation.1", "flickruploader.donation.2", "flickruploader.donation.3", "flickruploader.donation.5",
-													"flickruploader.donation.8", "premium.5", "premium.2.5", "premium.1.25")) {
+											for (String sku : Arrays.asList("premium.5", "premium.2.5", "premium.1.25")) {
 												if (queryInventory.hasPurchase(sku)) {
 													LOG.debug("has purchased the app : " + sku);
-													Utils.setPremium(true);
+													Utils.setPremium(true, true, true);
 													break;
 												}
 											}
@@ -1451,7 +1444,7 @@ public final class Utils {
 	}
 
 	public static String getUploadDescription() {
-		return sp.getString("upload_description", "uploaded with <a href='https://play.google.com/store/apps/details?id=com.rafali.flickruploader'>Flickr Uploader</a> for Android");
+		return sp.getString("upload_description", "uploaded with <a href='https://play.google.com/store/apps/details?id=com.rafali.flickruploader2'>Flickr Uploader</a> for Android");
 	}
 
 	public static String formatFileSize(long bytes) {
