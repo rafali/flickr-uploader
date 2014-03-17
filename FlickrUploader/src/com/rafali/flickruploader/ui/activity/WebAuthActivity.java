@@ -1,7 +1,9 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.ui.activity;
 
 import java.net.URL;
+
 import org.slf4j.LoggerFactory;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -20,7 +22,7 @@ import android.webkit.WebSettings.LayoutAlgorithm;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.TextView;
-import android.widget.Toast;
+
 import com.google.analytics.tracking.android.EasyTracker;
 import com.googlecode.androidannotations.annotations.AfterViews;
 import com.googlecode.androidannotations.annotations.Background;
@@ -33,13 +35,16 @@ import com.googlecode.flickrjandroid.oauth.OAuthInterface;
 import com.googlecode.flickrjandroid.oauth.OAuthToken;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
+import com.rafali.flickruploader.api.FlickrApi;
+import com.rafali.flickruploader.tool.RPC;
+import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader2.R;
 
 @EActivity(R.layout.webauth)
-public class WebAuth extends Activity {
+public class WebAuthActivity extends Activity {
 
 	public static final int RESULT_CODE_AUTH = 2227;
-	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(WebAuth.class);
+	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(WebAuthActivity.class);
 
 	@ViewById(R.id.web_view)
 	WebView webView;
@@ -114,7 +119,7 @@ public class WebAuth extends Activity {
 
 	@UiThread
 	void onNetworkError() {
-		new AlertDialog.Builder(WebAuth.this).setTitle("Error connecting to Flickr")
+		new AlertDialog.Builder(WebAuthActivity.this).setTitle("Error connecting to Flickr")
 				.setMessage("An error occured while connecting to Flickr. Please make sure your internet access works and/or retry later.")
 				.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 					@Override
@@ -253,13 +258,7 @@ public class WebAuth extends Activity {
 	@UiThread
 	void onFail(Throwable e) {
 		LOG.warn(e.getMessage(), e);
-		toast("An error occured, please retry : " + e.getMessage());
-	}
-
-	@UiThread
-	void toast(String message) {
-		LOG.debug(message);
-		Toast.makeText(WebAuth.this, message, Toast.LENGTH_SHORT).show();
+		Utils.toast("An error occured, please retry : " + e.getMessage());
 	}
 
 	@Override

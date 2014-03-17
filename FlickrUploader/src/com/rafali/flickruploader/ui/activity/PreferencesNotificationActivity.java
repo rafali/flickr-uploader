@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.ui.activity;
 
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
@@ -7,16 +7,19 @@ import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.view.MenuItem;
+
 import com.rafali.common.STR;
+import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader2.R;
 
-public class PreferencesNotification extends PreferenceActivity implements OnSharedPreferenceChangeListener {
+public class PreferencesNotificationActivity extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 
 	@SuppressWarnings("deprecation")
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		getActionBar().setDisplayHomeAsUpEnabled(true);
+		getActionBar().setIcon(R.drawable.preferences);
 		PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
 		addPreferencesFromResource(R.xml.preferences_notification);
 		if (Utils.isPremium()) {

@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.broadcast;
 
 import java.util.Arrays;
 
@@ -8,9 +8,12 @@ import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.widget.Toast;
 
-import com.rafali.flickruploader.FlickrApi.PRIVACY;
+import com.rafali.flickruploader.api.FlickrApi;
+import com.rafali.flickruploader.api.FlickrApi.PRIVACY;
+import com.rafali.flickruploader.model.Media;
+import com.rafali.flickruploader.service.UploadService;
+import com.rafali.flickruploader.tool.Utils;
 
 public class MyBroadcastReceiver extends BroadcastReceiver {
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(MyBroadcastReceiver.class);
@@ -25,7 +28,7 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
 				Media image = Utils.getImage(imageId);
 				final String photoId = FlickrApi.getPhotoId(image);
 				if (photoId != null) {
-					Toast.makeText(context, "Sharing photo", Toast.LENGTH_LONG).show();
+					Utils.toast("Sharing photo");
 					String url = FlickrApi.getShortUrl(photoId);
 					Intent sharingIntent = new Intent(android.content.Intent.ACTION_SEND);
 					sharingIntent.setType("text/plain");

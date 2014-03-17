@@ -1,4 +1,4 @@
-package com.rafali.flickruploader.widget;
+package com.rafali.flickruploader.ui.widget;
 
 import java.util.Locale;
 import android.content.Context;

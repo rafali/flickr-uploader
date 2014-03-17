@@ -1,10 +1,12 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.ui.activity;
 
 import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
+
 import org.slf4j.LoggerFactory;
+
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -23,24 +25,31 @@ import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.view.MenuItem;
+
 import com.google.analytics.tracking.android.EasyTracker;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
-import com.rafali.flickruploader.FlickrApi.PRIVACY;
+import com.rafali.flickruploader.ui.activity.AutoUploadFoldersActivity_;
+import com.rafali.flickruploader.ui.activity.WebAuthActivity_;
+import com.rafali.flickruploader.api.FlickrApi;
+import com.rafali.flickruploader.api.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.billing.IabHelper;
+import com.rafali.flickruploader.model.Folder;
+import com.rafali.flickruploader.service.UploadService;
+import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader2.R;
 
-public class Preferences extends PreferenceActivity implements OnSharedPreferenceChangeListener {
+public class PreferencesActivity extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 
-	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(Preferences.class);
+	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(PreferencesActivity.class);
 	public static final String UPLOAD_NETWORK = "upload_network";
 	public static final String UPLOAD_PRIVACY = "upload_privacy";
 	public static final String AUTOUPLOAD = "autoupload";
 	public static final String AUTOUPLOAD_VIDEOS = "autouploadvideos";
 	public static final String CHARGING_ONLY = "charging_only";
 
-	Preferences activity = this;
+	PreferencesActivity activity = this;
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -48,6 +57,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		handler = new Handler();
 		super.onCreate(savedInstanceState);
 		getActionBar().setDisplayHomeAsUpEnabled(true);
+		getActionBar().setIcon(R.drawable.preferences);
 		sp = PreferenceManager.getDefaultSharedPreferences(this);
 		// add preferences from xml
 		addPreferencesFromResource(R.xml.preferences);
@@ -75,7 +85,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 								}
 							}).setNegativeButton("Cancel", null).show();
 				} else {
-					WebAuth_.intent(activity).start();
+					WebAuthActivity_.intent(activity).start();
 				}
 				return false;
 			}
@@ -104,14 +114,14 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		findPreference("notifications").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
-				startActivity(new Intent(activity, PreferencesNotification.class));
+				startActivity(new Intent(activity, PreferencesNotificationActivity.class));
 				return false;
 			}
 		});
 		findPreference("advancedPreferences").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
-				startActivity(new Intent(activity, PreferencesAdvanced.class));
+				startActivity(new Intent(activity, PreferencesAdvancedActivity.class));
 				return false;
 			}
 		});
@@ -219,7 +229,6 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 				}
 			}
 
-
 		});
 	}
 
@@ -233,7 +242,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 		}
 		{
 			String summary;
-			if (Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false) || Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
+			if (Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) || Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
 				if (nbSynced <= 0) {
 					summary = "No folder monitored";
 				} else {

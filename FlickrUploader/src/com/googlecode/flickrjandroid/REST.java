@@ -37,8 +37,8 @@ import com.googlecode.flickrjandroid.util.StringUtilities;
 import com.googlecode.flickrjandroid.util.UrlUtilities;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.Config;
-import com.rafali.flickruploader.Media;
-import com.rafali.flickruploader.UploadService;
+import com.rafali.flickruploader.model.Media;
+import com.rafali.flickruploader.service.UploadService;
 
 /**
  * Transport implementation using the REST interface.

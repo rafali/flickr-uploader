@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.service;
 
 import java.io.File;
 import java.sql.Date;
@@ -36,8 +36,17 @@ import android.provider.MediaStore.Video;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
-import com.rafali.flickruploader.Utils.CAN_UPLOAD;
-import com.rafali.flickruploader.Utils.MediaType;
+import com.rafali.flickruploader.FlickrUploader;
+import com.rafali.flickruploader.api.FlickrApi;
+import com.rafali.flickruploader.broadcast.AlarmBroadcastReceiver;
+import com.rafali.flickruploader.model.Folder;
+import com.rafali.flickruploader.model.Media;
+import com.rafali.flickruploader.tool.Notifications;
+import com.rafali.flickruploader.tool.Utils;
+import com.rafali.flickruploader.tool.Utils.CAN_UPLOAD;
+import com.rafali.flickruploader.tool.Utils.MediaType;
+import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
+import com.rafali.flickruploader.ui.activity.PreferencesActivity;
 
 public class UploadService extends Service {
 
@@ -626,10 +635,10 @@ public class UploadService extends Service {
 			long newestFileAge = 0;
 			List<Media> not_uploaded = new ArrayList<Media>();
 			for (Media image : media) {
-				if (image.mediaType == MediaType.photo && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false)) {
+				if (image.mediaType == MediaType.photo && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false)) {
 					LOG.debug("not uploading " + media + " because photo upload disabled");
 					continue;
-				} else if (image.mediaType == MediaType.video && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
+				} else if (image.mediaType == MediaType.video && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
 					LOG.debug("not uploading " + media + " because video upload disabled");
 					continue;
 				} else {

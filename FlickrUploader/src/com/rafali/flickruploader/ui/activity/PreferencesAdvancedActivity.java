@@ -1,8 +1,10 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.ui.activity;
 
 import java.util.Arrays;
 import java.util.List;
+
 import org.slf4j.LoggerFactory;
+
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -16,14 +18,18 @@ import android.preference.PreferenceManager;
 import android.text.Html;
 import android.view.MenuItem;
 import android.widget.EditText;
+
 import com.google.common.base.Joiner;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.rafali.flickruploader.FlickrUploader;
+import com.rafali.flickruploader.tool.Utils;
+import com.rafali.flickruploader.tool.Utils.Callback;
 import com.rafali.flickruploader2.R;
 
 @SuppressWarnings("deprecation")
-public class PreferencesAdvanced extends PreferenceActivity implements OnSharedPreferenceChangeListener {
+public class PreferencesAdvancedActivity extends PreferenceActivity implements OnSharedPreferenceChangeListener {
 
-	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(PreferencesAdvanced.class);
+	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(PreferencesAdvancedActivity.class);
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +40,7 @@ public class PreferencesAdvanced extends PreferenceActivity implements OnSharedP
 		findPreference("clear_logs").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
-				Utils.showConfirmCancel(PreferencesAdvanced.this, "Delete logs", "Do you confirm deleting all log files?", new Utils.Callback<Boolean>() {
+				Utils.showConfirmCancel(PreferencesAdvancedActivity.this, "Delete logs", "Do you confirm deleting all log files?", new Utils.Callback<Boolean>() {
 					@Override
 					public void onResult(Boolean result) {
 						if (result) {
@@ -105,11 +111,11 @@ public class PreferencesAdvanced extends PreferenceActivity implements OnSharedP
 
 		@Override
 		public boolean onPreferenceClick(Preference preference) {
-			AlertDialog.Builder alert = new AlertDialog.Builder(PreferencesAdvanced.this);
+			AlertDialog.Builder alert = new AlertDialog.Builder(PreferencesAdvancedActivity.this);
 			alert.setTitle(findPreference(prefKey).getTitle());
 			if (Utils.isPremium()) {
 				// Set an EditText view to get user input
-				final EditText input = new EditText(PreferencesAdvanced.this);
+				final EditText input = new EditText(PreferencesAdvancedActivity.this);
 				if (prefKey.equals("upload_description")) {
 					input.setText(Utils.getUploadDescription());
 				} else {
@@ -132,7 +138,7 @@ public class PreferencesAdvanced extends PreferenceActivity implements OnSharedP
 				alert.setPositiveButton("Get Premium Now", new OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						Utils.startPayment(PreferencesAdvanced.this, new Utils.Callback<Boolean>() {
+						Utils.startPayment(PreferencesAdvancedActivity.this, new Utils.Callback<Boolean>() {
 							@Override
 							public void onResult(Boolean result) {
 								//FIXME

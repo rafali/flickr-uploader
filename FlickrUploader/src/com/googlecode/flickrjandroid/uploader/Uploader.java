@@ -24,7 +24,7 @@ import com.googlecode.flickrjandroid.Transport;
 import com.googlecode.flickrjandroid.oauth.OAuthInterface;
 import com.googlecode.flickrjandroid.oauth.OAuthUtils;
 import com.googlecode.flickrjandroid.util.StringUtilities;
-import com.rafali.flickruploader.Media;
+import com.rafali.flickruploader.model.Media;
 
 /**
  * Upload a photo.

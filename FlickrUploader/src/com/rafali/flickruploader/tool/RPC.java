@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.tool;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,11 +55,12 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.LoggerFactory;
 
 import android.os.SystemClock;
-import android.widget.Toast;
 
 import com.google.common.base.Joiner;
 import com.rafali.common.AndroidRpcInterface;
 import com.rafali.common.ToolString;
+import com.rafali.flickruploader.Config;
+import com.rafali.flickruploader.FlickrUploader;
 
 public final class RPC {
 
@@ -282,7 +283,7 @@ public final class RPC {
 
 		if (executionCount > DEFAULT_MAX_RETRIES) {
 			// Do not retry if over max retry count
-			Toast.makeText(FlickrUploader.getAppContext(), "Network error", Toast.LENGTH_LONG).show();
+			Utils.toast("Network error");
 			retry = false;
 		} else if (exceptionBlacklist.contains(exception.getClass())) {
 			// immediately cancel retry if the error is blacklisted
@@ -310,7 +311,7 @@ public final class RPC {
 	static void notifyNetworkError() {
 		if (System.currentTimeMillis() - lastNotifyNetworkError > 10000) {
 			lastNotifyNetworkError = System.currentTimeMillis();
-			Toast.makeText(FlickrUploader.getAppContext(), "Network error, retrying...", Toast.LENGTH_SHORT).show();
+			Utils.toast("Network error, retrying...");
 		}
 	}
 

@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.ui;
 
 import org.slf4j.LoggerFactory;
 
@@ -17,10 +17,16 @@ import com.googlecode.androidannotations.annotations.ViewById;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
-import com.rafali.flickruploader.UploadService.UploadProgressListener;
-import com.rafali.flickruploader.Utils.CAN_UPLOAD;
-import com.rafali.flickruploader.Utils.VIEW_SIZE;
-import com.rafali.flickruploader.widget.CustomImageView;
+import com.rafali.flickruploader.api.FlickrApi;
+import com.rafali.flickruploader.model.Media;
+import com.rafali.flickruploader.service.UploadService;
+import com.rafali.flickruploader.service.UploadService.UploadProgressListener;
+import com.rafali.flickruploader.tool.Utils;
+import com.rafali.flickruploader.tool.Utils.CAN_UPLOAD;
+import com.rafali.flickruploader.tool.Utils.VIEW_SIZE;
+import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
+import com.rafali.flickruploader.ui.activity.PreferencesActivity;
+import com.rafali.flickruploader.ui.widget.CustomImageView;
 import com.rafali.flickruploader2.R;
 
 @EViewGroup(R.layout.drawer_handle_view)
@@ -110,7 +116,7 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 
 	int nbMonitored = -1;
 
-	void onResume() {
+	public void onResume() {
 		nbMonitored = Utils.getSyncedFolders().size();
 	}
 
@@ -124,7 +130,7 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 				if (canShow > 4000) {
 					if (!FlickrApi.isAuthentified()) {
 						message.setText("Login into Flickr from the Preferences");
-					} else if (!Utils.isPremium() && !Utils.isTrial() && Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false)) {
+					} else if (!Utils.isPremium() && !Utils.isTrial() && Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false)) {
 						message.setText("Click on the menu and select 'Trial Info'");
 					} else if (UploadService.getNbQueued() == 0) {
 						String text = "No media queued";
@@ -137,7 +143,7 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 							text += ", " + nbError + " error" + (nbError > 1 ? "s" : "");
 						}
 						if (nbError + nbUploaded <= 0) {
-							if (Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false) || Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
+							if (Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) || Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
 								if (nbMonitored < 0) {
 									nbMonitored = Utils.getSyncedFolders().size();
 								}

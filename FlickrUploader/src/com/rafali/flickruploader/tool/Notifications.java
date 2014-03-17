@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.tool;
 
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +14,10 @@ import android.support.v4.app.NotificationCompat.Builder;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
-import com.rafali.flickruploader.Utils.VIEW_SIZE;
+import com.rafali.flickruploader.FlickrUploader;
+import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity_;
+import com.rafali.flickruploader.model.Media;
+import com.rafali.flickruploader.tool.Utils.VIEW_SIZE;
 import com.rafali.flickruploader2.R;
 
 public class Notifications {

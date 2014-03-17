@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.tool;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -57,7 +57,10 @@ import android.provider.MediaStore.Video;
 import android.provider.Settings.Secure;
 import android.telephony.TelephonyManager;
 import android.util.TypedValue;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.LinkedHashMultimap;
@@ -66,13 +69,22 @@ import com.google.common.collect.Multimap;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
-import com.rafali.flickruploader.FlickrApi.PRIVACY;
+import com.rafali.flickruploader.AndroidDevice;
+import com.rafali.flickruploader.Config;
+import com.rafali.flickruploader.FlickrUploader;
+import com.rafali.flickruploader.ui.activity.WebAuthActivity_;
+import com.rafali.flickruploader.api.FlickrApi;
+import com.rafali.flickruploader.api.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.billing.IabException;
 import com.rafali.flickruploader.billing.IabHelper;
 import com.rafali.flickruploader.billing.IabHelper.OnIabPurchaseFinishedListener;
 import com.rafali.flickruploader.billing.IabResult;
 import com.rafali.flickruploader.billing.Inventory;
 import com.rafali.flickruploader.billing.Purchase;
+import com.rafali.flickruploader.model.Folder;
+import com.rafali.flickruploader.model.Media;
+import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
+import com.rafali.flickruploader.ui.activity.PreferencesActivity;
 import com.rafali.flickruploader2.R;
 
 public final class Utils {
@@ -89,7 +101,7 @@ public final class Utils {
 						.setPositiveButton("Sign in now", new DialogInterface.OnClickListener() {
 							@Override
 							public void onClick(DialogInterface dialog, int which) {
-								context.startActivityForResult(WebAuth_.intent(context).get(), 14);
+								context.startActivityForResult(WebAuthActivity_.intent(context).get(), 14);
 							}
 						}).setNegativeButton("Later", null).setCancelable(false).show();
 				setButtonSize(alertDialog);
@@ -204,11 +216,11 @@ public final class Utils {
 		setBooleanProperty("show_videos", show_videos);
 	}
 
-	enum VIEW_SIZE {
+	public enum VIEW_SIZE {
 		small, medium, large
 	}
 
-	enum VIEW_GROUP_TYPE {
+	public enum VIEW_GROUP_TYPE {
 		date, folder
 	}
 
@@ -329,7 +341,7 @@ public final class Utils {
 	}
 
 	public static PRIVACY getDefaultPrivacy() {
-		return PRIVACY.valueOf(sp.getString(Preferences.UPLOAD_PRIVACY, PRIVACY.PRIVATE.toString()));
+		return PRIVACY.valueOf(sp.getString(PreferencesActivity.UPLOAD_PRIVACY, PRIVACY.PRIVATE.toString()));
 	}
 
 	public static void setBooleanProperty(String property, Boolean value) {
@@ -705,7 +717,7 @@ public final class Utils {
 	}
 
 	public static String canAutoUpload() {
-		if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
+		if (!Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
 			return "Autoupload disabled";
 		}
 		if (!Utils.isPremium() && !Utils.isTrial()) {
@@ -729,7 +741,7 @@ public final class Utils {
 		if (System.currentTimeMillis() < Utils.getLongProperty(STR.manuallyPaused)) {
 			return CAN_UPLOAD.manually;
 		}
-		if (Utils.getBooleanProperty(Preferences.CHARGING_ONLY, false)) {
+		if (Utils.getBooleanProperty(PreferencesActivity.CHARGING_ONLY, false)) {
 			if (!checkIfCharging()) {
 				return CAN_UPLOAD.charging;
 			}
@@ -743,7 +755,7 @@ public final class Utils {
 		}
 
 		// if wifi is disabled and the user preference only allows wifi abort
-		if (sp.getString(Preferences.UPLOAD_NETWORK, "").equals(STR.wifionly)) {
+		if (sp.getString(PreferencesActivity.UPLOAD_NETWORK, "").equals(STR.wifionly)) {
 			switch (activeNetwork.getType()) {
 			case ConnectivityManager.TYPE_MOBILE:
 			case ConnectivityManager.TYPE_MOBILE_DUN:
@@ -833,20 +845,20 @@ public final class Utils {
 
 	static Map<String, String> folderSetNames;
 
-	static boolean isAutoUpload(Folder folder) {
-		if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
+	public static boolean isAutoUpload(Folder folder) {
+		if (!Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
 			return false;
 		}
 		ensureSyncedFolder();
 		return folderSetNames.containsKey(folder.path);
 	}
 
-	static void setAutoUploaded(Folder folder, boolean synced, String albumTitle) {
+	public static void setAutoUploaded(Folder folder, boolean synced, String albumTitle) {
 		ensureSyncedFolder();
 		if (synced) {
-			if (!Utils.getBooleanProperty(Preferences.AUTOUPLOAD, false) && !Utils.getBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, false)) {
+			if (!Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
 				if (Utils.isPremium() || Utils.isTrial()) {
-					Utils.setBooleanProperty(Preferences.AUTOUPLOAD, true);
+					Utils.setBooleanProperty(PreferencesActivity.AUTOUPLOAD, true);
 				}
 			}
 			if (albumTitle == null) {
@@ -999,7 +1011,6 @@ public final class Utils {
 			}
 		}
 	};
-	
 
 	private static boolean charging = false;
 
@@ -1336,7 +1347,7 @@ public final class Utils {
 		}
 	}
 
-	static String customSku;
+	public static String customSku;
 
 	public static void checkPremium(final boolean force, final Callback<Boolean> callback) {
 		long lastPremiumCheck = getLongProperty(STR.lastPremiumCheck);
@@ -1511,4 +1522,29 @@ public final class Utils {
 		return syncedFolders;
 	}
 
+	public static void toast(final String message) {
+		toast(message, Toast.LENGTH_LONG);
+	}
+
+	private static void toast(final String message, final int duration) {
+		if (FlickrUploaderActivity.getInstance() != null) {
+			FlickrUploaderActivity.getInstance().runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					LOG.debug("toast : " + message);
+					View view = View.inflate(FlickrUploaderActivity.getInstance(), R.layout.toast, null);
+
+					TextView text = (TextView) view.findViewById(R.id.description);
+					text.setText(message);
+
+					Toast toast = new Toast(FlickrUploaderActivity.getInstance());
+					toast.setDuration(duration);
+					toast.setView(view);
+					toast.show();
+				}
+			});
+		} else {
+			LOG.debug("Not toasted : " + message);
+		}
+	}
 }

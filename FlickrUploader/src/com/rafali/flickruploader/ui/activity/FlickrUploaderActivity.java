@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.ui.activity;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -52,11 +52,12 @@ import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.ShareActionProvider;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.analytics.tracking.android.EasyTracker;
 import com.google.common.base.Functions;
 import com.google.common.base.Joiner;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
 import com.googlecode.androidannotations.annotations.AfterViews;
 import com.googlecode.androidannotations.annotations.Background;
@@ -66,16 +67,25 @@ import com.googlecode.androidannotations.annotations.ViewById;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
-import com.rafali.flickruploader.FlickrApi.PRIVACY;
-import com.rafali.flickruploader.Utils.Callback;
-import com.rafali.flickruploader.Utils.MediaType;
-import com.rafali.flickruploader.Utils.VIEW_GROUP_TYPE;
-import com.rafali.flickruploader.Utils.VIEW_SIZE;
+import com.rafali.flickruploader.FlickrUploader;
+import com.rafali.flickruploader.api.FlickrApi;
+import com.rafali.flickruploader.api.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.billing.IabHelper;
-import com.rafali.flickruploader.widget.SlidingDrawer;
-import com.rafali.flickruploader.widget.StickyHeaderListView;
-import com.rafali.flickruploader.widget.StickyHeaderListView.Header;
-import com.rafali.flickruploader.widget.StickyHeaderListView.HeaderAdapter;
+import com.rafali.flickruploader.model.Folder;
+import com.rafali.flickruploader.model.Media;
+import com.rafali.flickruploader.service.UploadService;
+import com.rafali.flickruploader.tool.Notifications;
+import com.rafali.flickruploader.tool.Utils;
+import com.rafali.flickruploader.tool.Utils.Callback;
+import com.rafali.flickruploader.tool.Utils.MediaType;
+import com.rafali.flickruploader.tool.Utils.VIEW_GROUP_TYPE;
+import com.rafali.flickruploader.tool.Utils.VIEW_SIZE;
+import com.rafali.flickruploader.ui.DrawerContentView;
+import com.rafali.flickruploader.ui.DrawerHandleView;
+import com.rafali.flickruploader.ui.widget.SlidingDrawer;
+import com.rafali.flickruploader.ui.widget.StickyHeaderListView;
+import com.rafali.flickruploader.ui.widget.StickyHeaderListView.Header;
+import com.rafali.flickruploader.ui.widget.StickyHeaderListView.HeaderAdapter;
 import com.rafali.flickruploader2.R;
 
 @EActivity(R.layout.flickr_uploader_slider_activity)
@@ -121,9 +131,11 @@ public class FlickrUploaderActivity extends Activity {
 					List<Media> loadImages = Utils.loadImages(imageUri.toString(), type.startsWith("image/") ? MediaType.photo : MediaType.video, 1);
 					LOG.debug("imageUri : " + imageUri + ", loadImages : " + loadImages);
 					if (!loadImages.isEmpty()) {
-						confirmUpload(loadImages, false);
+						selectedMedia.clear();
+						selectedMedia.addAll(loadImages);
+						confirmUpload();
 					} else {
-						toast("No media found for " + imageUri);
+						Utils.toast("No media found for " + imageUri);
 					}
 				}
 			} else if (Intent.ACTION_SEND_MULTIPLE.equals(action) && type != null) {
@@ -137,19 +149,16 @@ public class FlickrUploaderActivity extends Activity {
 							loadImages.addAll(tmpImages);
 						}
 						if (!loadImages.isEmpty()) {
-							confirmUpload(loadImages, false);
+							selectedMedia.clear();
+							selectedMedia.addAll(loadImages);
+							confirmUpload();
 						} else {
-							toast("No media found");
+							Utils.toast("No media found");
 						}
 					}
 				}
 			}
 		}
-	}
-
-	@UiThread
-	void toast(String message) {
-		Toast.makeText(activity, message, Toast.LENGTH_LONG).show();
 	}
 
 	SimpleDateFormat format = new SimpleDateFormat("MMMM, yyyy", Locale.US);
@@ -363,7 +372,7 @@ public class FlickrUploaderActivity extends Activity {
 		UploadService.unregister(drawerContentView);
 	}
 
-	boolean destroyed = false;
+	public boolean destroyed = false;
 
 	PhotoAdapter photoAdapter = new PhotoAdapter();
 
@@ -615,80 +624,39 @@ public class FlickrUploaderActivity extends Activity {
 	// };
 
 	@UiThread
-	void confirmUpload(final List<Media> selection, boolean isFolderTab) {
-		if (isFolderTab) {
-			// new
-			// AlertDialog.Builder(activity).setTitle("Upload to").setPositiveButton(null,
-			// null).setNegativeButton(null, null).setCancelable(true)
-			// .setItems(new String[] { "Default set (" + STR.instantUpload +
-			// ")", "One set per folder", "New set...", "Existing set..." }, new
-			// DialogInterface.OnClickListener() {
-			// @Override
-			// public void onClick(DialogInterface dialog, int which) {
-			// switch (which) {
-			// case 0:
-			// for (Media image : selection) {
-			// Folder folder = foldersMap.get(image);
-			// enqueue(folder.images, STR.instantUpload);
-			// }
-			// clearSelection();
-			// break;
-			// case 1: {
-			// List<Folder> folders = new ArrayList<Folder>();
-			// for (Media image : selection) {
-			// Folder folder = foldersMap.get(image);
-			// folders.add(folder);
-			// }
-			// createOneSetPerFolder(folders);
-			// }
-			// break;
-			// case 2: {
-			// List<Folder> folders = new ArrayList<Folder>();
-			// for (Media image : selection) {
-			// Folder folder = foldersMap.get(image);
-			// folders.add(folder);
-			// }
-			// if (folders.size() == 1) {
-			// showNewSetDialog(folders.get(0), selection);
-			// } else {
-			// showNewSetDialog(null, selection);
-			// }
-			// }
-			// break;
-			// case 3:
-			// showExistingSetDialog(selection);
-			// break;
-			// default:
-			// break;
-			// }
-			// LOG.debug("which : " + which);
-			// }
-			//
-			// }).show();
-		} else {
-			new AlertDialog.Builder(activity).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
-					.setItems(new String[] { "Default set (" + STR.instantUpload + ")", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
-						@Override
-						public void onClick(DialogInterface dialog, int which) {
-							switch (which) {
-							case 0:
-								enqueue(selection, STR.instantUpload);
-								clearSelection();
-								break;
-							case 1:
-								showNewSetDialog(null, selection);
-								break;
-							case 2:
-								showExistingSetDialog(selection);
-								break;
-
-							default:
-								break;
+	void confirmUpload() {
+		new AlertDialog.Builder(activity).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
+				.setItems(new String[] { "Default set (" + STR.instantUpload + ")", "One set per folder", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						switch (which) {
+						case 0:
+							enqueue(selectedMedia, STR.instantUpload);
+							clearSelection();
+							break;
+						case 1:
+							Multimap<String, Media> multimap = HashMultimap.create();
+							for (Media image : selectedMedia) {
+								multimap.put(image.getFolderName(), image);
 							}
-							LOG.debug("which : " + which);
+							for (String folderName : multimap.keySet()) {
+								enqueue(multimap.get(folderName), folderName);
+							}
+							clearSelection();
+							break;
+						case 2:
+							showNewSetDialog(null);
+							break;
+						case 3:
+							showExistingSetDialog();
+							break;
+
+						default:
+							break;
 						}
-					}).show();
-		}
+						LOG.debug("which : " + which);
+					}
+				}).show();
 	}
 
 	@UiThread
@@ -701,19 +669,12 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	@UiThread
-	void showExistingSetDialog(final List<Media> selection) {
+	void showExistingSetDialog() {
 		showExistingSetDialog(activity, new Callback<String[]>() {
 			@Override
 			public void onResult(String[] result) {
 				String photoSetTitle = result[1];
-				// if (isFolderTab()) {
-				// for (Media image : selection) {
-				// Folder folder = foldersMap.get(image);
-				// enqueue(folder.images, photoSetTitle);
-				// }
-				// } else {
-				enqueue(selection, photoSetTitle);
-				// }
+				enqueue(selectedMedia, photoSetTitle);
 				clearSelection();
 			}
 		}, null);
@@ -730,7 +691,7 @@ public class FlickrUploaderActivity extends Activity {
 					public void run() {
 						dialog.cancel();
 						if (photosets.isEmpty()) {
-							Toast.makeText(activity, "No photoset found", Toast.LENGTH_LONG).show();
+							Utils.toast("No photoset found");
 						} else {
 							AlertDialog.Builder builder = new AlertDialog.Builder(activity);
 							final List<String> photosetTitles = new ArrayList<String>();
@@ -770,18 +731,18 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	@UiThread
-	void showNewSetDialog(final Folder folder, final List<Media> selection) {
+	void showNewSetDialog(final Folder folder) {
 		showNewSetDialog(activity, folder == null ? null : folder.name, new Callback<String>() {
 			@Override
 			public void onResult(final String value) {
 				if (ToolString.isBlank(value)) {
-					toast("Title cannot be empty");
-					showNewSetDialog(folder, selection);
+					Utils.toast("Title cannot be empty");
+					showNewSetDialog(folder);
 				} else {
 					BackgroundExecutor.execute(new Runnable() {
 						@Override
 						public void run() {
-							enqueue(selection, value);
+							enqueue(selectedMedia, value);
 							clearSelection();
 						}
 					});
@@ -807,18 +768,6 @@ public class FlickrUploaderActivity extends Activity {
 	void hideLoading() {
 		if (progressDialog != null) {
 			progressDialog.dismiss();
-		}
-	}
-
-	@Background
-	void createOneSetPerFolder(List<Folder> folders) {
-		for (Folder folder : folders) {
-			try {
-				enqueue(folder.images, folder.name);
-				clearSelection();
-			} catch (Throwable e) {
-				LOG.error(ToolString.stack2string(e));
-			}
 		}
 	}
 
@@ -1185,7 +1134,7 @@ public class FlickrUploaderActivity extends Activity {
 		this.menu = menu;
 		super.onCreateOptionsMenu(menu);
 		MenuInflater inflater = getMenuInflater();
-		inflater.inflate(R.menu.main_menu, menu);
+		inflater.inflate(R.menu.menu, menu);
 		return true;
 	}
 
@@ -1239,7 +1188,7 @@ public class FlickrUploaderActivity extends Activity {
 			});
 			break;
 		case R.id.preferences:
-			startActivity(new Intent(activity, Preferences.class));
+			startActivity(new Intent(activity, PreferencesActivity.class));
 			break;
 		case R.id.faq:
 			String url = "https://github.com/rafali/flickr-uploader/wiki/FAQ";
@@ -1309,30 +1258,16 @@ public class FlickrUploaderActivity extends Activity {
 			}
 			computeHeaders(false);
 			break;
+		case R.id.upload_add:
+			if (selectedMedia.isEmpty()) {
+				Utils.toast("Select at least one file");
+			} else {
+				confirmUpload();
+			}
+			break;
 		}
 
 		return (super.onOptionsItemSelected(item));
-	}
-
-	@UiThread
-	void showSortDialog() {
-		final CharSequence[] modes = { "Recent to old", "Old to recent" };
-		AlertDialog.Builder alt_bld = new AlertDialog.Builder(activity);
-		alt_bld.setTitle("Sort");
-		final int sort_type = (int) Utils.getLongProperty("sort_type");
-		alt_bld.setSingleChoiceItems(modes, sort_type, new OnClickListener() {
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				dialog.dismiss();
-				if (sort_type != which) {
-					LOG.debug("clicked : " + modes[which]);
-					Utils.setLongProperty("sort_type", (long) which);
-					load();
-				}
-			}
-		});
-		AlertDialog alert = alt_bld.create();
-		alert.show();
 	}
 
 	@Override
@@ -1354,8 +1289,8 @@ public class FlickrUploaderActivity extends Activity {
 		builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int id) {
 				ListView lw = ((AlertDialog) dialog).getListView();
-				Utils.setBooleanProperty(Preferences.AUTOUPLOAD, lw.isItemChecked(0));
-				Utils.setBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, lw.isItemChecked(1));
+				Utils.setBooleanProperty(PreferencesActivity.AUTOUPLOAD, lw.isItemChecked(0));
+				Utils.setBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, lw.isItemChecked(1));
 			}
 
 		});
@@ -1363,9 +1298,9 @@ public class FlickrUploaderActivity extends Activity {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				ListView lw = ((AlertDialog) dialog).getListView();
-				Utils.setBooleanProperty(Preferences.AUTOUPLOAD, lw.isItemChecked(0));
-				Utils.setBooleanProperty(Preferences.AUTOUPLOAD_VIDEOS, lw.isItemChecked(1));
-				startActivity(new Intent(activity, Preferences.class));
+				Utils.setBooleanProperty(PreferencesActivity.AUTOUPLOAD, lw.isItemChecked(0));
+				Utils.setBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, lw.isItemChecked(1));
+				startActivity(new Intent(activity, PreferencesActivity.class));
 			}
 		});
 		builder.setCancelable(false);
@@ -1377,7 +1312,7 @@ public class FlickrUploaderActivity extends Activity {
 		if (IabHelper.get(false) != null && IabHelper.get(false).handleActivityResult(requestCode, resultCode, data)) {
 			return;
 		}
-		if (resultCode == WebAuth.RESULT_CODE_AUTH) {
+		if (resultCode == WebAuthActivity.RESULT_CODE_AUTH) {
 			if (FlickrApi.isAuthentified()) {
 				confirmSync();
 			}

@@ -5,24 +5,24 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <com.rafali.flickruploader.widget.SlidingDrawer
+    <com.rafali.flickruploader.ui.widget.SlidingDrawer
         android:id="@+id/slidingDrawer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         rafali:content="@+id/drawer_content"
         rafali:handle="@+id/drawer_handle" >
 
-        <com.rafali.flickruploader.DrawerHandleView_
+        <com.rafali.flickruploader.ui.DrawerHandleView_
             android:id="@+id/drawer_handle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bottom_bar"
             android:gravity="center_vertical" />
 
-        <com.rafali.flickruploader.DrawerContentView_
+        <com.rafali.flickruploader.ui.DrawerContentView_
             android:id="@+id/drawer_content"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@drawable/drawer_content_bg" />
-    </com.rafali.flickruploader.widget.SlidingDrawer>
+    </com.rafali.flickruploader.ui.widget.SlidingDrawer>
 </RelativeLayout>

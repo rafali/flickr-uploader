@@ -3,7 +3,7 @@
  *  @file	ToolStream.java
  *  @datecreation Oct 28, 2009
  */
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.tool;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

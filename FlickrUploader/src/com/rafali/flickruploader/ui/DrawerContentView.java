@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.ui;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,9 +32,15 @@ import com.googlecode.androidannotations.annotations.ViewById;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
-import com.rafali.flickruploader.UploadService.UploadProgressListener;
-import com.rafali.flickruploader.Utils.VIEW_SIZE;
-import com.rafali.flickruploader.widget.TabView;
+import com.rafali.flickruploader.api.FlickrApi;
+import com.rafali.flickruploader.model.Media;
+import com.rafali.flickruploader.service.UploadService;
+import com.rafali.flickruploader.service.UploadService.UploadProgressListener;
+import com.rafali.flickruploader.tool.Notifications;
+import com.rafali.flickruploader.tool.Utils;
+import com.rafali.flickruploader.tool.Utils.VIEW_SIZE;
+import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
+import com.rafali.flickruploader.ui.widget.TabView;
 import com.rafali.flickruploader2.R;
 
 @EViewGroup(R.layout.drawer_content)

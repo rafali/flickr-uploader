@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.model;
 
 import java.io.File;
 import java.util.ArrayList;

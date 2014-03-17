@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.api;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -10,9 +10,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+
 import org.slf4j.LoggerFactory;
+
 import android.content.Context;
 import android.net.ConnectivityManager;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
@@ -30,7 +33,13 @@ import com.googlecode.flickrjandroid.photosets.Photosets;
 import com.googlecode.flickrjandroid.uploader.UploadMetaData;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
-import com.rafali.flickruploader.Utils.CAN_UPLOAD;
+import com.rafali.flickruploader.FlickrUploader;
+import com.rafali.flickruploader.model.Folder;
+import com.rafali.flickruploader.model.Media;
+import com.rafali.flickruploader.tool.Utils;
+import com.rafali.flickruploader.tool.Utils.CAN_UPLOAD;
+import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
+import com.rafali.flickruploader.ui.activity.PreferencesActivity;
 import com.rafali.flickruploader2.R;
 
 public class FlickrApi {
@@ -50,7 +59,7 @@ public class FlickrApi {
 			this.simpleName = simpleName;
 		}
 
-		String getSimpleName() {
+		public String getSimpleName() {
 			if (simpleName != null) {
 				return simpleName;
 			}
@@ -294,7 +303,7 @@ public class FlickrApi {
 		String photoId = null;
 		String sha1tag = Utils.getSHA1tag(image);
 		ConnectivityManager cm = (ConnectivityManager) FlickrUploader.getAppContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-		if (STR.wifionly.equals(Utils.getStringProperty(Preferences.UPLOAD_NETWORK))) {
+		if (STR.wifionly.equals(Utils.getStringProperty(PreferencesActivity.UPLOAD_NETWORK))) {
 			cm.setNetworkPreference(ConnectivityManager.TYPE_WIFI);
 		} else {
 			cm.setNetworkPreference(ConnectivityManager.DEFAULT_NETWORK_PREFERENCE);

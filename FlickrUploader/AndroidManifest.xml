@@ -33,12 +33,10 @@
         android:name="com.rafali.flickruploader.FlickrUploader"
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
-        android:label="@string/app_name"
-        android:logo="@drawable/icon_action_bar"
         android:theme="@style/CustomTheme" >
-        <service android:name="com.rafali.flickruploader.UploadService" />
+        <service android:name="com.rafali.flickruploader.service.UploadService" />
 
-        <receiver android:name="com.rafali.flickruploader.MyBroadcastReceiver" >
+        <receiver android:name="com.rafali.flickruploader.broadcast.MyBroadcastReceiver" >
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
@@ -50,25 +48,15 @@
             </intent-filter>
         </receiver>
         <receiver
-            android:name="com.rafali.flickruploader.AlarmBroadcastReceiver"
+            android:name="com.rafali.flickruploader.broadcast.AlarmBroadcastReceiver"
             android:process=":remote" >
         </receiver>
 
-        <!-- - Google Play Store donations -->
-        <service android:name="org.donations.google.BillingService" />
-
-        <receiver android:name="org.donations.google.BillingReceiver" >
-            <intent-filter>
-                <action android:name="com.android.vending.billing.IN_APP_NOTIFY" />
-                <action android:name="com.android.vending.billing.RESPONSE_CODE" />
-                <action android:name="com.android.vending.billing.PURCHASE_STATE_CHANGED" />
-            </intent-filter>
-        </receiver>
-
         <activity
-            android:name="com.rafali.flickruploader.FlickrUploaderActivity_"
+            android:name="com.rafali.flickruploader.ui.activity.FlickrUploaderActivity_"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:label="@string/app_name" >
+            android:label="Flickr Uploader"
+            android:logo="@drawable/upload" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -90,10 +78,10 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.rafali.flickruploader.Preferences"
+            android:name="com.rafali.flickruploader.ui.activity.PreferencesActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:icon="@drawable/empty_shape"
-            android:label="Preferences" >
+            android:label="Preferences"
+            android:logo="@drawable/preferences" >
             <intent-filter>
                 <action android:name="android.intent.action.MANAGE_NETWORK_USAGE" >
                 </action>
@@ -103,26 +91,25 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.rafali.flickruploader.PreferencesNotification"
+            android:name="com.rafali.flickruploader.ui.activity.PreferencesNotificationActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:label="Notifications" />
+            android:label="Notifications"
+            android:logo="@drawable/preferences" />
         <activity
-            android:name="com.rafali.flickruploader.PreferencesAdvanced"
+            android:name="com.rafali.flickruploader.ui.activity.PreferencesAdvancedActivity"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:label="Advanced Preferences" />
+            android:label="Advanced Preferences"
+            android:logo="@drawable/preferences" />
         <activity
-            android:name="com.rafali.flickruploader.WebAuth_"
+            android:name="com.rafali.flickruploader.ui.activity.WebAuthActivity_"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:icon="@drawable/empty_shape"
             android:windowSoftInputMode="adjustResize" />
         <activity
-            android:name="com.rafali.flickruploader.AutoUploadFoldersActivity_"
+            android:name="com.rafali.flickruploader.ui.activity.AutoUploadFoldersActivity_"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="Auto Upload Folders"
             android:windowSoftInputMode="adjustResize" />
-        <activity
-            android:name="com.google.ads.AdActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize" />
     </application>
 
 </manifest>

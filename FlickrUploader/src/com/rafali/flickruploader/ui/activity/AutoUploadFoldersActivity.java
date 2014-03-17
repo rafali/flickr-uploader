@@ -1,4 +1,4 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.ui.activity;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,7 +27,6 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.common.collect.Lists;
 import com.googlecode.androidannotations.annotations.Background;
@@ -36,7 +35,11 @@ import com.googlecode.androidannotations.annotations.UiThread;
 import com.googlecode.androidannotations.annotations.ViewById;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
-import com.rafali.flickruploader.Utils.VIEW_SIZE;
+import com.rafali.flickruploader.api.FlickrApi;
+import com.rafali.flickruploader.model.Folder;
+import com.rafali.flickruploader.model.Media;
+import com.rafali.flickruploader.tool.Utils;
+import com.rafali.flickruploader.tool.Utils.VIEW_SIZE;
 import com.rafali.flickruploader2.R;
 
 @EActivity(R.layout.auto_upload_folders_activity)
@@ -247,11 +250,6 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 	@Background
 	void createSetForFolder(Folder folder, String photoSetTitle) {
 		setAutoUploaded(folder, true, photoSetTitle);
-	}
-
-	@UiThread
-	void toast(String message) {
-		Toast.makeText(this, message, Toast.LENGTH_LONG).show();
 	}
 
 	ExecutorService executorService = Executors.newSingleThreadExecutor();

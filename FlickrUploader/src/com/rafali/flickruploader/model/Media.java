@@ -1,6 +1,7 @@
-package com.rafali.flickruploader;
+package com.rafali.flickruploader.model;
 
-import com.rafali.flickruploader.Utils.MediaType;
+import com.rafali.flickruploader.tool.Utils;
+import com.rafali.flickruploader.tool.Utils.MediaType;
 
 public class Media {
 
