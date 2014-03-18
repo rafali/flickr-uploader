@@ -18,6 +18,3 @@ It uses a few open source libraries:
 - [ACRA](https://github.com/ACRA/acra) : sends crash report to a configurable url
 - [AndroidAnnotation](https://github.com/excilys/androidannotations) : simplifies Android development with annotations to define code scope (UI thread, background thread…)
 - [google-collections](https://code.google.com/p/google-collections/) : simplifies use of lists, maps and multimaps 
-
-
-[![Mobile Analytics](https://cdn.mxpnl.com/site_media/images/partner/badge_blue.png)](https://mixpanel.com/f/partner)
