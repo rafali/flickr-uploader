@@ -30,11 +30,9 @@ import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore.Images;
 import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -46,7 +44,6 @@ import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -90,16 +87,15 @@ public class FlickrUploaderActivity extends Activity {
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrUploaderActivity.class);
 
 	private static FlickrUploaderActivity instance;
-	private FlickrUploaderActivity activity;
+	private FlickrUploaderActivity activity = this;
 
 	@Override
 	public void onCreate(Bundle bundle) {
-		activity = this;
 		super.onCreate(bundle);
 		load();
 		LOG.debug("onCreate " + bundle);
 		UploadService.wake();
-		if (Utils.getStringProperty(STR.accessToken) == null) {
+		if (!FlickrApi.isAuthentified()) {
 			Utils.confirmSignIn(activity);
 		}
 		if (instance != null)
@@ -108,10 +104,22 @@ public class FlickrUploaderActivity extends Activity {
 		Utils.checkPremium(false, new Utils.Callback<Boolean>() {
 			@Override
 			public void onResult(Boolean result) {
-
+				checkPremium();
 			}
 		});
 		handleIntent(getIntent());
+	}
+
+	@UiThread
+	void checkPremium() {
+		if (!Utils.isPremium() && !Utils.isTrial()) {
+			Utils.showPremiumDialog(activity, new Callback<Boolean>() {
+				@Override
+				public void onResult(Boolean result) {
+				}
+			});
+		} else {
+		}
 	}
 
 	@Background
@@ -192,52 +200,6 @@ public class FlickrUploaderActivity extends Activity {
 		computeHeaders(true);
 
 		init();
-		// test();
-	}
-
-	@Background
-	void test() {
-		int size = medias.size();
-		for (int i = 0; i < size; i++) {
-			Media media = medias.get(i);
-
-			Bitmap bitmap = null;
-			// try {
-			// ExifInterface exif = new ExifInterface(media.path);
-			// if (exif.hasThumbnail()) {
-			// byte[] thumbnail = exif.getThumbnail();
-			// bitmap = BitmapFactory.decodeByteArray(thumbnail, 0,
-			// thumbnail.length);
-			// LOG.info(i + "/" + size + " EXIF : " + bitmap.getWidth() + "x" +
-			// bitmap.getHeight());
-			// }
-			// } catch (Throwable e) {
-			// LOG.error(ToolString.stack2string(e));
-			// }
-
-			if (bitmap == null) {
-				BitmapFactory.Options options = new BitmapFactory.Options();
-				options.inSampleSize = 1;
-				options.inPurgeable = true;
-				options.inInputShareable = true;
-				bitmap = Images.Thumbnails.getThumbnail(getContentResolver(), media.id, Images.Thumbnails.MINI_KIND, options);
-				LOG.info(i + "/" + size + " MINI_KIND : " + bitmap.getWidth() + "x" + bitmap.getHeight());
-			}
-
-			// final BitmapFactory.Options opts = new BitmapFactory.Options();
-			// opts.inJustDecodeBounds = true;
-			// opts.inPurgeable = true;
-			// opts.inInputShareable = true;
-			// BitmapFactory.decodeFile(media.path, opts);
-			// // BitmapFactory.decodeFileDescriptor(file., null,
-			// // opts);
-			//
-			// // Calculate inSampleSize
-			// opts.inJustDecodeBounds = false;
-			// opts.inSampleSize = Utils.calculateInSampleSize(opts, 800, 600);
-			// Bitmap bitmap = BitmapFactory.decodeFile(media.path, opts);
-
-		}
 	}
 
 	@UiThread
@@ -252,8 +214,6 @@ public class FlickrUploaderActivity extends Activity {
 
 		Media[] mediaRow = null;
 		int currentIndex = 0;
-
-		LOG.info("Utils.getViewGroupType() : " + Utils.getViewGroupType());
 
 		for (Media media : medias) {
 			Header header;
@@ -308,13 +268,13 @@ public class FlickrUploaderActivity extends Activity {
 	@Override
 	protected void onStart() {
 		super.onStart();
-		EasyTracker.getInstance().activityStart(activity);
+		EasyTracker.getInstance(activity).activityStart(activity);
 	}
 
 	@Override
 	protected void onStop() {
 		super.onStop();
-		EasyTracker.getInstance().activityStop(activity);
+		EasyTracker.getInstance(activity).activityStop(activity);
 	}
 
 	@Override
@@ -427,7 +387,8 @@ public class FlickrUploaderActivity extends Activity {
 		}
 		computed_req_width = screenWidthPx / nb_column;
 		computed_nb_column = nb_column;
-		LOG.info(view_size + ", nb_column : " + nb_column + ", screenWidthPx : " + screenWidthPx);
+		// LOG.info(view_size + ", nb_column : " + nb_column +
+		// ", screenWidthPx : " + screenWidthPx);
 	}
 
 	int computed_req_height = 100;
@@ -436,38 +397,42 @@ public class FlickrUploaderActivity extends Activity {
 
 	@UiThread
 	void confirmUpload() {
-		new AlertDialog.Builder(activity).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
-				.setItems(new String[] { "Default set (" + STR.instantUpload + ")", "One set per folder", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						switch (which) {
-						case 0:
-							enqueue(selectedMedia, STR.instantUpload);
-							clearSelection();
-							break;
-						case 1:
-							Multimap<String, Media> multimap = HashMultimap.create();
-							for (Media image : selectedMedia) {
-								multimap.put(image.getFolderName(), image);
-							}
-							for (String folderName : multimap.keySet()) {
-								enqueue(multimap.get(folderName), folderName);
-							}
-							clearSelection();
-							break;
-						case 2:
-							showNewSetDialog(null);
-							break;
-						case 3:
-							showExistingSetDialog();
-							break;
+		if (FlickrApi.isAuthentified()) {
+			new AlertDialog.Builder(activity).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
+					.setItems(new String[] { "Default set (" + STR.instantUpload + ")", "One set per folder", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							switch (which) {
+							case 0:
+								enqueue(selectedMedia, STR.instantUpload);
+								clearSelection();
+								break;
+							case 1:
+								Multimap<String, Media> multimap = HashMultimap.create();
+								for (Media image : selectedMedia) {
+									multimap.put(image.getFolderName(), image);
+								}
+								for (String folderName : multimap.keySet()) {
+									enqueue(multimap.get(folderName), folderName);
+								}
+								clearSelection();
+								break;
+							case 2:
+								showNewSetDialog(null);
+								break;
+							case 3:
+								showExistingSetDialog();
+								break;
 
-						default:
-							break;
+							default:
+								break;
+							}
+							LOG.debug("which : " + which);
 						}
-						LOG.debug("which : " + which);
-					}
-				}).show();
+					}).show();
+		} else {
+			Utils.confirmSignIn(activity);
+		}
 	}
 
 	@UiThread
@@ -974,7 +939,6 @@ public class FlickrUploaderActivity extends Activity {
 			Utils.showPremiumDialog(activity, new Utils.Callback<Boolean>() {
 				@Override
 				public void onResult(Boolean result) {
-
 				}
 			});
 			break;
@@ -982,10 +946,7 @@ public class FlickrUploaderActivity extends Activity {
 			startActivity(new Intent(activity, PreferencesActivity.class));
 			break;
 		case R.id.faq:
-			String url = "https://github.com/rafali/flickr-uploader/wiki/FAQ";
-			Intent i = new Intent(Intent.ACTION_VIEW);
-			i.setData(Uri.parse(url));
-			startActivity(i);
+			Utils.showHelpDialog(activity);
 			break;
 		case R.id.view_size_small:
 			Utils.setViewSize(VIEW_SIZE.small);
@@ -1049,10 +1010,14 @@ public class FlickrUploaderActivity extends Activity {
 			computeHeaders(false);
 			break;
 		case R.id.upload_add:
-			if (selectedMedia.isEmpty()) {
-				Utils.toast("Select at least one file");
+			if (Utils.isPremium() || Utils.isTrial()) {
+				if (selectedMedia.isEmpty()) {
+					Utils.toast("Select at least one file");
+				} else {
+					confirmUpload();
+				}
 			} else {
-				confirmUpload();
+				checkPremium();
 			}
 			break;
 		case R.id.upload_remove:
@@ -1080,32 +1045,6 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	@UiThread
-	void confirmSync() {
-		final CharSequence[] modes = { "Auto-upload new photos", "Auto-upload new videos" };
-		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-		builder.setTitle("Auto-upload (7-days Trial)");
-		builder.setMultiChoiceItems(modes, new boolean[] { true, true }, null);
-		builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog, int id) {
-				ListView lw = ((AlertDialog) dialog).getListView();
-				Utils.setBooleanProperty(PreferencesActivity.AUTOUPLOAD, lw.isItemChecked(0));
-				Utils.setBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, lw.isItemChecked(1));
-			}
-
-		});
-		builder.setNegativeButton("More options", new OnClickListener() {
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				ListView lw = ((AlertDialog) dialog).getListView();
-				Utils.setBooleanProperty(PreferencesActivity.AUTOUPLOAD, lw.isItemChecked(0));
-				Utils.setBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, lw.isItemChecked(1));
-				startActivity(new Intent(activity, PreferencesActivity.class));
-			}
-		});
-		builder.setCancelable(false);
-		builder.create().show();
-	}
-
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (IabHelper.get(false) != null && IabHelper.get(false).handleActivityResult(requestCode, resultCode, data)) {
@@ -1113,7 +1052,7 @@ public class FlickrUploaderActivity extends Activity {
 		}
 		if (resultCode == FlickrWebAuthActivity.RESULT_CODE_AUTH) {
 			if (FlickrApi.isAuthentified()) {
-				confirmSync();
+				Utils.showAutoUploadDialog(activity);
 			}
 		} else {
 			super.onActivityResult(requestCode, resultCode, data);

@@ -59,6 +59,7 @@ import android.telephony.TelephonyManager;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -1256,22 +1257,71 @@ public final class Utils {
 
 	public static void showPremiumDialog(final Activity activity, final Callback<Boolean> callback) {
 		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-		String message = "Support this open-source app. Get the premium today and enjoy the automatic uploads and the next app improvements for life.";
-		if (!isTrial()) {
-			message += " And no ads.";
+		if (Utils.isTrial()) {
+			builder.setTitle("Trial info");
+			builder.setMessage("As explained in the Play Store description, this app can be used for free during 7 days. After 7 days, a one time payment is required to continue to use the app. Please refer to the Play Store description for the price and the payment methods.");
+		} else {
+			builder.setTitle("Trial expired");
+			builder.setMessage("The 7-day trial of this app is now over. As explained in the Play Store description, a one time payment is required to continue to use the app.");
 		}
-		builder.setTitle("Premium features").setMessage(message).setNegativeButton("Later", new OnClickListener() {
+
+		builder.setNegativeButton("Later", new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				LOG.debug("premium for later then");
 			}
-		}).setPositiveButton("Get Premium Now", new OnClickListener() {
+		}).setPositiveButton("Purchase Now", new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				startPayment(activity, callback);
 			}
 		});
 
+		builder.create().show();
+	}
+
+	public static void showHelpDialog(final Activity activity) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+		builder.setTitle("Help");
+		builder.setMessage("Make sure to read the FAQ (Frequently Asked Questions) before contacting the support as your question is probably in it.");
+		builder.setNegativeButton("Open FAQ", new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/rafali/flickr-uploader/wiki/FAQ2")));
+			}
+		});
+		builder.setPositiveButton("Contact support", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int id) {
+				Utils.showEmailActivity(activity, "Feedback on Flickr Uploader " + Config.VERSION_NAME, "I have read the FAQ and I still have a question:", true);
+			}
+
+		});
+		builder.create().show();
+	}
+
+	public static void showAutoUploadDialog(final Activity activity) {
+		final CharSequence[] modes = { "Auto-upload new photos", "Auto-upload new videos" };
+		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+		builder.setTitle("Auto-upload");
+		builder.setMultiChoiceItems(modes, new boolean[] { true, true }, null);
+		builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int id) {
+				ListView lw = ((AlertDialog) dialog).getListView();
+				Utils.setBooleanProperty(PreferencesActivity.AUTOUPLOAD, lw.isItemChecked(0));
+				Utils.setBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, lw.isItemChecked(1));
+			}
+
+		});
+		builder.setNegativeButton("More options", new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				ListView lw = ((AlertDialog) dialog).getListView();
+				Utils.setBooleanProperty(PreferencesActivity.AUTOUPLOAD, lw.isItemChecked(0));
+				Utils.setBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, lw.isItemChecked(1));
+				activity.startActivity(new Intent(activity, PreferencesActivity.class));
+			}
+		});
+		builder.setCancelable(false);
 		builder.create().show();
 	}
 
@@ -1362,7 +1412,7 @@ public final class Utils {
 					boolean premium = false;
 					try {
 						try {
-							Object[] checkPremium = RPC.getRpcService().checkPremium(getAccountEmails());
+							Object[] checkPremium = RPC.getRpcService().checkPremiumStatus(createAndroidDevice());
 							if (checkPremium != null && checkPremium[0] != null) {
 								premium = (Boolean) checkPremium[0];
 								customSku = (String) checkPremium[1];
@@ -1413,16 +1463,10 @@ public final class Utils {
 		return getBooleanProperty(STR.premium, false);
 	}
 
-	private static long releasePremiumDate = 1373742056622L;
-
 	public static long trialUntil() {
 		try {
 			long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;
-			if (firstInstallTime < releasePremiumDate) {
-				return firstInstallTime + 6 * 31 * 24 * 3600 * 1000L;
-			} else {
-				return firstInstallTime + 7 * 24 * 3600 * 1000L;
-			}
+			return firstInstallTime + 7 * 24 * 3600 * 1000L;
 		} catch (Throwable e) {
 			LOG.error(ToolString.stack2string(e));
 		}
@@ -1440,6 +1484,7 @@ public final class Utils {
 	}
 
 	public static boolean isTrial() {
+		// return false;
 		return trialUntil() > System.currentTimeMillis();
 	}
 

@@ -6,7 +6,7 @@ import com.rafali.flickruploader.AndroidDevice;
 import com.rafali.flickruploader.AppInstall;
 
 public interface AndroidRpcInterface {
-	Object[] checkPremium(List<String> emails);
+	Object[] checkPremiumStatus(AndroidDevice androidDevice);
 
 	void sendEmail(String recipient, String subject, String bodyHtml, String fromAddress);
 

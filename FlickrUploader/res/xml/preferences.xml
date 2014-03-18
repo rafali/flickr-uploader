@@ -19,7 +19,8 @@
     <PreferenceScreen
         android:key="autoupload_folder_settings"
         android:title="Auto Upload Folders" />
-    <ListPreference
+
+    <ListPreference
         android:defaultValue="wifior3G"
         android:dialogTitle="Upload when connected to"
         android:entries="@array/network_entries"
@@ -55,6 +56,9 @@
         android:key="feedback"
         android:summary="Something is not right? Need some help not found in the FAQ? Ideas for improvements?"
         android:title="Feedback / Help" />
-
+    <PreferenceScreen
+        android:key="github"
+        android:summary="This app is opensource and the source can be found on github.com/rafali/flickr-uploader"
+        android:title="Source code" />
 
 </PreferenceScreen>

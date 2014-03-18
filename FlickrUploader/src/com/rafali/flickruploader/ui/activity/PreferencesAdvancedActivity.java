@@ -23,7 +23,6 @@ import com.google.common.base.Joiner;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrUploader;
 import com.rafali.flickruploader.tool.Utils;
-import com.rafali.flickruploader.tool.Utils.Callback;
 import com.rafali.flickruploader2.R;
 
 @SuppressWarnings("deprecation")
@@ -141,7 +140,7 @@ public class PreferencesAdvancedActivity extends PreferenceActivity implements O
 						Utils.startPayment(PreferencesAdvancedActivity.this, new Utils.Callback<Boolean>() {
 							@Override
 							public void onResult(Boolean result) {
-								//FIXME
+								render();
 							}
 						});
 					}

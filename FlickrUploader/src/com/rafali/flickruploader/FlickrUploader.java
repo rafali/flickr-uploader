@@ -1,7 +1,6 @@
 package com.rafali.flickruploader;
 
 import static org.acra.ReportField.ANDROID_VERSION;
-import static org.acra.ReportField.APPLICATION_LOG;
 import static org.acra.ReportField.APP_VERSION_CODE;
 import static org.acra.ReportField.APP_VERSION_NAME;
 import static org.acra.ReportField.AVAILABLE_MEM_SIZE;
@@ -50,7 +49,7 @@ import com.rafali.flickruploader2.R;
 
 @ReportsCrashes(formUri = "http://ra-fa-li.appspot.com/androidCrashReport", formKey = "", mode = ReportingInteractionMode.TOAST, forceCloseDialogAfterToast = false, resToastText = R.string.crash_toast_text, customReportContent = {
 		REPORT_ID, APP_VERSION_CODE, APP_VERSION_NAME, PHONE_MODEL, ANDROID_VERSION, BUILD, BRAND, PRODUCT, TOTAL_MEM_SIZE, AVAILABLE_MEM_SIZE, STACK_TRACE, USER_APP_START_DATE, USER_CRASH_DATE,
-		DEVICE_FEATURES, ENVIRONMENT, SETTINGS_SYSTEM, SETTINGS_SECURE, THREAD_DETAILS, APPLICATION_LOG })
+		DEVICE_FEATURES, ENVIRONMENT, SETTINGS_SYSTEM, SETTINGS_SECURE, THREAD_DETAILS })
 public class FlickrUploader extends Application {
 
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrUploader.class);

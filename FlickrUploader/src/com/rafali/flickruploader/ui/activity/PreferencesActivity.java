@@ -30,6 +30,7 @@ import com.google.analytics.tracking.android.EasyTracker;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
+import com.rafali.flickruploader.Config;
 import com.rafali.flickruploader.ui.activity.AutoUploadFoldersActivity_;
 import com.rafali.flickruploader.ui.activity.FlickrWebAuthActivity_;
 import com.rafali.flickruploader.api.FlickrApi;
@@ -105,7 +106,7 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 		findPreference("rate").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
-				activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.rafali.flickruploader")));
+				activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.rafali.flickruploader2")));
 				Utils.setBooleanProperty(STR.hasRated, true);
 				return false;
 			}
@@ -129,7 +130,7 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 		findPreference("faq").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
-				activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/rafali/flickr-uploader/wiki/FAQ")));
+				activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/rafali/flickr-uploader/wiki/FAQ2")));
 				return false;
 			}
 		});
@@ -137,11 +138,20 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 		findPreference("feedback").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
-				Utils.showEmailActivity(activity, "Feedback on Flickr Instant Upload", "Here are some feedback to improve this app:", true);
+				Utils.showEmailActivity(activity, "Feedback on Flickr Uploader " + Config.VERSION_NAME, "Here are some feedback to improve this app:", true);
 				return false;
 			}
 
 		});
+		
+		findPreference("github").setOnPreferenceClickListener(new OnPreferenceClickListener() {
+			@Override
+			public boolean onPreferenceClick(Preference preference) {
+				activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/rafali/flickr-uploader")));
+				return false;
+			}
+		});
+
 
 		findPreference("autoupload_folder_settings").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
@@ -186,13 +196,13 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 	@Override
 	protected void onStart() {
 		super.onStart();
-		EasyTracker.getInstance().activityStart(this);
+		EasyTracker.getInstance(this).activityStart(this);
 	}
 
 	@Override
 	protected void onStop() {
 		super.onStop();
-		EasyTracker.getInstance().activityStop(this);
+		EasyTracker.getInstance(this).activityStop(this);
 	}
 
 	@Override

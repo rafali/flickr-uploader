@@ -81,7 +81,7 @@ public class FlickrWebAuthActivity extends Activity {
 	@Override
 	protected void onStart() {
 		super.onStart();
-		EasyTracker.getInstance().activityStart(this);
+		EasyTracker.getInstance(this).activityStart(this);
 	}
 
 	boolean paused = false;
@@ -89,7 +89,7 @@ public class FlickrWebAuthActivity extends Activity {
 	@Override
 	protected void onStop() {
 		super.onStop();
-		EasyTracker.getInstance().activityStop(this);
+		EasyTracker.getInstance(this).activityStop(this);
 	}
 
 	@Override

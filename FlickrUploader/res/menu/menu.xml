@@ -116,6 +116,11 @@
         android:title="Menu">
         <menu>
             <item
+                android:id="@+id/trial_info"
+                android:icon="@drawable/payment"
+                android:showAsAction="never"
+                android:title="Trial Info"/>
+            <item
                 android:id="@+id/faq"
                 android:icon="@drawable/help"
                 android:showAsAction="never"
@@ -125,10 +130,6 @@
                 android:icon="@drawable/preferences"
                 android:showAsAction="never"
                 android:title="Preferences"/>
-            <item
-                android:id="@+id/trial_info"
-                android:showAsAction="never"
-                android:title="Trial Info"/>
         </menu>
     </item>
 
