@@ -1384,6 +1384,8 @@ public final class Utils {
 						paypalCallback.onResult(false);
 					}
 				}
+				paypalCallback = null;
+				paypalActivity = null;
 			}
 		});
 	}
