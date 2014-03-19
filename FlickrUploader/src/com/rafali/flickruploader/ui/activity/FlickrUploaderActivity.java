@@ -108,11 +108,6 @@ public class FlickrUploaderActivity extends Activity {
 			}
 		});
 		handleIntent(getIntent());
-		Utils.showPremiumDialog(activity, new Callback<Boolean>() {
-			@Override
-			public void onResult(Boolean result) {
-			}
-		});
 	}
 
 	@UiThread
