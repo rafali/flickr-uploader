@@ -98,7 +98,7 @@ public class StickyHeaderListView extends ListView implements AbsListView.OnScro
 
 		if (getAdapter() != null) {
 			int headerPosition = getHeaderAdapter().getHeaderPosition(firstVisibleItem);
-			if (headerPosition != floatingHeaderPosition) {
+			if (headerPosition >= 0 && headerPosition != floatingHeaderPosition) {
 				floatingHeaderPosition = headerPosition;
 				floatingHeader = getAdapter().getView(headerPosition, null, this);
 				updateDimensionsForHeader(floatingHeader);

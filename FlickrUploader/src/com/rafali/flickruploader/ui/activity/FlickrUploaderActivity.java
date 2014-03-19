@@ -774,13 +774,16 @@ public class FlickrUploaderActivity extends Activity {
 
 		@Override
 		public int getHeaderPosition(int firstVisibleItem) {
-			Object thumbObject = thumbItems.get(firstVisibleItem);
-			if (thumbObject instanceof Header) {
-				return firstVisibleItem;
-			} else {
-				Media[] mediaRow = (Media[]) thumbObject;
-				return thumbItems.indexOf(headerMap.get(mediaRow[0]));
+			if (thumbItems.size() > firstVisibleItem) {
+				Object thumbObject = thumbItems.get(firstVisibleItem);
+				if (thumbObject instanceof Header) {
+					return firstVisibleItem;
+				} else {
+					Media[] mediaRow = (Media[]) thumbObject;
+					return thumbItems.indexOf(headerMap.get(mediaRow[0]));
+				}
 			}
+			return -1;
 		}
 
 	}
