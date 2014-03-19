@@ -2,6 +2,8 @@ package com.rafali.flickruploader.ui.widget;
 
 import org.slf4j.LoggerFactory;
 
+import com.rafali.common.ToolString;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
@@ -251,18 +253,22 @@ public class StickyHeaderListView extends ListView implements AbsListView.OnScro
 
 	protected void updateDimensionsForHeader(View headerView) {
 		if (headerView != null && headerView.isLayoutRequested()) {
-			int widthMeasure = MeasureSpec.makeMeasureSpec(getMeasuredWidth(), widthMode);
-			int heightMeasure;
+			try {
+				int widthMeasure = MeasureSpec.makeMeasureSpec(getMeasuredWidth(), widthMode);
+				int heightMeasure;
 
-			ViewGroup.LayoutParams layoutParams = headerView.getLayoutParams();
-			if (layoutParams != null && layoutParams.height > 0) {
-				heightMeasure = MeasureSpec.makeMeasureSpec(layoutParams.height, MeasureSpec.EXACTLY);
-			} else {
-				heightMeasure = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+				ViewGroup.LayoutParams layoutParams = headerView.getLayoutParams();
+				if (layoutParams != null && layoutParams.height > 0) {
+					heightMeasure = MeasureSpec.makeMeasureSpec(layoutParams.height, MeasureSpec.EXACTLY);
+				} else {
+					heightMeasure = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+				}
+
+				headerView.measure(widthMeasure, heightMeasure);
+				headerView.layout(0, 0, headerView.getMeasuredWidth(), headerView.getMeasuredHeight());
+			} catch (Throwable e) {
+				LOG.error(ToolString.stack2string(e));
 			}
-
-			headerView.measure(widthMeasure, heightMeasure);
-			headerView.layout(0, 0, headerView.getMeasuredWidth(), headerView.getMeasuredHeight());
 		}
 	}
 

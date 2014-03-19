@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.rafali.flickruploader2"
     android:installLocation="internalOnly"
-    android:versionCode="36"
+    android:versionCode="38"
     android:versionName="2.0" >
 
     <uses-sdk
@@ -17,7 +17,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
-    <!-- Required permission to use Google Play Store donations -->
+    <!-- Required permission to use Google Play Store in app purchase -->
     <uses-permission android:name="com.android.vending.BILLING" />
 
     <permission
@@ -28,6 +28,8 @@
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
+    <!-- Required permission to use Paypal -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
     <application
         android:name="com.rafali.flickruploader.FlickrUploader"
