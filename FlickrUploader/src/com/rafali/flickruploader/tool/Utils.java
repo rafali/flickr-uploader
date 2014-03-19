@@ -8,7 +8,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigDecimal;
 import java.security.MessageDigest;
+import java.sql.Date;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -60,6 +63,7 @@ import android.util.TypedValue;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ListView;
+import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -68,12 +72,16 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.paypal.android.sdk.payments.PayPalConfiguration;
+import com.paypal.android.sdk.payments.PayPalPayment;
+import com.paypal.android.sdk.payments.PayPalService;
+import com.paypal.android.sdk.payments.PaymentActivity;
+import com.paypal.android.sdk.payments.PaymentConfirmation;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.AndroidDevice;
 import com.rafali.flickruploader.Config;
 import com.rafali.flickruploader.FlickrUploader;
-import com.rafali.flickruploader.ui.activity.FlickrWebAuthActivity_;
 import com.rafali.flickruploader.api.FlickrApi;
 import com.rafali.flickruploader.api.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.billing.IabException;
@@ -85,6 +93,7 @@ import com.rafali.flickruploader.billing.Purchase;
 import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
+import com.rafali.flickruploader.ui.activity.FlickrWebAuthActivity_;
 import com.rafali.flickruploader.ui.activity.PreferencesActivity;
 import com.rafali.flickruploader2.R;
 
@@ -1256,14 +1265,18 @@ public final class Utils {
 	}
 
 	public static void showPremiumDialog(final Activity activity, final Callback<Boolean> callback) {
+		View view = View.inflate(activity, R.layout.premium_dialog, null);
 		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+		TextView description = (TextView) view.findViewById(R.id.description);
 		if (Utils.isTrial()) {
-			builder.setTitle("Trial info");
-			builder.setMessage("As explained in the Play Store description, this app can be used for free during 7 days. After 7 days, a one time payment is required to continue to use the app. Please refer to the Play Store description for the price and the payment methods.");
+			description.setText("This app can be used for free during 7 days. So after " + new SimpleDateFormat("dd MMMM", Locale.US).format(new Date(Utils.trialUntil()))
+					+ ", a one time payment will be required to continue to use the app.");
 		} else {
-			builder.setTitle("Trial expired");
-			builder.setMessage("The 7-day trial of this app is now over. As explained in the Play Store description, a one time payment is required to continue to use the app.");
+			description.setText("The 7-day trial of this app is now over. A one time payment is required to continue to use the app.");
 		}
+
+		builder.setView(view);
+		final RadioButton googleRadio = (RadioButton) view.findViewById(R.id.radio_google);
 
 		builder.setNegativeButton("Later", new OnClickListener() {
 			@Override
@@ -1273,11 +1286,17 @@ public final class Utils {
 		}).setPositiveButton("Purchase Now", new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-				startPayment(activity, callback);
+				if (googleRadio.isChecked()) {
+					startGooglePayment(activity, callback);
+				} else {
+					startPaypalPayment(activity, callback);
+				}
 			}
 		});
 
-		builder.create().show();
+		AlertDialog dialog = builder.create();
+		dialog.setCanceledOnTouchOutside(false);
+		dialog.show();
 	}
 
 	public static void showHelpDialog(final Activity activity) {
@@ -1325,7 +1344,101 @@ public final class Utils {
 		builder.create().show();
 	}
 
-	public static void startPayment(final Activity activity, final Callback<Boolean> callback) {
+	private static final String CONFIG_ENVIRONMENT = Config.isDebug() ? PayPalConfiguration.ENVIRONMENT_SANDBOX : PayPalConfiguration.ENVIRONMENT_PRODUCTION;
+	private static final String CONFIG_CLIENT_ID = Utils.getString(R.string.paypal_client_id);
+	private static final int PAYPAL_REQUEST_CODE_PAYMENT = 111000;
+
+	private static PayPalConfiguration config = new PayPalConfiguration().environment(CONFIG_ENVIRONMENT).clientId(CONFIG_CLIENT_ID);
+	private static Activity paypalActivity;
+	private static Callback<Boolean> paypalCallback;
+
+	public static void startPaypalPayment(final Activity activity, final Callback<Boolean> callback) {
+		Utils.paypalActivity = activity;
+		Utils.paypalCallback = callback;
+		String paypal_result_confirmation = Utils.getStringProperty("paypal_result_confirmation");
+		if (ToolString.isNotBlank(paypal_result_confirmation)) {
+			validatePaypalPayment(paypal_result_confirmation);
+		} else {
+			{
+				Intent intent = new Intent(activity, PayPalService.class);
+				intent.putExtra(PayPalService.EXTRA_PAYPAL_CONFIGURATION, config);
+				activity.startService(intent);
+			}
+			PayPalPayment thingToBuy = new PayPalPayment(new BigDecimal("4.99"), "USD", "Flickr Uploader License", PayPalPayment.PAYMENT_INTENT_SALE);
+			Intent intent = new Intent(activity, PaymentActivity.class);
+			intent.putExtra(PaymentActivity.EXTRA_PAYMENT, thingToBuy);
+			activity.startActivityForResult(intent, PAYPAL_REQUEST_CODE_PAYMENT);
+		}
+	}
+
+	static void validatePaypalPayment(final String paypal_result_confirmation) {
+		BackgroundExecutor.execute(new Runnable() {
+			@Override
+			public void run() {
+				if (ToolString.isNotBlank(paypal_result_confirmation) && paypalActivity != null && paypalCallback != null) {
+					toast("Processing payment");
+					Boolean valid = RPC.getRpcService().confirmPaypalPayment(paypal_result_confirmation);
+					if (valid != null && valid) {
+						onPaymentAccepted("Paypal", paypalActivity, paypalCallback);
+					} else {
+						paypalCallback.onResult(false);
+					}
+				}
+			}
+		});
+	}
+
+	public static boolean onActivityResult(int requestCode, int resultCode, Intent data) {
+		boolean consumed = false;
+		if (requestCode == PAYPAL_REQUEST_CODE_PAYMENT) {
+			consumed = true;
+			if (resultCode == Activity.RESULT_OK) {
+				PaymentConfirmation confirm = data.getParcelableExtra(PaymentActivity.EXTRA_RESULT_CONFIRMATION);
+				if (confirm != null) {
+					String paypal_result_confirmation = confirm.toJSONObject().toString();
+					LOG.info(paypal_result_confirmation);
+					Utils.setStringProperty("paypal_result_confirmation", paypal_result_confirmation);
+					validatePaypalPayment(paypal_result_confirmation);
+					// TODO: send 'confirm' to your server for verification
+					// or consent
+					// completion.
+					// see
+					// https://developer.paypal.com/webapps/developer/docs/integration/mobile/verify-mobile-payment/
+					// for more details.
+				}
+			} else if (resultCode == Activity.RESULT_CANCELED) {
+				LOG.info("The user canceled.");
+			} else if (resultCode == PaymentActivity.RESULT_EXTRAS_INVALID) {
+				LOG.warn("An invalid Payment was submitted. Please see the docs.");
+			}
+		} else if (IabHelper.get(false) != null && IabHelper.get(false).handleActivityResult(requestCode, resultCode, data)) {
+			consumed = true;
+		}
+		return consumed;
+	}
+
+	private static void onPaymentAccepted(String method, final Activity activity, final Callback<Boolean> callback) {
+		try {
+			setPremium(true, true, true);
+			activity.runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					callback.onResult(true);
+				}
+			});
+			thankYou(activity);
+
+			long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;
+			long timeSinceInstall = System.currentTimeMillis() - firstInstallTime;
+
+			Utils.sendMail("[FlickrUploader] PremiumSuccess " + method + " - " + ToolString.formatDuration(timeSinceInstall) + " - " + getCountryCode(), Utils.getDeviceId() + " - " + Utils.getEmail()
+					+ " - " + Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
+		} catch (Throwable e) {
+			LOG.error(ToolString.stack2string(e));
+		}
+	}
+
+	public static void startGooglePayment(final Activity activity, final Callback<Boolean> callback) {
 		final OnIabPurchaseFinishedListener mPurchaseFinishedListener = new OnIabPurchaseFinishedListener() {
 			@Override
 			public void onIabPurchaseFinished(IabResult result, Purchase purchase) {
@@ -1338,20 +1451,13 @@ public final class Utils {
 						}
 						callback.onResult(false);
 					} else {
-						setPremium(true, true, true);
-						callback.onResult(true);
-						thankYou(activity);
-
-						long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;
-						long timeSinceInstall = System.currentTimeMillis() - firstInstallTime;
-
-						Utils.sendMail("[FlickrUploader] PremiumSuccess " + ToolString.formatDuration(timeSinceInstall) + " - " + getCountryCode(), Utils.getDeviceId() + " - " + Utils.getEmail()
-								+ " - " + Utils.getStringProperty(STR.userId) + " - " + Utils.getStringProperty(STR.userName));
+						onPaymentAccepted("Google", activity, callback);
 					}
 				} catch (Throwable e) {
 					LOG.error(ToolString.stack2string(e));
 				}
 			}
+
 		};
 		// enable debug logging (for a production application, you should set
 		// this to false).
@@ -1585,4 +1691,5 @@ public final class Utils {
 			LOG.debug("Not toasted : " + message);
 		}
 	}
+
 }

@@ -134,4 +134,9 @@ public class AndroidRpcImpl implements AndroidRpcInterface {
 		return null;
 	}
 
+	@Override
+	public Boolean confirmPaypalPayment(String paypalResultJson) {
+		// TODO paypal actual API check
+		return true;
+	}
 }

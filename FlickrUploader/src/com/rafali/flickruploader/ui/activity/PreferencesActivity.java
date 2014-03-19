@@ -31,11 +31,8 @@ import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.Config;
-import com.rafali.flickruploader.ui.activity.AutoUploadFoldersActivity_;
-import com.rafali.flickruploader.ui.activity.FlickrWebAuthActivity_;
 import com.rafali.flickruploader.api.FlickrApi;
 import com.rafali.flickruploader.api.FlickrApi.PRIVACY;
-import com.rafali.flickruploader.billing.IabHelper;
 import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.service.UploadService;
 import com.rafali.flickruploader.tool.Utils;
@@ -312,7 +309,7 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 	}
 
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (IabHelper.get(false) != null && IabHelper.get(false).handleActivityResult(requestCode, resultCode, data)) {
+		if (Utils.onActivityResult(requestCode, resultCode, data)) {
 			return;
 		}
 		super.onActivityResult(requestCode, resultCode, data);

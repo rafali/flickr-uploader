@@ -29,7 +29,16 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
     <!-- Required permission to use Paypal -->
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <!-- for card.io card scanning -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
 
     <application
         android:name="com.rafali.flickruploader.FlickrUploader"
@@ -37,6 +46,9 @@
         android:icon="@drawable/ic_launcher"
         android:theme="@style/CustomTheme" >
         <service android:name="com.rafali.flickruploader.service.UploadService" />
+        <service
+            android:name="com.paypal.android.sdk.payments.PayPalService"
+            android:exported="false" />
 
         <receiver android:name="com.rafali.flickruploader.broadcast.MyBroadcastReceiver" >
             <intent-filter>
@@ -113,6 +125,17 @@
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="Auto Upload Folders"
             android:windowSoftInputMode="adjustResize" />
+        <activity android:name="com.paypal.android.sdk.payments.PaymentActivity" />
+        <activity android:name="com.paypal.android.sdk.payments.LoginActivity" />
+        <activity android:name="com.paypal.android.sdk.payments.PaymentMethodActivity" />
+        <activity android:name="com.paypal.android.sdk.payments.PaymentConfirmActivity" />
+        <activity android:name="com.paypal.android.sdk.payments.PayPalFuturePaymentActivity" />
+        <activity android:name="com.paypal.android.sdk.payments.FuturePaymentConsentActivity" />
+        <activity android:name="com.paypal.android.sdk.payments.FuturePaymentInfoActivity" />
+        <activity
+            android:name="io.card.payment.CardIOActivity"
+            android:configChanges="keyboardHidden|orientation" />
+        <activity android:name="io.card.payment.DataEntryActivity" />
     </application>
 
 </manifest>

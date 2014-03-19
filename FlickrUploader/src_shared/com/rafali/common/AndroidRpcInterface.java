@@ -13,4 +13,6 @@ public interface AndroidRpcInterface {
 	void setPremium(boolean premium, boolean purchased, List<String> emails);
 
 	AppInstall ensureInstall(AndroidDevice androidDevice);
+	
+	Boolean confirmPaypalPayment(String paypalResultJson);
 }

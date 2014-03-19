@@ -58,12 +58,12 @@ import com.googlecode.androidannotations.annotations.EActivity;
 import com.googlecode.androidannotations.annotations.UiThread;
 import com.googlecode.androidannotations.annotations.ViewById;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
+import com.paypal.android.sdk.payments.PayPalService;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrUploader;
 import com.rafali.flickruploader.api.FlickrApi;
 import com.rafali.flickruploader.api.FlickrApi.PRIVACY;
-import com.rafali.flickruploader.billing.IabHelper;
 import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.service.UploadService;
@@ -108,6 +108,11 @@ public class FlickrUploaderActivity extends Activity {
 			}
 		});
 		handleIntent(getIntent());
+		Utils.showPremiumDialog(activity, new Callback<Boolean>() {
+			@Override
+			public void onResult(Boolean result) {
+			}
+		});
 	}
 
 	@UiThread
@@ -323,6 +328,7 @@ public class FlickrUploaderActivity extends Activity {
 		destroyed = true;
 		UploadService.unregister(drawerHandleView);
 		UploadService.unregister(drawerContentView);
+		stopService(new Intent(this, PayPalService.class));
 	}
 
 	public boolean destroyed = false;
@@ -1047,7 +1053,7 @@ public class FlickrUploaderActivity extends Activity {
 	@UiThread
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (IabHelper.get(false) != null && IabHelper.get(false).handleActivityResult(requestCode, resultCode, data)) {
+		if (Utils.onActivityResult(requestCode, resultCode, data)) {
 			return;
 		}
 		if (resultCode == FlickrWebAuthActivity.RESULT_CODE_AUTH) {

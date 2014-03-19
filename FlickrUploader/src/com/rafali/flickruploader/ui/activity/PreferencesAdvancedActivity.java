@@ -137,7 +137,7 @@ public class PreferencesAdvancedActivity extends PreferenceActivity implements O
 				alert.setPositiveButton("Get Premium Now", new OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						Utils.startPayment(PreferencesAdvancedActivity.this, new Utils.Callback<Boolean>() {
+						Utils.startGooglePayment(PreferencesAdvancedActivity.this, new Utils.Callback<Boolean>() {
 							@Override
 							public void onResult(Boolean result) {
 								render();
