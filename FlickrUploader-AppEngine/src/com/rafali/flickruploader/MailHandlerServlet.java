@@ -3,6 +3,7 @@ package com.rafali.flickruploader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -129,6 +130,7 @@ public class MailHandlerServlet extends HttpServlet {
 				for (Coupon coupon : results) {
 					coupon.setPremium(premium);
 					coupon.setPurchased(purchased);
+					coupon.setDateUpdated(new Date());
 					logger.debug("updated : " + coupon);
 				}
 			}

@@ -77,11 +77,11 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 
 	@Background
 	void load() {
-		List<Media> media = Utils.loadImages(null);
+		List<Media> media = Utils.loadMedia(null);
 		if (media != null) {
 			folders = Utils.getFolders(media);
 			for (Folder folder : folders) {
-				foldersMap.put(folder.images.get(0), folder);
+				foldersMap.put(folder.medias.get(0), folder);
 			}
 			render();
 		}
@@ -124,7 +124,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 
 		@Override
 		public Object getItem(int position) {
-			return folders.get(position).images.get(0);
+			return folders.get(position).medias.get(0);
 		}
 
 		@Override
@@ -141,9 +141,9 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 				convertView.setTag(R.id.title, convertView.findViewById(R.id.title));
 				convertView.setTag(R.id.sub_title, convertView.findViewById(R.id.sub_title));
 			}
-			final Media image = (Media) item;
-			if (convertView.getTag() != image) {
-				convertView.setTag(image);
+			final Media media = (Media) item;
+			if (convertView.getTag() != media) {
+				convertView.setTag(media);
 				renderImageView(convertView);
 			}
 			return convertView;
@@ -256,10 +256,10 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 
 	private void renderImageView(final View convertView) {
 		if (convertView.getTag() instanceof Media) {
-			final Media image = (Media) convertView.getTag();
+			final Media media = (Media) convertView.getTag();
 			final CacheableImageView imageView = (CacheableImageView) convertView.getTag(R.id.image_view);
-			imageView.setTag(image);
-			Folder folder = foldersMap.get(image);
+			imageView.setTag(media);
+			Folder folder = foldersMap.get(media);
 			((TextView) convertView.getTag(R.id.title)).setText(folder.name + " (" + folder.size + ")");
 			boolean autoUpload = Utils.isAutoUpload(folder);
 			String summary;
@@ -277,7 +277,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 			}
 			subTitle.setText(summary);
 
-			final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(image.path + "_" + item_layout);
+			final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(media.getPath() + "_" + item_layout);
 			if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
 				// The cache has it, so just display it
 				imageView.setImageDrawable(wrapper);
@@ -288,14 +288,14 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 			executorService.submit(new Runnable() {
 				@Override
 				public void run() {
-					if (imageView.getTag() == image) {
+					if (imageView.getTag() == media) {
 						final CacheableBitmapDrawable bitmapDrawable;
 						if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
 							bitmapDrawable = wrapper;
 						} else {
-							Bitmap bitmap = Utils.getBitmap(image, VIEW_SIZE.small);
+							Bitmap bitmap = Utils.getBitmap(media, VIEW_SIZE.small);
 							if (bitmap != null) {
-								bitmapDrawable = Utils.getCache().put(image.path + "_" + item_layout, bitmap);
+								bitmapDrawable = Utils.getCache().put(media.getPath() + "_" + item_layout, bitmap);
 							} else {
 								bitmapDrawable = null;
 							}
@@ -304,7 +304,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 						runOnUiThread(new Runnable() {
 							@Override
 							public void run() {
-								if (imageView.getTag() == image) {
+								if (imageView.getTag() == media) {
 									if (wrapper != bitmapDrawable) {
 										imageView.setImageDrawable(bitmapDrawable);
 									}

@@ -33,13 +33,13 @@ import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.AbsListView;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -130,7 +130,7 @@ public class FlickrUploaderActivity extends Activity {
 			if (Intent.ACTION_SEND.equals(action) && type != null) {
 				if (type.startsWith("image/") || type.startsWith("video/")) {
 					Uri imageUri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
-					List<Media> loadImages = Utils.loadImages(imageUri.toString(), type.startsWith("image/") ? MediaType.photo : MediaType.video, 1);
+					List<Media> loadImages = Utils.loadMedia(imageUri.toString(), type.startsWith("image/") ? MediaType.photo : MediaType.video, 1);
 					LOG.debug("imageUri : " + imageUri + ", loadImages : " + loadImages);
 					if (!loadImages.isEmpty()) {
 						selectedMedia.clear();
@@ -146,7 +146,7 @@ public class FlickrUploaderActivity extends Activity {
 					List<Media> loadImages = new ArrayList<Media>();
 					if (imageUris != null) {
 						for (Uri imageUri : imageUris) {
-							List<Media> tmpImages = Utils.loadImages(imageUri.toString(), type.startsWith("image/") ? MediaType.photo : MediaType.video, 1);
+							List<Media> tmpImages = Utils.loadMedia(imageUri.toString(), type.startsWith("image/") ? MediaType.photo : MediaType.video, 1);
 							LOG.debug("imageUri : " + imageUri + ", loadImages : " + loadImages);
 							loadImages.addAll(tmpImages);
 						}
@@ -166,16 +166,27 @@ public class FlickrUploaderActivity extends Activity {
 	SimpleDateFormat format = new SimpleDateFormat("MMMM, yyyy", Locale.US);
 
 	List<Object> thumbItems;
+	Map<Media, Media[]> mediaRows;
 	List<Media> medias;
 
 	@Background
 	void load() {
-		medias = new ArrayList<Media>();
-		if (Utils.getShowPhotos()) {
-			medias.addAll(Utils.loadImages(null, MediaType.photo));
+		medias = Utils.loadMedia();
+		boolean showPhotos = Utils.getShowPhotos();
+		boolean showVideos = Utils.getShowVideos();
+		Iterator<Media> it = medias.iterator();
+		int nbUploaded = 0;
+		while (it.hasNext()) {
+			Media media = it.next();
+			if (!showPhotos && media.isPhoto() || !showVideos && media.isVideo()) {
+				it.remove();
+			}
+			if (media.isUploaded()) {
+				nbUploaded++;
+			}
 		}
-		if (Utils.getShowVideos()) {
-			medias.addAll(Utils.loadImages(null, MediaType.video));
+		if (nbUploaded <= 0 && FlickrApi.isAuthentified()) {
+			FlickrApi.syncMedia();
 		}
 
 		if (Utils.getViewGroupType() == VIEW_GROUP_TYPE.date) {
@@ -210,6 +221,7 @@ public class FlickrUploaderActivity extends Activity {
 			headerIds = new HashMap<String, Header>();
 		}
 		thumbItems = new ArrayList<Object>();
+		mediaRows = new HashMap<Media, Media[]>();
 		computeNbColumn();
 
 		Media[] mediaRow = null;
@@ -218,7 +230,7 @@ public class FlickrUploaderActivity extends Activity {
 		for (Media media : medias) {
 			Header header;
 			if (Utils.getViewGroupType() == VIEW_GROUP_TYPE.date) {
-				String id = format.format(new Date(media.date));
+				String id = format.format(new Date(media.getDate()));
 				header = headerIds.get(id);
 				if (header == null) {
 					header = new Header(id, id);
@@ -253,6 +265,7 @@ public class FlickrUploaderActivity extends Activity {
 				thumbItems.add(mediaRow);
 			}
 			mediaRow[currentIndex] = media;
+			mediaRows.put(media, mediaRow);
 			currentIndex++;
 		}
 		if (listView != null) {
@@ -297,12 +310,12 @@ public class FlickrUploaderActivity extends Activity {
 
 	void testNotification() {
 		BackgroundExecutor.execute(new Runnable() {
-			Media image = medias.get(0);
+			Media media = medias.get(0);
 
 			@Override
 			public void run() {
 				for (int i = 0; i <= 100; i++) {
-					Notifications.notify(i, image, 1, 1);
+					Notifications.notify(i, media, 1, 1);
 					try {
 						Thread.sleep(200);
 					} catch (InterruptedException e) {
@@ -410,8 +423,8 @@ public class FlickrUploaderActivity extends Activity {
 								break;
 							case 1:
 								Multimap<String, Media> multimap = HashMultimap.create();
-								for (Media image : selectedMedia) {
-									multimap.put(image.getFolderName(), image);
+								for (Media media : selectedMedia) {
+									multimap.put(media.getFolderName(), media);
 								}
 								for (String folderName : multimap.keySet()) {
 									enqueue(multimap.get(folderName), folderName);
@@ -690,6 +703,19 @@ public class FlickrUploaderActivity extends Activity {
 								refresh(false);
 							}
 						});
+						thumbView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+							@Override
+							public void onViewDetachedFromWindow(View v) {
+								thumbViews.values().removeAll(Collections.singleton(v));
+							}
+
+							@Override
+							public void onViewAttachedToWindow(View v) {
+								if (v.getTag() instanceof Media) {
+									thumbViews.put((Media) v.getTag(), v);
+								}
+							}
+						});
 					}
 				}
 				if (linearLayout.getTag() != mediaRow) {
@@ -697,8 +723,17 @@ public class FlickrUploaderActivity extends Activity {
 
 					for (int i = 0; i < mediaRow.length; i++) {
 						View thumbView = linearLayout.getChildAt(i);
-						thumbView.setTag(mediaRow[i]);
-						renderImageView(thumbView, true);
+						Media media = mediaRow[i];
+						if (media == null) {
+							thumbViews.remove(thumbView.getTag());
+							thumbView.setTag(media);
+							renderImageView(thumbView, true);
+						} else if (!media.equals(thumbView.getTag())) {
+							thumbViews.remove(thumbView.getTag());
+							thumbViews.put(media, thumbView);
+							thumbView.setTag(media);
+							renderImageView(thumbView, true);
+						}
 					}
 
 				}
@@ -712,6 +747,7 @@ public class FlickrUploaderActivity extends Activity {
 			if (convertView == null) {
 				convertView = View.inflate(activity, R.layout.grid_header, null);
 				convertView.setTag(Header.class);
+				convertView.setLayoutParams(new AbsListView.LayoutParams(AbsListView.LayoutParams.MATCH_PARENT, Utils.getScaledSize(48)));
 				convertView.findViewById(R.id.count).setOnClickListener(new View.OnClickListener() {
 					@Override
 					public void onClick(View v) {
@@ -788,11 +824,45 @@ public class FlickrUploaderActivity extends Activity {
 
 	}
 
+	public static void updateStatic(Media media) {
+		if (instance != null) {
+			instance.update(media);
+		}
+	}
+
+	Map<Media, View> thumbViews = new HashMap<Media, View>();
+
+	private void update(Media media) {
+		int index = medias.indexOf(media);
+		if (index >= 0) {
+			medias.remove(index);
+			medias.add(index, media);
+			if (mediaRows != null) {
+				Media[] mediaRow = mediaRows.get(media);
+				if (mediaRow != null) {
+					for (int i = 0; i < mediaRow.length; i++) {
+						if (media.equals(mediaRow[i])) {
+							mediaRow[i] = media;
+							break;
+						}
+					}
+				}
+			}
+			View thumbView = thumbViews.get(media);
+			if (thumbView != null) {
+				thumbView.setTag(media);
+				renderImageView(thumbView, false);
+				LOG.info(index + " view updated by " + media);
+			}
+		}
+	}
+
 	Set<View> attachedHeaderViews = new HashSet<View>();
 
 	ExecutorService executorService = Executors.newSingleThreadExecutor();
 
-	private void renderImageView(final View convertView, boolean reset) {
+	@UiThread
+	void renderImageView(final View convertView, boolean reset) {
 		if (convertView.getTag() instanceof Media) {
 			convertView.setVisibility(View.VISIBLE);
 			convertView.setLayoutParams(new LinearLayout.LayoutParams(computed_req_width, computed_req_height));
@@ -807,9 +877,9 @@ public class FlickrUploaderActivity extends Activity {
 			}
 
 			View type = (View) convertView.getTag(R.id.type);
-			type.setVisibility(media.mediaType == MediaType.video ? View.VISIBLE : View.GONE);
+			type.setVisibility(media.getMediaType() == MediaType.video ? View.VISIBLE : View.GONE);
 
-			final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(media.path + "_" + Utils.getViewSize());
+			final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(media.getPath() + "_" + Utils.getViewSize());
 			if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
 				// The cache has it, so just display it
 				imageView.setImageDrawable(wrapper);
@@ -821,25 +891,22 @@ public class FlickrUploaderActivity extends Activity {
 				@Override
 				public void run() {
 					try {
-						if (imageView.getTag() == media) {
-							final boolean isUploaded;
-							final boolean isUploading;
-							isUploaded = FlickrApi.isUploaded(media);
-							isUploading = UploadService.isUploading(media);
+						if (media.equals(imageView.getTag())) {
+							final boolean uploading = UploadService.isUploading(media);
+							final boolean uploaded = media.isUploaded();
 							final int privacyResource;
-							if (isUploaded) {
-								privacyResource = getPrivacyResource(FlickrApi.getPrivacy(media));
+							if (uploaded) {
+								privacyResource = getPrivacyResource(media.getPrivacy());
 							} else {
 								privacyResource = 0;
 							}
-							// LOG.debug(tab + ", isUploaded=" + isUploaded);
 							final CacheableBitmapDrawable bitmapDrawable;
 							if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
 								bitmapDrawable = wrapper;
 							} else {
 								Bitmap bitmap = Utils.getBitmap(media, Utils.getViewSize());
 								if (bitmap != null) {
-									bitmapDrawable = Utils.getCache().put(media.path + "_" + Utils.getViewSize(), bitmap);
+									bitmapDrawable = Utils.getCache().put(media.getPath() + "_" + Utils.getViewSize(), bitmap);
 								} else {
 									bitmapDrawable = null;
 								}
@@ -847,10 +914,10 @@ public class FlickrUploaderActivity extends Activity {
 							runOnUiThread(new Runnable() {
 								@Override
 								public void run() {
-									if (imageView.getTag() == media) {
+									if (media.equals(imageView.getTag())) {
 										check_image.setVisibility(selectedMedia.contains(media) ? View.VISIBLE : View.GONE);
-										uploadedImageView.setVisibility(isUploaded ? View.VISIBLE : View.GONE);
-										((View) convertView.getTag(R.id.uploading)).setVisibility(isUploading ? View.VISIBLE : View.GONE);
+										uploadedImageView.setVisibility(uploaded ? View.VISIBLE : View.GONE);
+										((View) convertView.getTag(R.id.uploading)).setVisibility(uploading ? View.VISIBLE : View.GONE);
 										if (wrapper != bitmapDrawable) {
 											imageView.setImageDrawable(bitmapDrawable);
 										}
@@ -871,8 +938,6 @@ public class FlickrUploaderActivity extends Activity {
 			convertView.setVisibility(View.GONE);
 		}
 	}
-
-	static SparseArray<String> uploadedPhotos = new SparseArray<String>();
 
 	private Menu menu;
 

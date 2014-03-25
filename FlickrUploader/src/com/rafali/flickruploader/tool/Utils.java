@@ -30,6 +30,9 @@ import java.util.concurrent.Executors;
 
 import org.slf4j.LoggerFactory;
 
+import se.emilsjolander.sprinkles.CursorList;
+import se.emilsjolander.sprinkles.ManyQuery;
+import se.emilsjolander.sprinkles.Query;
 import uk.co.senab.bitmapcache.BitmapLruCache;
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -55,6 +58,8 @@ import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Environment;
 import android.preference.PreferenceManager;
+import android.provider.MediaStore;
+import android.provider.MediaStore.Files.FileColumns;
 import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Video;
 import android.provider.Settings.Secure;
@@ -361,16 +366,16 @@ public final class Utils {
 		editor.commit();
 	}
 
-	public static void setImages(String key, Collection<Media> images) {
+	public static void setImages(String key, Collection<Media> medias) {
 		try {
 			String serialized;
-			synchronized (images) {
-				if (images == null || images.isEmpty()) {
+			synchronized (medias) {
+				if (medias == null || medias.isEmpty()) {
 					serialized = null;
 				} else {
 					List<Integer> ids = new ArrayList<Integer>();
-					for (Media image : images) {
-						ids.add(image.id);
+					for (Media media : medias) {
+						ids.add(media.getId());
 					}
 					serialized = Joiner.on(",").join(ids);
 				}
@@ -387,7 +392,7 @@ public final class Utils {
 		String queueIds = getStringProperty(key);
 		if (ToolString.isNotBlank(queueIds)) {
 			String filter = Images.Media._ID + " IN (" + queueIds + ")";
-			List<Media> images = Utils.loadImages(filter);
+			List<Media> images = Utils.loadMedia(filter);
 			LOG.debug(key + " - queueIds : " + queueIds.split(",").length + ", images:" + images.size());
 			return images;
 		}
@@ -398,14 +403,14 @@ public final class Utils {
 		List<Media> images = null;
 		if (ids != null && !ids.isEmpty()) {
 			String filter = Images.Media._ID + " IN (" + Joiner.on(",").join(ids) + ")";
-			images = Utils.loadImages(filter);
+			images = Utils.loadMedia(filter);
 		}
 		return images;
 	}
 
 	public static Media getImage(int id) {
 		String filter = Images.Media._ID + " IN (" + id + ")";
-		List<Media> images = Utils.loadImages(filter);
+		List<Media> images = Utils.loadMedia(filter);
 		if (!images.isEmpty()) {
 			return images.get(0);
 		}
@@ -499,15 +504,7 @@ public final class Utils {
 		return map;
 	}
 
-	private static String SHA1(Media image) {
-		return SHA1(image.path + "_" + new File(image.path).length());
-	}
-
-	public static String getSHA1tag(Media image) {
-		return "file:sha1sig=" + SHA1(image).toLowerCase(Locale.US);
-	}
-
-	private static String SHA1(String text) {
+	public static String SHA1(String text) {
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-1");
 			byte[] sha1hash = new byte[40];
@@ -559,21 +556,9 @@ public final class Utils {
 		}
 	}
 
-	static final Map<String, String> md5Sums = new HashMap<String, String>();
-
-	public static final String getMD5Checksum(Media image) {
-		String filename = image.path;
-		String md5sum = md5Sums.get(filename);
-		if (md5sum == null) {
-			md5sum = getMD5Checksum(filename);
-			md5Sums.put(filename, md5sum);
-		}
-		return md5sum;
-	}
-
 	// see this How-to for a faster way to convert
 	// a byte array to a HEX string
-	private static String getMD5Checksum(String filename) {
+	public static String getMD5Checksum(String filename) {
 		byte[] b = createChecksum(filename);
 		String result = "";
 
@@ -605,24 +590,24 @@ public final class Utils {
 	static final String[] projPhoto = { Images.Media._ID, Images.Media.DATA, Images.Media.DATE_ADDED, Images.Media.DATE_TAKEN, Images.Media.DISPLAY_NAME, Images.Media.SIZE };
 	static final String[] projVideo = { Video.Media._ID, Video.Media.DATA, Video.Media.DATE_ADDED, Video.Media.DATE_TAKEN, Video.Media.DISPLAY_NAME, Video.Media.SIZE };
 
-	public static List<Media> loadImages(String filter) {
-		return loadImages(filter, 0);
+	public static List<Media> loadMedia(String filter) {
+		return loadMedia(filter, 0);
 	}
 
-	public static List<Media> loadImages(String filter, int limit) {
-		List<Media> photos = Utils.loadImages(filter, MediaType.photo, limit);
-		List<Media> videos = Utils.loadImages(filter, MediaType.video, limit);
+	public static List<Media> loadMedia(String filter, int limit) {
+		List<Media> photos = Utils.loadMedia(filter, MediaType.photo, limit);
+		List<Media> videos = Utils.loadMedia(filter, MediaType.video, limit);
 		List<Media> images = new ArrayList<Media>(photos);
 		images.addAll(videos);
 		Collections.sort(images, MEDIA_COMPARATOR);
 		return images;
 	}
 
-	public static List<Media> loadImages(String filter, MediaType mediaType) {
-		return loadImages(filter, mediaType, 0);
+	public static List<Media> loadMedia(String filter, MediaType mediaType) {
+		return loadMedia(filter, mediaType, 0);
 	}
 
-	public static List<Media> loadImages(String filter, MediaType mediaType, int limit) {
+	public static List<Media> loadMedia(String filter, MediaType mediaType, int limit) {
 		Cursor cursor = null;
 		List<Media> images = new ArrayList<Media>();
 		try {
@@ -641,6 +626,9 @@ public final class Utils {
 				uri = Uri.parse(filter);
 				cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, null, null, orderBy);
 			} else {
+				// uri = mediaType == MediaType.photo ?
+				// Images.Media.INTERNAL_CONTENT_URI :
+				// Video.Media.INTERNAL_CONTENT_URI;
 				uri = mediaType == MediaType.photo ? Images.Media.EXTERNAL_CONTENT_URI : Video.Media.EXTERNAL_CONTENT_URI;
 				cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, filter, null, orderBy);
 			}
@@ -681,12 +669,12 @@ public final class Utils {
 					}
 
 					Media item = new Media();
-					item.id = cursor.getInt(idColumn);
-					item.mediaType = mediaType;
-					item.path = data;
-					item.name = cursor.getString(displayNameColumn);
-					item.size = cursor.getInt(sizeColumn);
-					item.date = date;
+					item.setId(cursor.getInt(idColumn));
+					item.setMediaType(mediaType);
+					item.setPath(data);
+					item.setName(cursor.getString(displayNameColumn));
+					item.setSize(cursor.getInt(sizeColumn));
+					item.setDate(date);
 					images.add(item);
 					cursor.moveToNext();
 					nbErrorConsecutive = 0;
@@ -707,12 +695,129 @@ public final class Utils {
 		return images;
 	}
 
-	public static List<Folder> getFolders(List<Media> images) {
+	static final String[] proj = { FileColumns._ID, FileColumns.DATA, FileColumns.MEDIA_TYPE, FileColumns.DATE_ADDED, FileColumns.DISPLAY_NAME, FileColumns.SIZE, Images.Media.DATE_TAKEN };
+
+	public static List<Media> loadMedia() {
+
+		long start = System.currentTimeMillis();
+		List<Media> medias = new ArrayList<Media>();
+		Cursor cursor = null;
+		try {
+			ManyQuery<Media> query = Query.many(Media.class, "select * from Media order by id asc");
+			CursorList<Media> cursorList = query.get();
+			Iterator<Media> it = cursorList.iterator();
+
+			String selection = FileColumns.MEDIA_TYPE + "=" + FileColumns.MEDIA_TYPE_IMAGE + " OR " + FileColumns.MEDIA_TYPE + "=" + FileColumns.MEDIA_TYPE_VIDEO;
+
+			String orderBy = FileColumns._ID + " ASC";
+			cursor = FlickrUploader.getAppContext().getContentResolver().query(MediaStore.Files.getContentUri("external"), proj, selection, null, orderBy);
+
+			int idColumn = cursor.getColumnIndex(FileColumns._ID);
+			int dataColumn = cursor.getColumnIndex(FileColumns.DATA);
+			int mediaTypeColumn = cursor.getColumnIndex(FileColumns.MEDIA_TYPE);
+			int displayNameColumn = cursor.getColumnIndex(FileColumns.DISPLAY_NAME);
+			int dateAddedColumn = cursor.getColumnIndexOrThrow(FileColumns.DATE_ADDED);
+			int sizeColumn = cursor.getColumnIndex(FileColumns.SIZE);
+			int dateTakenColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_TAKEN);
+			cursor.moveToFirst();
+			int totalMediaStore = cursor.getCount();
+			int totalDatabase = cursorList.size();
+			LOG.debug("totalMediaStore = " + totalMediaStore + ", totalDatabase = " + totalDatabase);
+			Media currentMedia = null;
+			for (int i = 0; i < Math.max(totalMediaStore, totalDatabase); i++) {
+				if (currentMedia == null && it.hasNext()) {
+					currentMedia = it.next();
+				}
+				if (cursor.isAfterLast()) {
+					LOG.info(i + " : cursor.isAfterLast");
+					if (currentMedia != null) {
+						LOG.info(currentMedia + " no longer exist, we should delete it here too");
+						currentMedia.deleteAsync();
+						currentMedia = null;
+					}
+				} else {
+					try {
+						int mediaStoreId = cursor.getInt(idColumn);
+						String data = cursor.getString(dataColumn);
+
+						// LOG.info("i=" + i + ", mediaStoreId=" + mediaStoreId
+						// + ", currentMedia=" + currentMedia);
+
+						if (currentMedia != null && currentMedia.getId() < mediaStoreId) {
+							LOG.info(currentMedia + " no longer exist, we should delete it");
+							currentMedia.deleteAsync();
+							currentMedia = null;
+						} else if (currentMedia != null && currentMedia.getId() == mediaStoreId && currentMedia.getPath().equals(data)) {
+							// LOG.info("nothing to do, already in sync");
+							medias.add(currentMedia);
+							currentMedia = null;
+							cursor.moveToNext();
+						} else {
+							Media mediaToPersist;
+							if (currentMedia != null && currentMedia.getId() == mediaStoreId) {
+								mediaToPersist = currentMedia;
+								currentMedia = null;
+							} else {
+								mediaToPersist = new Media();
+							}
+							medias.add(mediaToPersist);
+
+							// LOG.info("creating new Media");
+							Long date = null;
+							String dateStr = null;
+							try {
+								dateStr = cursor.getString(dateTakenColumn);
+								if (ToolString.isBlank(dateStr)) {
+									dateStr = cursor.getString(dateAddedColumn);
+									if (ToolString.isNotBlank(dateStr)) {
+										if (dateStr.trim().length() <= 10) {
+											date = Long.valueOf(dateStr) * 1000L;
+										} else {
+											date = Long.valueOf(dateStr);
+										}
+									}
+								} else {
+									date = Long.valueOf(dateStr);
+								}
+							} catch (Throwable e) {
+								LOG.warn(e.getClass().getSimpleName() + " : " + dateStr);
+							}
+							if (date == null) {
+								File file = new File(data);
+								date = file.lastModified();
+							}
+
+							mediaToPersist.setId(mediaStoreId);
+							mediaToPersist.setMediaType(cursor.getInt(mediaTypeColumn));
+							mediaToPersist.setPath(data);
+							mediaToPersist.setName(cursor.getString(displayNameColumn));
+							mediaToPersist.setSize(cursor.getInt(sizeColumn));
+							mediaToPersist.setDate(date);
+							mediaToPersist.saveAsync();
+
+							cursor.moveToNext();
+						}
+					} catch (Throwable e) {
+						LOG.error(ToolString.stack2string(e));
+					}
+				}
+			}
+		} catch (Throwable e) {
+			LOG.error(ToolString.stack2string(e));
+		} finally {
+			if (cursor != null)
+				cursor.close();
+		}
+		LOG.info(medias.size() + " sync done in " + ((System.currentTimeMillis() - start) / 1000) + " sec");
+		return medias;
+	}
+
+	public static List<Folder> getFolders(List<Media> medias) {
 		final Multimap<String, Media> photoFiles = LinkedHashMultimap.create();
-		for (Media image : images) {
-			int lastIndexOf = image.path.lastIndexOf("/");
+		for (Media media : medias) {
+			int lastIndexOf = media.getPath().lastIndexOf("/");
 			if (lastIndexOf > 0) {
-				photoFiles.put(image.path.substring(0, lastIndexOf), image);
+				photoFiles.put(media.getPath().substring(0, lastIndexOf), media);
 			}
 		}
 		List<Folder> folders = new ArrayList<Folder>();
@@ -807,15 +912,15 @@ public final class Utils {
 				options.inSampleSize = 1;
 				options.inPurgeable = true;
 				options.inInputShareable = true;
-				if (media.mediaType == MediaType.video) {
-					bitmap = Video.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), media.id, Video.Thumbnails.MINI_KIND, null);
+				if (media.getMediaType() == MediaType.video) {
+					bitmap = Video.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), media.getId(), Video.Thumbnails.MINI_KIND, null);
 					return bitmap;
 				} else if (view_size == VIEW_SIZE.small) {
-					bitmap = Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), media.id, Images.Thumbnails.MICRO_KIND, options);
+					bitmap = Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), media.getId(), Images.Thumbnails.MICRO_KIND, options);
 
 				} else if (view_size == VIEW_SIZE.medium || view_size == VIEW_SIZE.large) {
 					try {
-						ExifInterface exif = new ExifInterface(media.path);
+						ExifInterface exif = new ExifInterface(media.getPath());
 						if (exif.hasThumbnail()) {
 							byte[] thumbnail = exif.getThumbnail();
 							bitmap = BitmapFactory.decodeByteArray(thumbnail, 0, thumbnail.length);
@@ -825,7 +930,7 @@ public final class Utils {
 					}
 
 					if (bitmap == null) {
-						bitmap = Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), media.id, Images.Thumbnails.MINI_KIND, options);
+						bitmap = Images.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), media.getId(), Images.Thumbnails.MINI_KIND, options);
 					}
 				} else {
 					// First decode with inJustDecodeBounds=true to check
@@ -834,13 +939,13 @@ public final class Utils {
 					opts.inJustDecodeBounds = true;
 					opts.inPurgeable = true;
 					opts.inInputShareable = true;
-					BitmapFactory.decodeFile(media.path, opts);
+					BitmapFactory.decodeFile(media.getPath(), opts);
 					// BitmapFactory.decodeFileDescriptor(file., null, opts);
 
 					// Calculate inSampleSize
 					opts.inJustDecodeBounds = false;
 					opts.inSampleSize = calculateInSampleSize(opts, getScreenWidthPx(), getScreenWidthPx()) + retry;
-					bitmap = BitmapFactory.decodeFile(media.path, opts);
+					bitmap = BitmapFactory.decodeFile(media.getPath(), opts);
 				}
 			} catch (OutOfMemoryError e) {
 				LOG.warn("retry : " + retry + ", " + e.getMessage(), e);
@@ -939,18 +1044,12 @@ public final class Utils {
 	}
 
 	/**
-	 * Calculate an inSampleSize for use in a {@link BitmapFactory.Options}
-	 * object when decoding bitmaps using the decode* methods from
-	 * {@link BitmapFactory}. This implementation calculates the closest
-	 * inSampleSize that will result in the final decoded bitmap having a width
-	 * and height equal to or larger than the requested width and height. This
-	 * implementation does not ensure a power of 2 is returned for inSampleSize
-	 * which can be faster when decoding but results in a larger bitmap which
-	 * isn't as useful for caching purposes.
+	 * Calculate an inSampleSize for use in a {@link BitmapFactory.Options} object when decoding bitmaps using the decode* methods from {@link BitmapFactory}. This implementation calculates the
+	 * closest inSampleSize that will result in the final decoded bitmap having a width and height equal to or larger than the requested width and height. This implementation does not ensure a power
+	 * of 2 is returned for inSampleSize which can be faster when decoding but results in a larger bitmap which isn't as useful for caching purposes.
 	 * 
 	 * @param options
-	 *            An options object with out* params already populated (run
-	 *            through a decode* method with inJustDecodeBounds==true
+	 *            An options object with out* params already populated (run through a decode* method with inJustDecodeBounds==true
 	 * @param reqWidth
 	 *            The requested width of the resulting bitmap
 	 * @param reqHeight
@@ -1012,9 +1111,9 @@ public final class Utils {
 	public static final Comparator<Media> MEDIA_COMPARATOR = new Comparator<Media>() {
 		@Override
 		public int compare(Media arg0, Media arg1) {
-			if (arg0.date > arg1.date) {
+			if (arg0.getDate() > arg1.getDate()) {
 				return -1;
-			} else if (arg0.date < arg1.date) {
+			} else if (arg0.getDate() < arg1.getDate()) {
 				return 1;
 			} else {
 				return 0;
@@ -1656,7 +1755,7 @@ public final class Utils {
 
 	public static List<Folder> getSyncedFolders() {
 		List<Folder> syncedFolders = new ArrayList<Folder>();
-		List<Media> media = Utils.loadImages(null);
+		List<Media> media = Utils.loadMedia(null);
 		if (media != null) {
 			List<Folder> folders = Utils.getFolders(media);
 			for (Folder folder : folders) {

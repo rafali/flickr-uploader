@@ -57,7 +57,7 @@ public class AndroidRpcImpl implements AndroidRpcInterface {
 			query.setFilter(":param.contains(email)");
 			List<Coupon> result = (List<Coupon>) query.execute(androidDevice.getEmails());
 			for (Coupon coupon : result) {
-				if (coupon.getPurchased() || coupon.getDateCreation().after(releaseDate)) {
+				if (coupon.getPurchased() || coupon.getDateUpdated().after(releaseDate)) {
 					premium = coupon.isPremium();
 					sku = coupon.getSku();
 					purchased = coupon.getPurchased();

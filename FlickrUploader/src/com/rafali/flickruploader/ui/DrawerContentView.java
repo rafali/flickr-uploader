@@ -293,9 +293,9 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 				convertView.setTag(R.id.sub_title, convertView.findViewById(R.id.sub_title));
 				convertView.setTag(R.id.list_view, titleRes);
 			}
-			final Media image = medias.get(position);
-			if (convertView.getTag() != image) {
-				convertView.setTag(image);
+			final Media media = medias.get(position);
+			if (convertView.getTag() != media) {
+				convertView.setTag(media);
 				renderImageView(convertView);
 			}
 			return convertView;
@@ -308,16 +308,16 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 	private QueueTabView queueTabView;
 
 	private void renderImageView(final View convertView) {
-		final Media image = (Media) convertView.getTag();
-		if (image != null) {
+		final Media media = (Media) convertView.getTag();
+		if (media != null) {
 			final CacheableImageView imageView = (CacheableImageView) convertView.getTag(R.id.image_view);
 			final TextView titleView = (TextView) convertView.getTag(R.id.title);
 			final TextView subTitleView = (TextView) convertView.getTag(R.id.sub_title);
 			int titleRes = (Integer) convertView.getTag(R.id.list_view);
-			titleView.setText(image.path);
+			titleView.setText(media.getPath());
 			subTitleView.setText("");
-			imageView.setTag(image);
-			int nbError = UploadService.getNbError(image);
+			imageView.setTag(media);
+			int nbError = UploadService.getNbError(media);
 			if (titleRes == R.string.queued) {
 				if (nbError > 0) {
 					subTitleView.setText("retry #" + (nbError + 1));
@@ -326,10 +326,10 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 				}
 			} else if (titleRes == R.string.failed) {
 				String text = "";
-				if (FlickrApi.unretryable.contains(image)) {
+				if (FlickrApi.unretryable.contains(media)) {
 					text = "unretryable error";
 				} else {
-					long delay = UploadService.getRetryDelay(image);
+					long delay = UploadService.getRetryDelay(media);
 					if (nbError > 0) {
 						text = nbError + " error" + (nbError > 1 ? "s" : "");
 					}
@@ -340,13 +340,13 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 						text += "retrying in " + ToolString.formatDuration(delay - System.currentTimeMillis());
 					}
 				}
-				Throwable lastException = FlickrApi.getLastException(image);
+				Throwable lastException = FlickrApi.getLastException(media);
 				if (lastException != null) {
 					text += "\n" + lastException.getClass().getSimpleName() + " : " + lastException.getMessage();
 				}
 				subTitleView.setText(text);
 			}
-			final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(image.path + "_" + VIEW_SIZE.small);
+			final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(media.getPath() + "_" + VIEW_SIZE.small);
 			if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
 				// The cache has it, so just display it
 				imageView.setImageDrawable(wrapper);
@@ -355,14 +355,14 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 				executorService.submit(new Runnable() {
 					@Override
 					public void run() {
-						if (imageView.getTag() == image) {
+						if (imageView.getTag() == media) {
 							final CacheableBitmapDrawable bitmapDrawable;
 							if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
 								bitmapDrawable = wrapper;
 							} else {
-								Bitmap bitmap = Utils.getBitmap(image, VIEW_SIZE.small);
+								Bitmap bitmap = Utils.getBitmap(media, VIEW_SIZE.small);
 								if (bitmap != null) {
-									bitmapDrawable = Utils.getCache().put(image.path + "_" + R.layout.grid_thumb, bitmap);
+									bitmapDrawable = Utils.getCache().put(media.getPath() + "_" + R.layout.grid_thumb, bitmap);
 								} else {
 									bitmapDrawable = null;
 								}
@@ -371,7 +371,7 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 							((Activity) getContext()).runOnUiThread(new Runnable() {
 								@Override
 								public void run() {
-									if (imageView.getTag() == image) {
+									if (imageView.getTag() == media) {
 										if (wrapper != bitmapDrawable) {
 											imageView.setImageDrawable(bitmapDrawable);
 										}
@@ -387,7 +387,7 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 	}
 
 	@Override
-	public void onProgress(int progress, Media image) {
+	public void onProgress(int progress, Media media) {
 	}
 
 	@Override
@@ -406,7 +406,7 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 	}
 
 	@Override
-	public void onProcessed(Media image, boolean success) {
+	public void onProcessed(Media media, boolean success) {
 		updateLists();
 	}
 

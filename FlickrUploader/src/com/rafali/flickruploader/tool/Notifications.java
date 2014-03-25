@@ -59,7 +59,7 @@ public class Notifications {
 		}
 	}
 
-	public static void notify(int progress, final Media image, int currentPosition, int total) {
+	public static void notify(int progress, final Media media, int currentPosition, int total) {
 		try {
 			if (!Utils.getBooleanProperty("notification_progress", true)) {
 				return;
@@ -71,17 +71,17 @@ public class Notifications {
 
 			Builder builder = builderUploading;
 			builder.setProgress(100, realProgress, false);
-			builder.setContentText(image.name);
+			builder.setContentText(media.getName());
 			builder.setContentInfo(currentPosition + " / " + total);
 
-			CacheableBitmapDrawable bitmapDrawable = Utils.getCache().getFromMemoryCache(image.path + "_" + VIEW_SIZE.small);
+			CacheableBitmapDrawable bitmapDrawable = Utils.getCache().getFromMemoryCache(media.getPath() + "_" + VIEW_SIZE.small);
 			if (bitmapDrawable == null || bitmapDrawable.getBitmap().isRecycled()) {
 				BackgroundExecutor.execute(new Runnable() {
 					@Override
 					public void run() {
-						final Bitmap bitmap = Utils.getBitmap(image, VIEW_SIZE.small);
+						final Bitmap bitmap = Utils.getBitmap(media, VIEW_SIZE.small);
 						if (bitmap != null) {
-							Utils.getCache().put(image.path + "_" + R.layout.grid_thumb, bitmap);
+							Utils.getCache().put(media.getPath() + "_" + R.layout.grid_thumb, bitmap);
 						}
 					}
 				});

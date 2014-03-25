@@ -63,21 +63,21 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 	}
 
 	@UiThread
-	void renderProgress(int progress, final Media image, int currentPosition, int total) {
+	void renderProgress(int progress, final Media media, int currentPosition, int total) {
 		if (System.currentTimeMillis() > messageUntil) {
 			progressContainer.setVisibility(View.VISIBLE);
 			message.setVisibility(View.GONE);
-			title.setText(image.name);
+			title.setText(media.getName());
 			subTitle.setText(progress + "% - " + currentPosition + " / " + total);
 
-			CacheableBitmapDrawable bitmapDrawable = Utils.getCache().getFromMemoryCache(image.path + "_" + VIEW_SIZE.small);
+			CacheableBitmapDrawable bitmapDrawable = Utils.getCache().getFromMemoryCache(media.getPath() + "_" + VIEW_SIZE.small);
 			if (bitmapDrawable == null || bitmapDrawable.getBitmap().isRecycled()) {
 				BackgroundExecutor.execute(new Runnable() {
 					@Override
 					public void run() {
-						final Bitmap bitmap = Utils.getBitmap(image, VIEW_SIZE.small);
+						final Bitmap bitmap = Utils.getBitmap(media, VIEW_SIZE.small);
 						if (bitmap != null) {
-							Utils.getCache().put(image.path + "_" + R.layout.grid_thumb, bitmap);
+							Utils.getCache().put(media.getPath() + "_" + R.layout.grid_thumb, bitmap);
 						}
 					}
 				});
@@ -186,8 +186,8 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 
 	@Override
 	@UiThread
-	public void onProgress(int progress, Media image) {
-		renderProgress(progress, image, UploadService.getNbUploaded() + 1, UploadService.getTotal());
+	public void onProgress(int progress, Media media) {
+		renderProgress(progress, media, UploadService.getNbUploaded() + 1, UploadService.getTotal());
 	}
 
 	@Override
@@ -208,9 +208,9 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 
 	@Override
 	@UiThread
-	public void onProcessed(Media image, boolean success) {
+	public void onProcessed(Media media, boolean success) {
 		if (!success) {
-			setMessage("Error uploading " + image.name, 5000);
+			setMessage("Error uploading " + media.getName(), 5000);
 		}
 	}
 }

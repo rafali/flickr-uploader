@@ -136,7 +136,7 @@ public class FlickrWebAuthActivity extends Activity {
 				Utils.setStringProperty(STR.userName, appInstall.getFlickrUserName());
 				Utils.setLongProperty(STR.userDateCreated, System.currentTimeMillis());
 				FlickrApi.reset();
-				FlickrApi.syncUploadedPhotosMap(true);
+				FlickrApi.syncMedia();
 				setResult(RESULT_CODE_AUTH);
 				finish();
 			}
@@ -152,5 +152,6 @@ public class FlickrWebAuthActivity extends Activity {
 		}
 		return super.onOptionsItemSelected(item);
 	}
+
 
 }

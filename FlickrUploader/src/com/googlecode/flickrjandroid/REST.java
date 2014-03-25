@@ -367,6 +367,12 @@ public class REST extends Transport {
 
 	public String sendPost(String path, List<Parameter> parameters) throws IOException {
 		if (Config.isDebug()) {
+			for (Parameter parameter : parameters) {
+				if (parameter.getName().equals("method")) {
+					LOG.debug("API " + parameter.getValue());
+					break;
+				}
+			}
 			LOG.trace("Send Post Input Params: path '{}'; parameters {}", path, parameters);
 		}
 		HttpURLConnection conn = null;

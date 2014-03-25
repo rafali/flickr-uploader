@@ -32,6 +32,9 @@ public class Coupon implements Serializable {
 	@Persistent
 	private Date dateCreation;
 
+	@Persistent
+	private Date dateUpdated;
+
 	protected Coupon() {
 	}
 
@@ -50,7 +53,7 @@ public class Coupon implements Serializable {
 
 	@Override
 	public String toString() {
-		return email + "-" + dateCreation + " : premium=" + premium+ " : purchased=" + purchased + " : sku=" + getSku();
+		return email + "-" + dateCreation + " : premium=" + premium + " : purchased=" + purchased + " : sku=" + getSku();
 	}
 
 	public void setDateCreation(Date dateCreation) {
@@ -87,5 +90,15 @@ public class Coupon implements Serializable {
 
 	public void setPurchased(boolean purchased) {
 		this.purchased = purchased;
+	}
+
+	public Date getDateUpdated() {
+		if (dateUpdated == null)
+			return getDateCreation();
+		return dateUpdated;
+	}
+
+	public void setDateUpdated(Date dateUpdated) {
+		this.dateUpdated = dateUpdated;
 	}
 }

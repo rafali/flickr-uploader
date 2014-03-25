@@ -12,11 +12,11 @@ public class Folder {
 	}
 	public Folder(String path, Collection<Media> images) {
 		this(path);
-		this.images = new ArrayList<Media>(images);
+		this.medias = new ArrayList<Media>(images);
 		this.size = images.size();
 	}
 	public int size;
-	public List<Media> images;
+	public List<Media> medias;
 	public final String path;
 	public final String name;
 }

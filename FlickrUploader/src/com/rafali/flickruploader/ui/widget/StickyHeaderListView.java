@@ -260,8 +260,10 @@ public class StickyHeaderListView extends ListView implements AbsListView.OnScro
 				ViewGroup.LayoutParams layoutParams = headerView.getLayoutParams();
 				if (layoutParams != null && layoutParams.height > 0) {
 					heightMeasure = MeasureSpec.makeMeasureSpec(layoutParams.height, MeasureSpec.EXACTLY);
+					LOG.info("EXACTLY widthMeasure : " + widthMeasure + ", heightMeasure : " + heightMeasure);
 				} else {
 					heightMeasure = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+					LOG.info("widthMeasure : " + widthMeasure + ", heightMeasure : " + heightMeasure);
 				}
 
 				headerView.measure(widthMeasure, heightMeasure);

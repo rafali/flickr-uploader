@@ -1,7 +1,5 @@
 package com.rafali.flickruploader.broadcast;
 
-import java.util.Arrays;
-
 import org.slf4j.LoggerFactory;
 
 import android.app.NotificationManager;
@@ -25,8 +23,8 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
 			LOG.debug("share intent : " + intent);
 			int imageId = intent.getIntExtra("imageId", -1);
 			if (imageId > 0) {
-				Media image = Utils.getImage(imageId);
-				final String photoId = FlickrApi.getPhotoId(image);
+				Media media = Utils.getImage(imageId);
+				final String photoId = media.getFlickrId();
 				if (photoId != null) {
 					Utils.toast("Sharing photo");
 					String url = FlickrApi.getShortUrl(photoId);
@@ -37,7 +35,8 @@ public class MyBroadcastReceiver extends BroadcastReceiver {
 					createChooser.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 					context.startActivity(createChooser);
 					LOG.debug("url : " + url);
-					FlickrApi.setPrivacy(PRIVACY.PUBLIC, Arrays.asList(photoId));
+					media.setPrivacy(PRIVACY.PUBLIC);
+					media.save();
 					NotificationManager mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 					mNotificationManager.cancelAll();
 				}

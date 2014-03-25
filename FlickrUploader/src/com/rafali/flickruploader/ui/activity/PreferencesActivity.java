@@ -7,6 +7,9 @@ import java.util.List;
 
 import org.slf4j.LoggerFactory;
 
+import se.emilsjolander.sprinkles.ManyQuery;
+import se.emilsjolander.sprinkles.ModelList;
+import se.emilsjolander.sprinkles.Query;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -34,6 +37,7 @@ import com.rafali.flickruploader.Config;
 import com.rafali.flickruploader.api.FlickrApi;
 import com.rafali.flickruploader.api.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.model.Folder;
+import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.service.UploadService;
 import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader2.R;
@@ -74,9 +78,10 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 									editor.remove(STR.accessTokenSecret);
 									editor.remove(STR.userDateCreated);
 									editor.remove(STR.userName);
-									editor.remove(STR.uploadedPhotos);
 									editor.apply();
 									editor.commit();
+									ManyQuery<Media> query = Query.all(Media.class);
+									ModelList.from(query.get()).deleteAllAsync();
 									render();
 									FlickrApi.reset();
 									UploadService.clearQueued();

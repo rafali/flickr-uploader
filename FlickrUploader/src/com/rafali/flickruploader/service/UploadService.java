@@ -55,9 +55,9 @@ public class UploadService extends Service {
 	private static final Set<UploadProgressListener> uploadProgressListeners = new HashSet<UploadService.UploadProgressListener>();
 
 	public static interface UploadProgressListener {
-		void onProgress(int progress, final Media image);
+		void onProgress(int progress, final Media media);
 
-		void onProcessed(final Media image, boolean success);
+		void onProcessed(final Media media, boolean success);
 
 		void onPaused();
 
@@ -87,8 +87,8 @@ public class UploadService extends Service {
 
 	private UploadProgressListener uploadProgressListener = new UploadProgressListener() {
 		@Override
-		public void onProgress(int progress, Media image) {
-			Notifications.notify(progress, image, uploaded.size() + 1, queue.size() + uploaded.size());
+		public void onProgress(int progress, Media media) {
+			Notifications.notify(progress, media, uploaded.size() + 1, queue.size() + uploaded.size());
 		}
 
 		@Override
@@ -105,7 +105,7 @@ public class UploadService extends Service {
 		}
 
 		@Override
-		public void onProcessed(Media image, boolean success) {
+		public void onProcessed(Media media, boolean success) {
 
 		}
 	};
@@ -136,11 +136,11 @@ public class UploadService extends Service {
 						while (it.hasNext()) {
 							Map.Entry<Integer, Integer> entry = it.next();
 							Integer imageId = entry.getKey();
-							Media image = Utils.getImage(imageId);
-							if (image != null && new File(image.path).exists()) {
+							Media media = Utils.getImage(imageId);
+							if (media != null && new File(media.getPath()).exists()) {
 								Integer nbErrors = entry.getValue();
 								failedCount.put(imageId, nbErrors);
-								retryDelay.put(image, System.currentTimeMillis() + nbErrors * 60 * 1000L);
+								retryDelay.put(media, System.currentTimeMillis() + nbErrors * 60 * 1000L);
 							}
 						}
 						if (!retryDelay.isEmpty()) {
@@ -254,22 +254,22 @@ public class UploadService extends Service {
 	private static Map<Media, Long> retryDelay = new ConcurrentHashMap<Media, Long>();
 	private static Map<Integer, Integer> failedCount = new ConcurrentHashMap<Integer, Integer>();
 
-	public static int enqueue(boolean auto, Collection<Media> images, String photoSetTitle) {
+	public static int enqueue(boolean auto, Collection<Media> medias, String photoSetTitle) {
 		int nbQueued = 0;
 		int nbAlreadyQueued = 0;
 		int nbAlreadyUploaded = 0;
-		for (Media image : images) {
-			if (queue.contains(image)) {
+		for (Media media : medias) {
+			if (queue.contains(media)) {
 				nbAlreadyQueued++;
-			} else if (FlickrApi.isUploaded(image)) {
+			} else if (media.isUploaded()) {
 				nbAlreadyUploaded++;
-			} else if (auto && getNbError(image) > 10) {
-				LOG.debug("not auto enqueueing file with too many retries : " + image);
+			} else if (auto && getNbError(media) > 10) {
+				LOG.debug("not auto enqueueing file with too many retries : " + media);
 			} else {
 				nbQueued++;
-				LOG.debug("enqueueing " + image);
-				queue.add(image);
-				mediaPhotosetTitles.put(image.path, photoSetTitle);
+				LOG.debug("enqueueing " + media);
+				queue.add(media);
+				mediaPhotosetTitles.put(media.getPath(), photoSetTitle);
 			}
 		}
 		for (UploadProgressListener uploadProgressListener : uploadProgressListeners) {
@@ -292,12 +292,12 @@ public class UploadService extends Service {
 		wake();
 	}
 
-	public static void dequeue(Collection<Media> images) {
-		for (Media image : images) {
-			if (queue.contains(image)) {
-				LOG.debug("dequeueing " + image);
-				queue.remove(image);
-				mediaPhotosetTitles.remove(image.path);
+	public static void dequeue(Collection<Media> medias) {
+		for (Media media : medias) {
+			if (queue.contains(media)) {
+				LOG.debug("dequeueing " + media);
+				queue.remove(media);
+				mediaPhotosetTitles.remove(media.getPath());
 			}
 		}
 		persistQueue();
@@ -333,15 +333,15 @@ public class UploadService extends Service {
 					CAN_UPLOAD canUploadNow = Utils.canUploadNow();
 					if (queue.isEmpty() || canUploadNow != Utils.CAN_UPLOAD.ok) {
 						if (queue.isEmpty()) {
-							for (Media image : failed.keySet()) {
-								Integer nbError = failedCount.get(image.id);
+							for (Media media : failed.keySet()) {
+								Integer nbError = failedCount.get(media.getId());
 								if (nbError == null) {
 									nbError = 1;
-									failedCount.put(image.id, nbError);
+									failedCount.put(media.getId(), nbError);
 								}
 								if (nbError < 10) {
 									// max 3 hours delay to retry
-									retryDelay.put(image, System.currentTimeMillis() + Math.min(3 * 60 * 60 * 1000L, (long) (Math.pow(2, nbFail) * 60 * 1000L)));
+									retryDelay.put(media, System.currentTimeMillis() + Math.min(3 * 60 * 60 * 1000L, (long) (Math.pow(2, nbFail) * 60 * 1000L)));
 								}
 							}
 							recentlyUploaded.putAll(uploaded);
@@ -393,8 +393,8 @@ public class UploadService extends Service {
 							long start = System.currentTimeMillis();
 							mediaCurrentlyUploading = queue.get(queue.size() - 1);
 							onProgress(mediaCurrentlyUploading, 0);
-							String photosetTitle = mediaPhotosetTitles.get(mediaCurrentlyUploading.path);
-							boolean success = FlickrApi.isUploaded(mediaCurrentlyUploading);
+							String photosetTitle = mediaPhotosetTitles.get(mediaCurrentlyUploading.getPath());
+							boolean success = mediaCurrentlyUploading.isUploaded();
 							if (!success) {
 								LOG.debug("Starting upload : " + mediaCurrentlyUploading);
 								success = FlickrApi.upload(mediaCurrentlyUploading, photosetTitle);
@@ -409,20 +409,20 @@ public class UploadService extends Service {
 								LOG.debug("Upload success : " + time + "ms " + mediaCurrentlyUploading);
 								uploaded.put(mediaCurrentlyUploading, System.currentTimeMillis());
 								failed.remove(mediaCurrentlyUploading);
-								failedCount.remove(mediaCurrentlyUploading.id);
-								mediaPhotosetTitles.remove(mediaCurrentlyUploading.path);
+								failedCount.remove(mediaCurrentlyUploading.getId());
+								mediaPhotosetTitles.remove(mediaCurrentlyUploading.getPath());
 							} else {
 								if (FlickrApi.unretryable.contains(mediaCurrentlyUploading)) {
 									failed.remove(mediaCurrentlyUploading);
-									failedCount.remove(mediaCurrentlyUploading.id);
+									failedCount.remove(mediaCurrentlyUploading.getId());
 								} else {
 									failed.put(mediaCurrentlyUploading, System.currentTimeMillis());
-									Integer countError = failedCount.get(mediaCurrentlyUploading.id);
+									Integer countError = failedCount.get(mediaCurrentlyUploading.getId());
 									if (countError == null) {
 										countError = 0;
 									}
 									nbFail++;
-									failedCount.put(mediaCurrentlyUploading.id, countError + 1);
+									failedCount.put(mediaCurrentlyUploading.getId(), countError + 1);
 									LOG.warn("Upload fail : nbFail=" + nbFail + " in " + time + "ms, countError=" + countError + " : " + mediaCurrentlyUploading);
 									Thread.sleep(Math.min(20000, (long) (Math.pow(2, nbFail) * 2000)));
 								}
@@ -438,7 +438,6 @@ public class UploadService extends Service {
 										uploadProgressListener.onFinished(uploaded.size(), failed.size());
 									}
 								}
-								FlickrApi.ensureOrdered(photosetTitle);
 							}
 
 							FlickrUploaderActivity flickrPhotoUploader = FlickrUploaderActivity.getInstance();
@@ -466,31 +465,31 @@ public class UploadService extends Service {
 		}
 	}
 
-	public static long isRecentlyUploaded(Media image) {
-		if (image != null) {
-			if (uploaded.containsKey(image)) {
-				return uploaded.get(image);
-			} else if (recentlyUploaded.containsKey(image)) {
-				return recentlyUploaded.get(image);
+	public static long isRecentlyUploaded(Media media) {
+		if (media != null) {
+			if (uploaded.containsKey(media)) {
+				return uploaded.get(media);
+			} else if (recentlyUploaded.containsKey(media)) {
+				return recentlyUploaded.get(media);
 			}
 		}
 		return -1;
 	}
 
-	public static int getNbError(Media image) {
-		if (failedCount.containsKey(image.id)) {
-			return failedCount.get(image.id) * FlickrApi.NB_RETRY;
+	public static int getNbError(Media media) {
+		if (failedCount.containsKey(media.getId())) {
+			return failedCount.get(media.getId()) * FlickrApi.NB_RETRY;
 		} else {
 			return 0;
 		}
 	}
 
-	public static boolean isUploading(Media image) {
-		return queue.contains(image);
+	public static boolean isUploading(Media media) {
+		return queue.contains(media);
 	}
 
 	public static boolean isUploading(Folder folder) {
-		return !Collections.disjoint(queue, folder.images);
+		return !Collections.disjoint(queue, folder.medias);
 	}
 
 	public static void wake() {
@@ -587,11 +586,11 @@ public class UploadService extends Service {
 		persistQueue();
 	}
 
-	public static long getRetryDelay(Media image) {
-		Long delay = retryDelay.get(image);
+	public static long getRetryDelay(Media media) {
+		Long delay = retryDelay.get(media);
 		if (delay == null || delay < System.currentTimeMillis()) {
 			delay = 0L;
-			retryDelay.put(image, delay);
+			retryDelay.put(media, delay);
 		}
 		return delay;
 	}
@@ -612,21 +611,21 @@ public class UploadService extends Service {
 			}
 
 			long lastNewFilesCheckNotEmpty = Utils.getLongProperty(STR.lastNewFilesCheckNotEmpty);
-			List<Media> media;
+			List<Media> medias;
 			if (lastNewFilesCheckNotEmpty <= 0) {
-				media = Utils.loadImages(null, 10);
+				medias = Utils.loadMedia(null, 10);
 			} else {
-				media = new ArrayList<Media>();
-				List<Media> all = Utils.loadImages(null);
+				medias = new ArrayList<Media>();
+				List<Media> all = Utils.loadMedia(null);
 				for (Media media2 : all) {
-					if (media2.date >= lastNewFilesCheckNotEmpty) {
-						media.add(media2);
+					if (media2.getDate() >= lastNewFilesCheckNotEmpty) {
+						medias.add(media2);
 					}
 				}
-				LOG.debug("found " + media.size() + " media files since: " + SimpleDateFormat.getDateTimeInstance().format(new Date(lastNewFilesCheckNotEmpty)));
+				LOG.debug("found " + medias.size() + " media files since: " + SimpleDateFormat.getDateTimeInstance().format(new Date(lastNewFilesCheckNotEmpty)));
 			}
 
-			if (media == null || media.isEmpty()) {
+			if (medias == null || medias.isEmpty()) {
 				LOG.debug("no media found");
 				return;
 			}
@@ -634,18 +633,18 @@ public class UploadService extends Service {
 			long uploadDelayMs = Utils.getUploadDelayMs();
 			long newestFileAge = 0;
 			List<Media> not_uploaded = new ArrayList<Media>();
-			for (Media image : media) {
-				if (image.mediaType == MediaType.photo && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false)) {
+			for (Media media : medias) {
+				if (media.getMediaType() == MediaType.photo && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false)) {
 					LOG.debug("not uploading " + media + " because photo upload disabled");
 					continue;
-				} else if (image.mediaType == MediaType.video && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
+				} else if (media.getMediaType() == MediaType.video && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
 					LOG.debug("not uploading " + media + " because video upload disabled");
 					continue;
 				} else {
-					File file = new File(image.path);
+					File file = new File(media.getPath());
 					if (file.exists()) {
-						boolean uploaded = FlickrApi.isUploaded(image);
-						LOG.debug("uploaded : " + uploaded + ", " + image);
+						boolean uploaded = media.isUploaded();
+						LOG.debug("uploaded : " + uploaded + ", " + media);
 						if (!uploaded) {
 							if (!Utils.isAutoUpload(new Folder(file.getParent()))) {
 								LOG.debug("Ignored : " + file);
@@ -670,7 +669,7 @@ public class UploadService extends Service {
 										checkNewFilesTask.future = scheduledThreadPoolExecutor.schedule(checkNewFilesTask, delay, TimeUnit.MILLISECONDS);
 									}
 								} else {
-									not_uploaded.add(image);
+									not_uploaded.add(media);
 								}
 							}
 						}
@@ -684,7 +683,7 @@ public class UploadService extends Service {
 				LOG.debug("enqueuing " + not_uploaded.size() + " media: " + not_uploaded);
 				Map<String, String> foldersSetNames = Utils.getFoldersSetNames();
 				for (Media notUploadedMedia : not_uploaded) {
-					File file = new File(notUploadedMedia.path);
+					File file = new File(notUploadedMedia.getPath());
 					String uploadSetTitle = foldersSetNames.get(file.getParentFile().getAbsolutePath());
 					if (uploadSetTitle == null) {
 						uploadSetTitle = STR.instantUpload;

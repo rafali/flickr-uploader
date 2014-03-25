@@ -2,7 +2,7 @@ package com.rafali.flickruploader.api;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -24,7 +24,6 @@ import com.googlecode.flickrjandroid.FlickrException;
 import com.googlecode.flickrjandroid.RequestContext;
 import com.googlecode.flickrjandroid.oauth.OAuth;
 import com.googlecode.flickrjandroid.oauth.OAuthToken;
-import com.googlecode.flickrjandroid.photos.Permissions;
 import com.googlecode.flickrjandroid.photos.Photo;
 import com.googlecode.flickrjandroid.photos.PhotoList;
 import com.googlecode.flickrjandroid.photos.SearchParameters;
@@ -34,11 +33,9 @@ import com.googlecode.flickrjandroid.uploader.UploadMetaData;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrUploader;
-import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader.tool.Utils.CAN_UPLOAD;
-import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
 import com.rafali.flickruploader.ui.activity.PreferencesActivity;
 import com.rafali.flickruploader2.R;
 
@@ -77,13 +74,14 @@ public class FlickrApi {
 		if (auth == null) {
 			updateOauth();
 		}
-		RequestContext.getRequestContext().setOAuth(auth);
+		if (RequestContext.getRequestContext().getOAuth() != auth) {
+			RequestContext.getRequestContext().setOAuth(auth);
+		}
 		return flickr;
 	}
 
 	public static void reset() {
 		auth = null;
-		uploadedPhotos.clear();
 		updateOauth();
 	}
 
@@ -91,15 +89,12 @@ public class FlickrApi {
 		String accessToken = Utils.getStringProperty(STR.accessToken);
 		String accessTokenSecret = Utils.getStringProperty(STR.accessTokenSecret);
 		authentified = ToolString.isNotBlank(accessToken) && ToolString.isNotBlank(accessTokenSecret);
-		// String userId = getStringProperty("userId");
 		auth = new OAuth();
 		auth.setToken(new OAuthToken(accessToken, accessTokenSecret));
 	}
 
 	private static boolean authentified = false;
 
-	private static Map<String, String> uploadedPhotos = Utils.getMapProperty(STR.uploadedPhotos);
-	private static Map<String, PRIVACY> photosPrivacy = Utils.getMapProperty(STR.photosPrivacy, PRIVACY.class);
 	public static Set<Media> unretryable = new HashSet<Media>();
 
 	static PRIVACY getPrivacy(Photo photo) {
@@ -115,89 +110,96 @@ public class FlickrApi {
 		return PRIVACY.PRIVATE;
 	}
 
-	static long lastSync = 0;
+	private static long lastSyncMedia = 0;
 
-	public static void syncUploadedPhotosMap(final boolean force) {
-		if (System.currentTimeMillis() - lastSync > 5000) {
-			lastSync = System.currentTimeMillis();
+	public static void syncMedia() {
+		if (System.currentTimeMillis() - lastSyncMedia > 10 * 60 * 1000L) {
+			lastSyncMedia = System.currentTimeMillis();
 			BackgroundExecutor.execute(new Runnable() {
 				@Override
 				public void run() {
 					try {
-						synchronized (API_KEY) {
-							if (force || FlickrApi.uploadedPhotos.isEmpty()) {
-								Map<String, String> uploadedPhotos;
-								if (FlickrApi.uploadedPhotos.isEmpty()) {
-									uploadedPhotos = FlickrApi.uploadedPhotos;
-								} else {
-									uploadedPhotos = new LinkedHashMap<String, String>();
-								}
-								int totalPage = 10;
-								int page = 1;
-								int per_page = 500;
-								int count = 0;
-								// fetching all uploaded photos
-								// the flickr query is not consistent (not all
-								// photos are retrieved)
-								while (page <= totalPage) {
-									lastSync = System.currentTimeMillis();
-									SearchParameters params = new SearchParameters();
-									params.setUserId(Utils.getStringProperty(STR.userId));
-									params.setMachineTags(new String[] { "file:sha1sig=" });
-									params.setExtras(EXTRAS_MACHINE_TAGS);
-									PhotoList photoList = FlickrApi.get().getPhotosInterface().search(params, per_page, page);
-									totalPage = photoList.getPages();
-									per_page = photoList.getPerPage();
-									count += photoList.size();
-									if (!photoList.isEmpty()) {
-										LOG.debug(count + " photos with machine tag fetched. page:" + page + "/" + totalPage);
-										for (Photo photo : photoList) {
-											for (String tag : photo.getMachineTags()) {
-												if (tag.startsWith("file:sha1sig")) {
-													uploadedPhotos.put(tag, photo.getId());
-													photosPrivacy.put(photo.getId(), getPrivacy(photo));
-													// System.out.println(tag +
-													// " = " + photo.getId());
-												}
+						List<Media> medias = Utils.loadMedia();
+						Collections.reverse(medias);
+						Map<String, Media> hashMedia = new HashMap<String, Media>();
+						for (Media media : medias) {
+							hashMedia.put(media.getSha1Tag(), media);
+						}
+						Map<String, String> uploadedPhotos = new HashMap<String, String>();
+						Map<String, PRIVACY> photosPrivacy = new HashMap<String, PRIVACY>();
+						int totalPage = 10;
+						int page = 1;
+						int per_page = 100;
+						int count = 0;
+						int nbUploaded = 0;
+						// fetching all uploaded photos
+						// the flickr query is not consistent (not all
+						// photos are retrieved)
+						while (page <= totalPage) {
+							SearchParameters params = new SearchParameters();
+							params.setUserId(Utils.getStringProperty(STR.userId));
+							params.setMachineTags(new String[] { "file:sha1sig=" });
+							params.setSort(SearchParameters.DATE_POSTED_DESC);
+							params.setExtras(EXTRAS_MACHINE_TAGS);
+							PhotoList photoList = FlickrApi.get().getPhotosInterface().search(params, per_page, page);
+							totalPage = photoList.getPages();
+							per_page = photoList.getPerPage();
+							count += photoList.size();
+							if (!photoList.isEmpty()) {
+								LOG.debug(count + " photos with machine tag fetched. page:" + page + "/" + totalPage);
+								for (Photo photo : photoList) {
+									for (String tag : photo.getMachineTags()) {
+										if (tag.startsWith("file:sha1sig")) {
+											String flickrId = photo.getId();
+											uploadedPhotos.put(tag, flickrId);
+											photosPrivacy.put(flickrId, getPrivacy(photo));
+											Media media = hashMedia.get(tag);
+											if (media != null) {
+												media.setFlickrId(flickrId);
+												media.setPrivacy(photosPrivacy.get(flickrId));
+												media.saveAsync2();
+												nbUploaded++;
 											}
 										}
-										page++;
-									} else {
-										break;
 									}
 								}
-								if (FlickrApi.uploadedPhotos != uploadedPhotos) {
-									// as all photos may not have been retrieve,
-									// we need to check which one have really
-									// been deleted manually
-									FlickrApi.uploadedPhotos.keySet().removeAll(uploadedPhotos.keySet());
-									for (String tag : FlickrApi.uploadedPhotos.keySet()) {
-										String photoId = FlickrApi.uploadedPhotos.get(tag);
-										try {
-											Photo photo = FlickrApi.get().getPhotosInterface().getPhoto(photoId);
-											if (photo != null) {
-												LOG.debug(photoId + "=" + tag + " still exist");
-												uploadedPhotos.put(tag, photoId);
-											}
-										} catch (FlickrException e) {
-											if ("1".equals(e.getErrorCode())) {// Photo
-																				// not
-																				// found
-												LOG.debug(photoId + "=" + tag + " still no longer exist");
-											} else {
-												LOG.error(ToolString.stack2string(e));
-											}
-										} catch (Throwable e) {
-											LOG.error(ToolString.stack2string(e));
-										}
-									}
-									FlickrApi.uploadedPhotos = uploadedPhotos;
-								}
-								Utils.setMapProperty(STR.uploadedPhotos, FlickrApi.uploadedPhotos);
-								Utils.setEnumMapProperty(STR.photosPrivacy, photosPrivacy);
-								FlickrUploaderActivity.staticRefresh(false);
+								page++;
+							} else {
+								break;
 							}
 						}
+						for (Media media : medias) {
+							String persistedFlickrId = media.getFlickrId();
+							String flickrId = uploadedPhotos.get(media.getSha1Tag());
+							if (persistedFlickrId != null && flickrId == null) {
+								// as all photos may not have been retrieved, we need to check which one
+								// have really been deleted manually
+								try {
+									Photo photo = FlickrApi.get().getPhotosInterface().getPhoto(persistedFlickrId);
+									if (photo != null) {
+										LOG.debug(persistedFlickrId + "=" + media.getSha1Tag() + " still exist");
+										media.setPrivacy(photosPrivacy.get(flickrId));
+										media.saveAsync2();
+										nbUploaded++;
+									}
+								} catch (FlickrException e) {
+									// Photo not found
+									if ("1".equals(e.getErrorCode())) {
+										LOG.debug(flickrId + "=" + media.getSha1Tag() + " no longer still exist");
+										media.setFlickrId(null);
+										media.setPrivacy(null);
+										media.saveAsync2();
+									} else {
+										LOG.error(ToolString.stack2string(e));
+									}
+								} catch (Throwable e) {
+									LOG.error(ToolString.stack2string(e));
+								}
+
+							}
+						}
+						LOG.info("nbUploaded = " + nbUploaded);
+						// FlickrUploaderActivity.staticRefresh(true);
 					} catch (Throwable e) {
 						LOG.error(ToolString.stack2string(e));
 					}
@@ -206,94 +208,8 @@ public class FlickrApi {
 		}
 	}
 
-	public static void ensureOrdered(String photosetTitle) {
-		try {
-			String photosetId = getPhotoSetId(photosetTitle);
-			if (photosetId != null) {
-				List<String> instantPhotoIds = new ArrayList<String>();
-				int page = 1;
-				int per_page = 500;
-				int totalPage = 10;
-				int count = 0;
-				while (page <= totalPage) {
-					lastSync = System.currentTimeMillis();
-					PhotoList photos = FlickrApi.get().getPhotosetsInterface().getPhotos(photosetId, EXTRAS_MACHINE_TAGS, Flickr.PRIVACY_LEVEL_NO_FILTER, per_page, page);
-					LOG.debug("nb photos uploaded : " + photos.size());
-					if (photos.isEmpty()) {
-						break;
-					} else {
-						count += photos.size();
-						per_page = photos.getPerPage();
-						totalPage = photos.getPages();
-						LOG.debug(count + " photos fetched for " + photosetId + ", page:" + page + "/" + totalPage);
-						page++;
-						for (Photo photo : photos) {
-							instantPhotoIds.add(photo.getId());
-							// as long as we are fetching data, let's make sure
-							// we have (again) the machine_tags
-							for (String tag : photo.getMachineTags()) {
-								if (tag.startsWith("file:sha1sig")) {
-									uploadedPhotos.put(tag, photo.getId());
-								}
-							}
-						}
-					}
-				}
-				Utils.setMapProperty(STR.uploadedPhotos, uploadedPhotos);
-
-				List<Media> loadImages = Utils.loadImages(null);
-				LOG.debug("loadImages : " + loadImages.size());
-				List<String> photoIds = new ArrayList<String>();
-				for (Media image : loadImages) {
-					String sha1tag = Utils.getSHA1tag(image);
-					String photoId = uploadedPhotos.get(sha1tag);
-					if (photoId != null && instantPhotoIds.contains(photoId)) {
-						photoIds.add(photoId);
-					}
-				}
-				// Ordering.explicit(valuesInOrder);
-				LOG.info("nb photos uploaded in " + photosetId + " : " + photoIds.size() + "/" + loadImages.size());
-				if (!photoIds.isEmpty()) {
-					boolean isOrdered = true;
-					for (int i = 0; i < Math.min(photoIds.size(), instantPhotoIds.size()); i++) {
-						if (photoIds.get(i).equals(instantPhotoIds.get(i))) {
-							isOrdered = false;
-							break;
-						}
-					}
-					if (!isOrdered) {
-						LOG.debug("reordering photoset : \n" + photosetId);
-						FlickrApi.get().getPhotosetsInterface().reorderPhotos(photosetId, photoIds);
-						FlickrApi.get().getPhotosetsInterface().setPrimaryPhoto(photosetId, photoIds.get(0));
-					}
-				}
-			}
-		} catch (Throwable e) {
-			LOG.error(ToolString.stack2string(e));
-		}
-	}
-
-	public static boolean isUploaded(Object object) {
-		if (object instanceof Media) {
-			String sha1tag = Utils.getSHA1tag((Media) object);
-			return uploadedPhotos.get(sha1tag) != null;
-		} else if (object instanceof Folder) {
-			for (Media image : ((Folder) object).images) {
-				if (!isUploaded(image)) {
-					return false;
-				}
-			}
-		}
-		return true;
-	}
-
-	public static String getPhotoId(Media image) {
-		String sha1tag = Utils.getSHA1tag(image);
-		return uploadedPhotos.get(sha1tag);
-	}
-
 	@SuppressWarnings("deprecation")
-	public static boolean upload(Media image, String photosetTitle) {
+	public static boolean upload(Media media, String photosetTitle) {
 		if (photosetTitle == null) {
 			LOG.warn("photosetTitle should not be null here, setting it to default " + STR.instantUpload);
 			photosetTitle = STR.instantUpload;
@@ -301,7 +217,7 @@ public class FlickrApi {
 		boolean success = false;
 		int retry = 0;
 		String photoId = null;
-		String sha1tag = Utils.getSHA1tag(image);
+		String sha1tag = media.getSha1Tag();
 		ConnectivityManager cm = (ConnectivityManager) FlickrUploader.getAppContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 		if (STR.wifionly.equals(Utils.getStringProperty(PreferencesActivity.UPLOAD_NETWORK))) {
 			cm.setNetworkPreference(ConnectivityManager.TYPE_WIFI);
@@ -313,11 +229,11 @@ public class FlickrApi {
 			photosetId = getPhotoSetId(photosetTitle);
 			try {
 				if (photoId == null) {
-					String extension = getExtension(image);
+					String extension = getExtension(media);
 					if (unsupportedExtensions.contains(extension)) {
 						throw new UploadException("Unsupported extension: " + extension);
 					}
-					String uri = image.path;
+					String uri = media.getPath();
 					File file = new File(uri);
 					if (!file.exists()) {
 						throw new UploadException("File no longer exists: " + file.getAbsolutePath());
@@ -328,7 +244,7 @@ public class FlickrApi {
 					if (file.length() > 1024 * 1024 * 1024L) {
 						throw new UploadException("File too big: " + file.getAbsolutePath());
 					}
-					String md5tag = "file:md5sum=" + Utils.getMD5Checksum(image);
+					String md5tag = media.getMd5Tag();
 					SearchParameters params = new SearchParameters();
 					params.setUserId(Utils.getStringProperty(STR.userId));
 					params.setMachineTags(new String[] { md5tag });
@@ -336,7 +252,6 @@ public class FlickrApi {
 					if (!photoList.isEmpty()) {
 						LOG.warn("already uploaded : " + photoList.get(0).getId() + " = " + md5tag + " = " + uri);
 						photoId = photoList.get(0).getId();
-						uploadedPhotos.put(sha1tag, photoId);
 					} else {
 						if (Utils.canUploadNow() != CAN_UPLOAD.ok)
 							break;
@@ -358,11 +273,8 @@ public class FlickrApi {
 						}
 						metaData.setTags(tags);
 						long start = System.currentTimeMillis();
-						photoId = FlickrApi.get().getUploader().upload(image.name, file, metaData, image);
+						photoId = FlickrApi.get().getUploader().upload(media.getName(), file, metaData, media);
 						LOG.debug("photo uploaded in " + (System.currentTimeMillis() - start) + "ms : " + photoId);
-						uploadedPhotos.put(sha1tag, photoId);
-						photosPrivacy.put(photoId, privacy);
-						Utils.setEnumMapProperty(STR.photosPrivacy, photosPrivacy);
 					}
 				}
 				if (photoId != null) {
@@ -375,7 +287,7 @@ public class FlickrApi {
 							FlickrApi.get().getPhotosetsInterface().addPhoto(photosetId, photoId);
 						}
 					} catch (FlickrException fe) {
-						if ("1".equals(fe.getErrorCode())) {// Photoset not
+						if ("1".equals(fe.getErrorCode())) {// Photoset not found
 							LOG.warn("photosetId : " + photosetId + " not found, photo will not be saved in a set");
 							cachedPhotoSets = null;
 						} else {
@@ -384,9 +296,9 @@ public class FlickrApi {
 					}
 				}
 				success = true;
-				exceptions.remove(image);
+				exceptions.remove(media);
 			} catch (Throwable e) {
-				exceptions.put(image, e);
+				exceptions.put(media, e);
 				if (e instanceof FlickrException) {
 					FlickrException fe = (FlickrException) e;
 					LOG.warn("retry " + retry + " : " + fe.getErrorCode() + " : " + fe.getErrorMessage());
@@ -400,7 +312,7 @@ public class FlickrApi {
 						auth = null;
 						authentified = false;
 					} else if ("5".equals(fe.getErrorCode())) {
-						addUnsupportedExtension(getExtension(image));
+						addUnsupportedExtension(getExtension(media));
 					}
 				}
 				LOG.error(ToolString.stack2string(e));
@@ -412,7 +324,7 @@ public class FlickrApi {
 						} catch (InterruptedException ignore) {
 						}
 					} else {
-						unretryable.add(image);
+						unretryable.add(media);
 						LOG.warn("not retrying : " + e.getClass().getSimpleName() + " : " + e.getMessage() + ", cause : " + e.getCause());
 						break;
 					}
@@ -421,9 +333,12 @@ public class FlickrApi {
 				retry++;
 			}
 		}
-		if (success) {
-			uploadedPhotos.put(sha1tag, photoId);
-			Utils.setMapProperty(STR.uploadedPhotos, uploadedPhotos);
+		if (photoId != null) {
+			media.setFlickrId(photoId);
+			if (success) {
+				media.addPhotoSet(photosetId);
+			}
+			media.save();
 		}
 		return success;
 	}
@@ -442,7 +357,7 @@ public class FlickrApi {
 
 	static String getExtension(Media media) {
 		try {
-			File file = new File(media.path);
+			File file = new File(media.getPath());
 			int lastIndexOf = file.getName().lastIndexOf('.');
 			if (lastIndexOf > 0) {
 				return file.getName().substring(lastIndexOf + 1).trim().toLowerCase(Locale.US);
@@ -536,37 +451,6 @@ public class FlickrApi {
 			result = alphabet[(int) num] + result;
 		}
 		return result;
-	}
-
-	public static PRIVACY getPrivacy(Media image) {
-		return photosPrivacy.get(getPhotoId(image));
-	}
-
-	public static void setPrivacy(final PRIVACY privacy, final List<String> photoIds) {
-		BackgroundExecutor.execute(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					for (String photoId : photoIds) {
-						Permissions permissions = new Permissions();
-						permissions.setPublicFlag(privacy == PRIVACY.PUBLIC);
-						permissions.setFamilyFlag(privacy == PRIVACY.FAMILY || privacy == PRIVACY.FRIENDS_FAMILY);
-						permissions.setFriendFlag(privacy == PRIVACY.FRIENDS || privacy == PRIVACY.FRIENDS_FAMILY);
-						FlickrApi.get().getPhotosInterface().setPerms(photoId, permissions);
-						photosPrivacy.put(photoId, privacy);
-						Utils.setEnumMapProperty(STR.photosPrivacy, photosPrivacy);
-						FlickrUploaderActivity.staticRefresh(false);
-						LOG.debug("set privacy " + privacy + " on " + photoId);
-					}
-				} catch (Throwable e) {
-					LOG.error(ToolString.stack2string(e));
-				}
-			}
-		});
-	}
-
-	public static PRIVACY getPrivacy(String photoId) {
-		return photosPrivacy.get(photoId);
 	}
 
 	static Map<String, String> cachedPhotoSets = Utils.getMapProperty("cachedPhotoSets");

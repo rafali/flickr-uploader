@@ -27,6 +27,8 @@ import org.acra.ReportingInteractionMode;
 import org.acra.annotation.ReportsCrashes;
 import org.slf4j.LoggerFactory;
 
+import se.emilsjolander.sprinkles.Migration;
+import se.emilsjolander.sprinkles.Sprinkles;
 import android.app.Application;
 import android.content.Context;
 import android.os.Handler;
@@ -44,6 +46,7 @@ import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
+import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader2.R;
 
@@ -61,6 +64,16 @@ public class FlickrUploader extends Application {
 		super.onCreate();
 		FlickrUploader.context = getApplicationContext();
 		getHandler();
+
+		try {
+			Sprinkles sprinkles = Sprinkles.init(getApplicationContext());
+			Migration initialMigration = new Migration();
+			initialMigration.createTable(Media.class);
+			sprinkles.addMigration(initialMigration);
+		} catch (Throwable e) {
+			Log.e("Flickr Uploader", e.getMessage(), e);
+		}
+
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
@@ -71,6 +84,7 @@ public class FlickrUploader extends Application {
 					if (Config.VERSION != versionCode) {
 						if (versionCode == 0) {
 							Utils.setLongProperty(STR.lastNewFilesCheckNotEmpty, System.currentTimeMillis());
+
 						} else {
 						}
 						Utils.saveAndroidDevice();
