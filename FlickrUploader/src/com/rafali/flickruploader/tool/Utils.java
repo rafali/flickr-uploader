@@ -15,7 +15,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -88,13 +87,17 @@ import com.rafali.flickruploader.AndroidDevice;
 import com.rafali.flickruploader.Config;
 import com.rafali.flickruploader.FlickrUploader;
 import com.rafali.flickruploader.api.FlickrApi;
-import com.rafali.flickruploader.api.FlickrApi.PRIVACY;
 import com.rafali.flickruploader.billing.IabException;
 import com.rafali.flickruploader.billing.IabHelper;
 import com.rafali.flickruploader.billing.IabHelper.OnIabPurchaseFinishedListener;
 import com.rafali.flickruploader.billing.IabResult;
 import com.rafali.flickruploader.billing.Inventory;
 import com.rafali.flickruploader.billing.Purchase;
+import com.rafali.flickruploader.enums.CAN_UPLOAD;
+import com.rafali.flickruploader.enums.MEDIA_TYPE;
+import com.rafali.flickruploader.enums.PRIVACY;
+import com.rafali.flickruploader.enums.VIEW_GROUP_TYPE;
+import com.rafali.flickruploader.enums.VIEW_SIZE;
 import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
@@ -231,22 +234,14 @@ public final class Utils {
 		setBooleanProperty("show_videos", show_videos);
 	}
 
-	public enum VIEW_SIZE {
-		small, medium, large
-	}
-
-	public enum VIEW_GROUP_TYPE {
-		date, folder
-	}
-
 	public static void dialogPrivacy(final Activity context, final PRIVACY privacy, final Callback<PRIVACY> callback) {
 		context.runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
 
-				final PRIVACY[] privacies = FlickrApi.PRIVACY.values();
+				final PRIVACY[] privacies = PRIVACY.values();
 				String[] items = new String[privacies.length];
-				for (int i = 0; i < FlickrApi.PRIVACY.values().length; i++) {
+				for (int i = 0; i < PRIVACY.values().length; i++) {
 					items[i] = privacies[i].getSimpleName();
 				}
 				int checked = -1;
@@ -388,35 +383,35 @@ public final class Utils {
 		}
 	}
 
-	public static List<Media> getImages(String key) {
-		String queueIds = getStringProperty(key);
-		if (ToolString.isNotBlank(queueIds)) {
-			String filter = Images.Media._ID + " IN (" + queueIds + ")";
-			List<Media> images = Utils.loadMedia(filter);
-			LOG.debug(key + " - queueIds : " + queueIds.split(",").length + ", images:" + images.size());
-			return images;
-		}
-		return null;
-	}
+//	public static List<Media> getImages(String key) {
+//		String queueIds = getStringProperty(key);
+//		if (ToolString.isNotBlank(queueIds)) {
+//			String filter = Images.Media._ID + " IN (" + queueIds + ")";
+//			List<Media> images = Utils.loadMedia(filter);
+//			LOG.debug(key + " - queueIds : " + queueIds.split(",").length + ", images:" + images.size());
+//			return images;
+//		}
+//		return null;
+//	}
 
-	public static List<Media> getImages(Collection<Integer> ids) {
-		List<Media> images = null;
-		if (ids != null && !ids.isEmpty()) {
-			String filter = Images.Media._ID + " IN (" + Joiner.on(",").join(ids) + ")";
-			images = Utils.loadMedia(filter);
-		}
-		return images;
-	}
+//	public static List<Media> getImages(Collection<Integer> ids) {
+//		List<Media> images = null;
+//		if (ids != null && !ids.isEmpty()) {
+//			String filter = Images.Media._ID + " IN (" + Joiner.on(",").join(ids) + ")";
+//			images = Utils.loadMedia(filter);
+//		}
+//		return images;
+//	}
 
-	public static Media getImage(int id) {
-		String filter = Images.Media._ID + " IN (" + id + ")";
-		List<Media> images = Utils.loadMedia(filter);
-		if (!images.isEmpty()) {
-			return images.get(0);
-		}
-		LOG.warn("id " + id + " not found!");
-		return null;
-	}
+//	public static Media getImage(int id) {
+//		String filter = Images.Media._ID + " IN (" + id + ")";
+//		List<Media> images = Utils.loadMedia(filter);
+//		if (!images.isEmpty()) {
+//			return images.get(0);
+//		}
+//		LOG.warn("id " + id + " not found!");
+//		return null;
+//	}
 
 	public static void setMapProperty(String property, Map<String, String> map) {
 		Editor editor = sp.edit();
@@ -583,117 +578,113 @@ public final class Utils {
 		}
 	}
 
-	public static enum MediaType {
-		photo, video
-	}
-
 	static final String[] projPhoto = { Images.Media._ID, Images.Media.DATA, Images.Media.DATE_ADDED, Images.Media.DATE_TAKEN, Images.Media.DISPLAY_NAME, Images.Media.SIZE };
 	static final String[] projVideo = { Video.Media._ID, Video.Media.DATA, Video.Media.DATE_ADDED, Video.Media.DATE_TAKEN, Video.Media.DISPLAY_NAME, Video.Media.SIZE };
 
-	public static List<Media> loadMedia(String filter) {
-		return loadMedia(filter, 0);
-	}
+//	public static List<Media> loadMedia(String filter) {
+//		return loadMedia(filter, 0);
+//	}
 
-	public static List<Media> loadMedia(String filter, int limit) {
-		List<Media> photos = Utils.loadMedia(filter, MediaType.photo, limit);
-		List<Media> videos = Utils.loadMedia(filter, MediaType.video, limit);
-		List<Media> images = new ArrayList<Media>(photos);
-		images.addAll(videos);
-		Collections.sort(images, MEDIA_COMPARATOR);
-		return images;
-	}
+//	public static List<Media> loadMedia(String filter, int limit) {
+//		List<Media> photos = Utils.loadMedia(filter, MEDIA_TYPE.photo, limit);
+//		List<Media> videos = Utils.loadMedia(filter, MEDIA_TYPE.video, limit);
+//		List<Media> images = new ArrayList<Media>(photos);
+//		images.addAll(videos);
+//		Collections.sort(images, MEDIA_COMPARATOR);
+//		return images;
+//	}
 
-	public static List<Media> loadMedia(String filter, MediaType mediaType) {
-		return loadMedia(filter, mediaType, 0);
-	}
+//	public static List<Media> loadMedia(String filter, MEDIA_TYPE mediaType) {
+//		return loadMedia(filter, mediaType, 0);
+//	}
 
-	public static List<Media> loadMedia(String filter, MediaType mediaType, int limit) {
-		Cursor cursor = null;
-		List<Media> images = new ArrayList<Media>();
-		try {
-
-			// long oneDayAgo = System.currentTimeMillis() - 24 * 3600 * 1000L;
-			// String filter = Images.Media.DATE_TAKEN + " > " + oneDayAgo;
-			// String filter = Images.Media._ID + " IN (54820, 56342)";
-
-			String orderBy = Images.Media.DATE_TAKEN + " DESC, " + Images.Media.DATE_ADDED + " DESC";
-			if (limit > 0) {
-				orderBy += " LIMIT " + limit;
-			}
-			Uri uri;
-			String[] proj = mediaType == MediaType.photo ? projPhoto : projVideo;
-			if (filter != null && filter.startsWith("content://")) {
-				uri = Uri.parse(filter);
-				cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, null, null, orderBy);
-			} else {
-				// uri = mediaType == MediaType.photo ?
-				// Images.Media.INTERNAL_CONTENT_URI :
-				// Video.Media.INTERNAL_CONTENT_URI;
-				uri = mediaType == MediaType.photo ? Images.Media.EXTERNAL_CONTENT_URI : Video.Media.EXTERNAL_CONTENT_URI;
-				cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, filter, null, orderBy);
-			}
-			int idColumn = cursor.getColumnIndex(Images.Media._ID);
-			int dataColumn = cursor.getColumnIndex(Images.Media.DATA);
-			int displayNameColumn = cursor.getColumnIndex(Images.Media.DISPLAY_NAME);
-			int dateTakenColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_TAKEN);
-			int dateAddedColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_ADDED);
-			int sizeColumn = cursor.getColumnIndex(Images.Media.SIZE);
-			cursor.moveToFirst();
-			LOG.debug("filter = " + filter + ", count = " + cursor.getCount());
-			int nbErrorConsecutive = 0;
-			while (cursor.isAfterLast() == false) {
-				try {
-					Long date = null;
-					String dateStr = null;
-					try {
-						dateStr = cursor.getString(dateTakenColumn);
-						if (ToolString.isBlank(dateStr)) {
-							dateStr = cursor.getString(dateAddedColumn);
-							if (ToolString.isNotBlank(dateStr)) {
-								if (dateStr.trim().length() <= 10) {
-									date = Long.valueOf(dateStr) * 1000L;
-								} else {
-									date = Long.valueOf(dateStr);
-								}
-							}
-						} else {
-							date = Long.valueOf(dateStr);
-						}
-					} catch (Throwable e) {
-						LOG.warn(e.getClass().getSimpleName() + " : " + dateStr);
-					}
-					String data = cursor.getString(dataColumn);
-					if (date == null) {
-						File file = new File(data);
-						date = file.lastModified();
-					}
-
-					Media item = new Media();
-					item.setId(cursor.getInt(idColumn));
-					item.setMediaType(mediaType);
-					item.setPath(data);
-					item.setName(cursor.getString(displayNameColumn));
-					item.setSize(cursor.getInt(sizeColumn));
-					item.setDate(date);
-					images.add(item);
-					cursor.moveToNext();
-					nbErrorConsecutive = 0;
-				} catch (Throwable e) {
-					nbErrorConsecutive++;
-					LOG.error(e.getMessage() + ", nbErrorConsecutive=" + nbErrorConsecutive, e);
-					if (nbErrorConsecutive > 5) {
-						break;
-					}
-				}
-			}
-		} catch (Throwable e) {
-			LOG.error(ToolString.stack2string(e));
-		} finally {
-			if (cursor != null)
-				cursor.close();
-		}
-		return images;
-	}
+//	public static List<Media> loadMedia(String filter, MEDIA_TYPE mediaType, int limit) {
+//		Cursor cursor = null;
+//		List<Media> images = new ArrayList<Media>();
+//		try {
+//
+//			// long oneDayAgo = System.currentTimeMillis() - 24 * 3600 * 1000L;
+//			// String filter = Images.Media.DATE_TAKEN + " > " + oneDayAgo;
+//			// String filter = Images.Media._ID + " IN (54820, 56342)";
+//
+//			String orderBy = Images.Media.DATE_TAKEN + " DESC, " + Images.Media.DATE_ADDED + " DESC";
+//			if (limit > 0) {
+//				orderBy += " LIMIT " + limit;
+//			}
+//			Uri uri;
+//			String[] proj = mediaType == MEDIA_TYPE.photo ? projPhoto : projVideo;
+//			if (filter != null && filter.startsWith("content://")) {
+//				uri = Uri.parse(filter);
+//				cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, null, null, orderBy);
+//			} else {
+//				// uri = mediaType == MediaType.photo ?
+//				// Images.Media.INTERNAL_CONTENT_URI :
+//				// Video.Media.INTERNAL_CONTENT_URI;
+//				uri = mediaType == MEDIA_TYPE.photo ? Images.Media.EXTERNAL_CONTENT_URI : Video.Media.EXTERNAL_CONTENT_URI;
+//				cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, filter, null, orderBy);
+//			}
+//			int idColumn = cursor.getColumnIndex(Images.Media._ID);
+//			int dataColumn = cursor.getColumnIndex(Images.Media.DATA);
+//			int displayNameColumn = cursor.getColumnIndex(Images.Media.DISPLAY_NAME);
+//			int dateTakenColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_TAKEN);
+//			int dateAddedColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_ADDED);
+//			int sizeColumn = cursor.getColumnIndex(Images.Media.SIZE);
+//			cursor.moveToFirst();
+//			LOG.debug("filter = " + filter + ", count = " + cursor.getCount());
+//			int nbErrorConsecutive = 0;
+//			while (cursor.isAfterLast() == false) {
+//				try {
+//					Long date = null;
+//					String dateStr = null;
+//					try {
+//						dateStr = cursor.getString(dateTakenColumn);
+//						if (ToolString.isBlank(dateStr)) {
+//							dateStr = cursor.getString(dateAddedColumn);
+//							if (ToolString.isNotBlank(dateStr)) {
+//								if (dateStr.trim().length() <= 10) {
+//									date = Long.valueOf(dateStr) * 1000L;
+//								} else {
+//									date = Long.valueOf(dateStr);
+//								}
+//							}
+//						} else {
+//							date = Long.valueOf(dateStr);
+//						}
+//					} catch (Throwable e) {
+//						LOG.warn(e.getClass().getSimpleName() + " : " + dateStr);
+//					}
+//					String data = cursor.getString(dataColumn);
+//					if (date == null) {
+//						File file = new File(data);
+//						date = file.lastModified();
+//					}
+//
+//					Media item = new Media();
+//					item.setId(cursor.getInt(idColumn));
+//					item.setMediaType(mediaType);
+//					item.setPath(data);
+//					item.setName(cursor.getString(displayNameColumn));
+//					item.setSize(cursor.getInt(sizeColumn));
+//					item.setDate(date);
+//					images.add(item);
+//					cursor.moveToNext();
+//					nbErrorConsecutive = 0;
+//				} catch (Throwable e) {
+//					nbErrorConsecutive++;
+//					LOG.error(e.getMessage() + ", nbErrorConsecutive=" + nbErrorConsecutive, e);
+//					if (nbErrorConsecutive > 5) {
+//						break;
+//					}
+//				}
+//			}
+//		} catch (Throwable e) {
+//			LOG.error(ToolString.stack2string(e));
+//		} finally {
+//			if (cursor != null)
+//				cursor.close();
+//		}
+//		return images;
+//	}
 
 	static final String[] proj = { FileColumns._ID, FileColumns.DATA, FileColumns.MEDIA_TYPE, FileColumns.DATE_ADDED, FileColumns.DISPLAY_NAME, FileColumns.SIZE, Images.Media.DATE_TAKEN };
 
@@ -707,7 +698,7 @@ public final class Utils {
 			CursorList<Media> cursorList = query.get();
 			Iterator<Media> it = cursorList.iterator();
 
-			String selection = FileColumns.MEDIA_TYPE + "=" + FileColumns.MEDIA_TYPE_IMAGE + " OR " + FileColumns.MEDIA_TYPE + "=" + FileColumns.MEDIA_TYPE_VIDEO;
+			String selection = FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.PHOTO + " OR " + FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.VIDEO;
 
 			String orderBy = FileColumns._ID + " ASC";
 			cursor = FlickrUploader.getAppContext().getContentResolver().query(MediaStore.Files.getContentUri("external"), proj, selection, null, orderBy);
@@ -827,10 +818,6 @@ public final class Utils {
 		return folders;
 	}
 
-	public enum CAN_UPLOAD {
-		ok, network, wifi, charging, manually, no_flickr_login
-	}
-
 	public static String canAutoUpload() {
 		if (!Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
 			return "Autoupload disabled";
@@ -912,7 +899,7 @@ public final class Utils {
 				options.inSampleSize = 1;
 				options.inPurgeable = true;
 				options.inInputShareable = true;
-				if (media.getMediaType() == MediaType.video) {
+				if (media.getMediaType() == MEDIA_TYPE.VIDEO) {
 					bitmap = Video.Thumbnails.getThumbnail(FlickrUploader.getAppContext().getContentResolver(), media.getId(), Video.Thumbnails.MINI_KIND, null);
 					return bitmap;
 				} else if (view_size == VIEW_SIZE.small) {
@@ -1755,7 +1742,7 @@ public final class Utils {
 
 	public static List<Folder> getSyncedFolders() {
 		List<Folder> syncedFolders = new ArrayList<Folder>();
-		List<Media> media = Utils.loadMedia(null);
+		List<Media> media = Utils.loadMedia();
 		if (media != null) {
 			List<Folder> folders = Utils.getFolders(media);
 			for (Folder folder : folders) {

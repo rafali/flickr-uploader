@@ -33,12 +33,12 @@ import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.api.FlickrApi;
+import com.rafali.flickruploader.enums.VIEW_SIZE;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.service.UploadService;
 import com.rafali.flickruploader.service.UploadService.UploadProgressListener;
 import com.rafali.flickruploader.tool.Notifications;
 import com.rafali.flickruploader.tool.Utils;
-import com.rafali.flickruploader.tool.Utils.VIEW_SIZE;
 import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
 import com.rafali.flickruploader.ui.widget.TabView;
 import com.rafali.flickruploader2.R;
@@ -130,10 +130,11 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 				dialog.show();
 			}
 		} else if (queueTabView.getCurrentItem() == TAB_FAILED_INDEX) {
-			List<Media> failedMedias = UploadService.getFailedSnapshot();
-			if (!failedMedias.isEmpty()) {
-				UploadService.enqueueRetry(failedMedias);
-			}
+			//FIXME
+//			List<Media> failedMedias = UploadService.getFailedSnapshot();
+//			if (!failedMedias.isEmpty()) {
+//				UploadService.enqueueRetry(failedMedias);
+//			}
 		}
 	}
 
@@ -145,7 +146,8 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 	void onClearClick() {
 		Notifications.clear();
 		if (queueTabView.getCurrentItem() == TAB_UPLOADED_INDEX) {
-			UploadService.clearUploaded();
+			//FIXME
+//			UploadService.clearUploaded();
 		} else if (queueTabView.getCurrentItem() == TAB_QUEUED_INDEX) {
 			UploadService.clearQueued();
 		} else if (queueTabView.getCurrentItem() == TAB_FAILED_INDEX) {
@@ -175,10 +177,22 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 			@Override
 			public void run() {
 				try {
-					List<Media> queuedMedias = UploadService.getQueueSnapshot();
-					Collections.reverse(queuedMedias);
-					List<Media> uploadedMedias = UploadService.getRecentlyUploadedSnapshot();
-					List<Media> failedMedias = UploadService.getFailedSnapshot();
+					List<Media> queuedMedias = new ArrayList<Media>();
+					List<Media> uploadedMedias = new ArrayList<Media>();
+					List<Media> failedMedias = new ArrayList<Media>();
+					List<Media> medias = Utils.loadMedia();
+					for (Media media : medias) {
+						if (media.isQueued()) {
+							queuedMedias.add(media);
+						} else if (media.isFailed()) {
+							failedMedias.add(media);
+						}
+					}
+					//FIXME
+//					List<Media> queuedMedias = UploadService.getQueueSnapshot();
+//					Collections.reverse(queuedMedias);
+//					List<Media> uploadedMedias = UploadService.getRecentlyUploadedSnapshot();
+//					List<Media> failedMedias = UploadService.getFailedSnapshot();
 					notifyDataSetChanged(queuedAdapter, queuedMedias);
 					notifyDataSetChanged(uploadedAdapter, uploadedMedias);
 					notifyDataSetChanged(failedAdapter, failedMedias);
@@ -317,7 +331,7 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 			titleView.setText(media.getPath());
 			subTitleView.setText("");
 			imageView.setTag(media);
-			int nbError = UploadService.getNbError(media);
+			int nbError = media.getRetries();
 			if (titleRes == R.string.queued) {
 				if (nbError > 0) {
 					subTitleView.setText("retry #" + (nbError + 1));
@@ -329,16 +343,17 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 				if (FlickrApi.unretryable.contains(media)) {
 					text = "unretryable error";
 				} else {
-					long delay = UploadService.getRetryDelay(media);
-					if (nbError > 0) {
-						text = nbError + " error" + (nbError > 1 ? "s" : "");
-					}
-					if (delay > 0) {
-						if (!text.isEmpty()) {
-							text += ", ";
-						}
-						text += "retrying in " + ToolString.formatDuration(delay - System.currentTimeMillis());
-					}
+					//FIXME
+//					long delay = UploadService.getRetryDelay(media);
+//					if (nbError > 0) {
+//						text = nbError + " error" + (nbError > 1 ? "s" : "");
+//					}
+//					if (delay > 0) {
+//						if (!text.isEmpty()) {
+//							text += ", ";
+//						}
+//						text += "retrying in " + ToolString.formatDuration(delay - System.currentTimeMillis());
+//					}
 				}
 				Throwable lastException = FlickrApi.getLastException(media);
 				if (lastException != null) {

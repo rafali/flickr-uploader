@@ -36,10 +36,10 @@ import com.googlecode.androidannotations.annotations.ViewById;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.api.FlickrApi;
+import com.rafali.flickruploader.enums.VIEW_SIZE;
 import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.tool.Utils;
-import com.rafali.flickruploader.tool.Utils.VIEW_SIZE;
 import com.rafali.flickruploader2.R;
 
 @EActivity(R.layout.auto_upload_folders_activity)
@@ -77,7 +77,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 
 	@Background
 	void load() {
-		List<Media> media = Utils.loadMedia(null);
+		List<Media> media = Utils.loadMedia();
 		if (media != null) {
 			folders = Utils.getFolders(media);
 			for (Folder folder : folders) {

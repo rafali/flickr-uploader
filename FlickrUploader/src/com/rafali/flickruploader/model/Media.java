@@ -10,14 +10,14 @@ import se.emilsjolander.sprinkles.Model;
 import se.emilsjolander.sprinkles.annotations.Column;
 import se.emilsjolander.sprinkles.annotations.PrimaryKey;
 import se.emilsjolander.sprinkles.annotations.Table;
-import android.provider.MediaStore;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.rafali.common.ToolString;
-import com.rafali.flickruploader.api.FlickrApi.PRIVACY;
+import com.rafali.flickruploader.enums.MEDIA_TYPE;
+import com.rafali.flickruploader.enums.PRIVACY;
+import com.rafali.flickruploader.enums.STATUS;
 import com.rafali.flickruploader.tool.Utils;
-import com.rafali.flickruploader.tool.Utils.MediaType;
 import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
 
 @Table("Media")
@@ -56,6 +56,12 @@ public class Media extends Model {
 
 	@Column("privacy")
 	private int privacy;
+
+	@Column("status")
+	private int status;
+
+	@Column("retries")
+	private int retries;
 
 	@Override
 	public String toString() {
@@ -97,28 +103,20 @@ public class Media extends Model {
 		return "";
 	}
 
-	public MediaType getMediaType() {
-		return this.mediaType == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO ? MediaType.video : MediaType.photo;
-	}
-
-	public void setMediaType(MediaType mediaType) {
-		this.mediaType = (mediaType == MediaType.video ? MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO : MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE);
+	public int getMediaType() {
+		return this.mediaType;
 	}
 
 	public void setMediaType(int mediaType) {
-		if (mediaType == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO || mediaType == MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE) {
-			this.mediaType = mediaType;
-		} else {
-			throw new IllegalArgumentException("not supported mediaType : " + mediaType);
-		}
+		this.mediaType = mediaType;
 	}
 
 	public boolean isPhoto() {
-		return this.mediaType == MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
+		return this.mediaType == MEDIA_TYPE.PHOTO;
 	}
 
 	public boolean isVideo() {
-		return this.mediaType == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
+		return this.mediaType == MEDIA_TYPE.VIDEO;
 	}
 
 	public int getId() {
@@ -283,5 +281,40 @@ public class Media extends Model {
 		});
 	}
 
+	public void save2() {
+		FlickrUploaderActivity.updateStatic(this);
+		save();
+	}
+
+	public int getStatus() {
+		return status;
+	}
+
+	public void setStatus(int status) {
+		if (this.status != status) {
+			this.status = status;
+			if (status == STATUS.QUEUED) {
+				this.retries = 0;
+			}
+			save2();
+		}
+	}
+
 	static ExecutorService executor = Executors.newSingleThreadExecutor();
+
+	public boolean isQueued() {
+		return this.status == STATUS.QUEUED;
+	}
+
+	public boolean isFailed() {
+		return this.status == STATUS.FAILED;
+	}
+
+	public int getRetries() {
+		return retries;
+	}
+
+	public void setRetries(int retries) {
+		this.retries = Math.max(0, retries);
+	}
 }

@@ -35,7 +35,7 @@ import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.Config;
 import com.rafali.flickruploader.api.FlickrApi;
-import com.rafali.flickruploader.api.FlickrApi.PRIVACY;
+import com.rafali.flickruploader.enums.PRIVACY;
 import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.service.UploadService;
@@ -94,7 +94,7 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 			}
 		});
 		ListPreference privacyPreference = (ListPreference) findPreference(UPLOAD_PRIVACY);
-		PRIVACY[] privacies = FlickrApi.PRIVACY.values();
+		PRIVACY[] privacies = PRIVACY.values();
 		int length = privacies.length;
 		String[] entries = new String[length];
 		String[] values = new String[length];
@@ -145,7 +145,7 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 			}
 
 		});
-		
+
 		findPreference("github").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference preference) {
@@ -153,7 +153,6 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 				return false;
 			}
 		});
-
 
 		findPreference("autoupload_folder_settings").setOnPreferenceClickListener(new OnPreferenceClickListener() {
 			@Override

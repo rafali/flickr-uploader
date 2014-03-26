@@ -63,16 +63,16 @@ import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrUploader;
 import com.rafali.flickruploader.api.FlickrApi;
-import com.rafali.flickruploader.api.FlickrApi.PRIVACY;
+import com.rafali.flickruploader.enums.MEDIA_TYPE;
+import com.rafali.flickruploader.enums.PRIVACY;
+import com.rafali.flickruploader.enums.VIEW_GROUP_TYPE;
+import com.rafali.flickruploader.enums.VIEW_SIZE;
 import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.service.UploadService;
 import com.rafali.flickruploader.tool.Notifications;
 import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader.tool.Utils.Callback;
-import com.rafali.flickruploader.tool.Utils.MediaType;
-import com.rafali.flickruploader.tool.Utils.VIEW_GROUP_TYPE;
-import com.rafali.flickruploader.tool.Utils.VIEW_SIZE;
 import com.rafali.flickruploader.ui.DrawerContentView;
 import com.rafali.flickruploader.ui.DrawerHandleView;
 import com.rafali.flickruploader.ui.widget.SlidingDrawer;
@@ -130,34 +130,36 @@ public class FlickrUploaderActivity extends Activity {
 			if (Intent.ACTION_SEND.equals(action) && type != null) {
 				if (type.startsWith("image/") || type.startsWith("video/")) {
 					Uri imageUri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
-					List<Media> loadImages = Utils.loadMedia(imageUri.toString(), type.startsWith("image/") ? MediaType.photo : MediaType.video, 1);
-					LOG.debug("imageUri : " + imageUri + ", loadImages : " + loadImages);
-					if (!loadImages.isEmpty()) {
-						selectedMedia.clear();
-						selectedMedia.addAll(loadImages);
-						confirmUpload();
-					} else {
-						Utils.toast("No media found for " + imageUri);
-					}
+					// FIXME
+					// List<Media> loadImages = Utils.loadMedia(imageUri.toString(), type.startsWith("image/") ? MEDIA_TYPE.photo : MEDIA_TYPE.video, 1);
+					// LOG.debug("imageUri : " + imageUri + ", loadImages : " + loadImages);
+					// if (!loadImages.isEmpty()) {
+					// selectedMedia.clear();
+					// selectedMedia.addAll(loadImages);
+					// confirmUpload();
+					// } else {
+					// Utils.toast("No media found for " + imageUri);
+					// }
 				}
 			} else if (Intent.ACTION_SEND_MULTIPLE.equals(action) && type != null) {
 				if (type.startsWith("image/") || type.startsWith("video/")) {
 					ArrayList<Uri> imageUris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
-					List<Media> loadImages = new ArrayList<Media>();
-					if (imageUris != null) {
-						for (Uri imageUri : imageUris) {
-							List<Media> tmpImages = Utils.loadMedia(imageUri.toString(), type.startsWith("image/") ? MediaType.photo : MediaType.video, 1);
-							LOG.debug("imageUri : " + imageUri + ", loadImages : " + loadImages);
-							loadImages.addAll(tmpImages);
-						}
-						if (!loadImages.isEmpty()) {
-							selectedMedia.clear();
-							selectedMedia.addAll(loadImages);
-							confirmUpload();
-						} else {
-							Utils.toast("No media found");
-						}
-					}
+					// FIXME
+					// List<Media> loadImages = new ArrayList<Media>();
+					// if (imageUris != null) {
+					// for (Uri imageUri : imageUris) {
+					// List<Media> tmpImages = Utils.loadMedia(imageUri.toString(), type.startsWith("image/") ? MEDIA_TYPE.photo : MEDIA_TYPE.video, 1);
+					// LOG.debug("imageUri : " + imageUri + ", loadImages : " + loadImages);
+					// loadImages.addAll(tmpImages);
+					// }
+					// if (!loadImages.isEmpty()) {
+					// selectedMedia.clear();
+					// selectedMedia.addAll(loadImages);
+					// confirmUpload();
+					// } else {
+					// Utils.toast("No media found");
+					// }
+					// }
 				}
 			}
 		}
@@ -171,6 +173,10 @@ public class FlickrUploaderActivity extends Activity {
 
 	@Background
 	void load() {
+		if ("".isEmpty()) {
+			Media topQueued = UploadService.getTopQueued();
+			LOG.info("topQueued : " + topQueued);
+		}
 		medias = Utils.loadMedia();
 		boolean showPhotos = Utils.getShowPhotos();
 		boolean showVideos = Utils.getShowVideos();
@@ -585,12 +591,17 @@ public class FlickrUploaderActivity extends Activity {
 		alert.show();
 	}
 
-	@UiThread
+	@Background
 	void enqueue(Collection<Media> images, String photoSetTitle) {
 		int enqueued = UploadService.enqueue(false, images, photoSetTitle);
 		if (slidingDrawer != null && enqueued > 0) {
-			slidingDrawer.animateOpen();
-			drawerContentView.setCurrentTab(DrawerContentView.TAB_QUEUED_INDEX);
+			runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					slidingDrawer.animateOpen();
+					drawerContentView.setCurrentTab(DrawerContentView.TAB_QUEUED_INDEX);
+				}
+			});
 		}
 	}
 
@@ -833,26 +844,28 @@ public class FlickrUploaderActivity extends Activity {
 	Map<Media, View> thumbViews = new HashMap<Media, View>();
 
 	private void update(Media media) {
-		int index = medias.indexOf(media);
-		if (index >= 0) {
-			medias.remove(index);
-			medias.add(index, media);
-			if (mediaRows != null) {
-				Media[] mediaRow = mediaRows.get(media);
-				if (mediaRow != null) {
-					for (int i = 0; i < mediaRow.length; i++) {
-						if (media.equals(mediaRow[i])) {
-							mediaRow[i] = media;
-							break;
+		if (medias != null) {
+			int index = medias.indexOf(media);
+			if (index >= 0) {
+				medias.remove(index);
+				medias.add(index, media);
+				if (mediaRows != null) {
+					Media[] mediaRow = mediaRows.get(media);
+					if (mediaRow != null) {
+						for (int i = 0; i < mediaRow.length; i++) {
+							if (media.equals(mediaRow[i])) {
+								mediaRow[i] = media;
+								break;
+							}
 						}
 					}
 				}
-			}
-			View thumbView = thumbViews.get(media);
-			if (thumbView != null) {
-				thumbView.setTag(media);
-				renderImageView(thumbView, false);
-				LOG.info(index + " view updated by " + media);
+				View thumbView = thumbViews.get(media);
+				if (thumbView != null) {
+					thumbView.setTag(media);
+					renderImageView(thumbView, false);
+					LOG.info(index + " view updated by " + media);
+				}
 			}
 		}
 	}
@@ -877,7 +890,7 @@ public class FlickrUploaderActivity extends Activity {
 			}
 
 			View type = (View) convertView.getTag(R.id.type);
-			type.setVisibility(media.getMediaType() == MediaType.video ? View.VISIBLE : View.GONE);
+			type.setVisibility(media.getMediaType() == MEDIA_TYPE.VIDEO ? View.VISIBLE : View.GONE);
 
 			final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(media.getPath() + "_" + Utils.getViewSize());
 			if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
@@ -892,7 +905,7 @@ public class FlickrUploaderActivity extends Activity {
 				public void run() {
 					try {
 						if (media.equals(imageView.getTag())) {
-							final boolean uploading = UploadService.isUploading(media);
+							final boolean uploading = media.isQueued();
 							final boolean uploaded = media.isUploaded();
 							final int privacyResource;
 							if (uploaded) {

@@ -33,9 +33,10 @@ import com.googlecode.flickrjandroid.uploader.UploadMetaData;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrUploader;
+import com.rafali.flickruploader.enums.CAN_UPLOAD;
+import com.rafali.flickruploader.enums.PRIVACY;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.tool.Utils;
-import com.rafali.flickruploader.tool.Utils.CAN_UPLOAD;
 import com.rafali.flickruploader.ui.activity.PreferencesActivity;
 import com.rafali.flickruploader2.R;
 
@@ -43,26 +44,6 @@ public class FlickrApi {
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrApi.class);
 
 	private static final HashSet<String> EXTRAS_MACHINE_TAGS = Sets.newHashSet("machine_tags");
-
-	public static enum PRIVACY {
-		PRIVATE, FRIENDS, FAMILY, FRIENDS_FAMILY("Friends and family"), PUBLIC;
-
-		private String simpleName;
-
-		private PRIVACY() {
-		}
-
-		private PRIVACY(String simpleName) {
-			this.simpleName = simpleName;
-		}
-
-		public String getSimpleName() {
-			if (simpleName != null) {
-				return simpleName;
-			}
-			return toString().substring(0, 1).toUpperCase(Locale.US) + toString().substring(1).toLowerCase(Locale.US);
-		}
-	}
 
 	private static final String API_SECRET = Utils.getString(R.string.flickr_api_secret);
 	private static final String API_KEY = Utils.getString(R.string.flickr_api_key);
