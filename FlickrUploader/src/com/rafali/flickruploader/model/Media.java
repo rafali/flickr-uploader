@@ -1,7 +1,7 @@
 package com.rafali.flickruploader.model;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -11,8 +11,6 @@ import se.emilsjolander.sprinkles.annotations.Column;
 import se.emilsjolander.sprinkles.annotations.PrimaryKey;
 import se.emilsjolander.sprinkles.annotations.Table;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.Lists;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.enums.MEDIA_TYPE;
 import com.rafali.flickruploader.enums.PRIVACY;
@@ -42,17 +40,20 @@ public class Media extends Model {
 	@Column("md5Sum")
 	private String md5Sum;
 
-	@Column("date")
-	private long date;
+	@Column("timestampCreated")
+	private long timestampCreated;
 
-	@Column("imported")
-	private long imported;
+	@Column("timestampImported")
+	private long timestampImported;
+
+	@Column("timestampUploaded")
+	private long timestampUploaded;
+
+	@Column("timestampQueued")
+	private long timestampQueued;
 
 	@Column("flickrId")
 	private String flickrId;
-
-	@Column("flickrSets")
-	private String flickrSets;
 
 	@Column("privacy")
 	private int privacy;
@@ -62,6 +63,16 @@ public class Media extends Model {
 
 	@Column("retries")
 	private int retries;
+
+	@Column("timestampRetry")
+	private long timestampRetry;
+
+	public Media() {
+	}
+
+	public Media(int status) {
+		this.status = status;
+	}
 
 	@Override
 	public String toString() {
@@ -151,16 +162,16 @@ public class Media extends Model {
 		this.size = size;
 	}
 
-	public long getDate() {
-		return this.date;
+	public long getTimestampCreated() {
+		return this.timestampCreated;
 	}
 
-	public void setDate(long date) {
-		this.date = date;
+	public void setTimestampCreated(long timestampCreated) {
+		this.timestampCreated = timestampCreated;
 	}
 
-	public long getImported() {
-		return this.imported;
+	public long getTimestampImported() {
+		return this.timestampImported;
 	}
 
 	public String getMd5Sum() {
@@ -190,26 +201,6 @@ public class Media extends Model {
 
 	public void setFlickrId(String flickrId) {
 		this.flickrId = flickrId;
-	}
-
-	public String getFlickrSets() {
-		return this.flickrSets;
-	}
-
-	public void setFlickrSets(String photoSets) {
-		this.flickrSets = photoSets;
-	}
-
-	public void addPhotoSet(String photosetId) {
-		if (ToolString.isNotBlank(photosetId)) {
-			if (ToolString.isBlank(flickrSets)) {
-				this.flickrSets = photosetId;
-			} else if (flickrSets != null && !flickrSets.contains(photosetId)) {
-				ArrayList<String> photoSetsList = Lists.newArrayList(flickrSets.split(";"));
-				photoSetsList.add(photosetId);
-				this.flickrSets = Joiner.on(";").join(photoSetsList);
-			}
-		}
 	}
 
 	public PRIVACY getPrivacy() {
@@ -257,18 +248,13 @@ public class Media extends Model {
 		}
 	}
 
-	private String sha1sig;
-
 	public String getSha1Tag() {
-		if (this.sha1sig == null) {
-			this.sha1sig = ("file:sha1sig=" + Utils.SHA1(this.path + "_" + new File(this.path).length())).toLowerCase(Locale.US);
-		}
-		return this.sha1sig;
+		return ("file:sha1sig=" + Utils.SHA1(this.path + "_" + new File(this.path).length())).toLowerCase(Locale.US);
 	}
 
 	@Override
 	protected void beforeCreate() {
-		this.imported = System.currentTimeMillis();
+		this.timestampImported = System.currentTimeMillis();
 	}
 
 	public void saveAsync2() {
@@ -295,6 +281,9 @@ public class Media extends Model {
 			this.status = status;
 			if (status == STATUS.QUEUED) {
 				this.retries = 0;
+				setTimestampQueued(System.currentTimeMillis());
+			} else if (status == STATUS.UPLOADED) {
+				setTimestampUploaded(System.currentTimeMillis());
 			}
 			save2();
 		}
@@ -310,11 +299,55 @@ public class Media extends Model {
 		return this.status == STATUS.FAILED;
 	}
 
+	public boolean isImported() {
+		return this.status == STATUS.IMPORTED;
+	}
+
 	public int getRetries() {
 		return retries;
 	}
 
 	public void setRetries(int retries) {
 		this.retries = Math.max(0, retries);
+	}
+
+	public long getTimestampUploaded() {
+		if (isUploaded()) {
+			if (timestampUploaded > 0)
+				return timestampUploaded;
+			else
+				return timestampCreated;
+		}
+		return -1;
+	}
+
+	public void setTimestampUploaded(long timestampUploaded) {
+		this.timestampUploaded = timestampUploaded;
+	}
+
+	public void setTimestampUploaded(Date dateUploaded) {
+		if (dateUploaded != null) {
+			setTimestampUploaded(dateUploaded.getTime());
+		}
+	}
+
+	public long getTimestampQueued() {
+		if (timestampQueued > 0) {
+			return timestampQueued;
+		} else {
+			return getTimestampUploaded();
+		}
+	}
+
+	public void setTimestampQueued(long timestampQueued) {
+		this.timestampQueued = timestampQueued;
+	}
+
+	public long getTimestampRetry() {
+		return timestampRetry;
+	}
+
+	public void setTimestampRetry(long timestampRetry) {
+		this.timestampRetry = timestampRetry;
 	}
 }

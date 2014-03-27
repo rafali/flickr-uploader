@@ -2,6 +2,7 @@ package com.rafali.flickruploader.ui.activity;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -127,39 +128,40 @@ public class FlickrUploaderActivity extends Activity {
 		if (intent != null) {
 			String action = intent.getAction();
 			String type = intent.getType();
+			List<String> paths = null;
 			if (Intent.ACTION_SEND.equals(action) && type != null) {
 				if (type.startsWith("image/") || type.startsWith("video/")) {
 					Uri imageUri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
-					// FIXME
-					// List<Media> loadImages = Utils.loadMedia(imageUri.toString(), type.startsWith("image/") ? MEDIA_TYPE.photo : MEDIA_TYPE.video, 1);
-					// LOG.debug("imageUri : " + imageUri + ", loadImages : " + loadImages);
-					// if (!loadImages.isEmpty()) {
-					// selectedMedia.clear();
-					// selectedMedia.addAll(loadImages);
-					// confirmUpload();
-					// } else {
-					// Utils.toast("No media found for " + imageUri);
-					// }
+					String path = Utils.getRealPathFromURI(imageUri);
+					if (path != null) {
+						paths = Arrays.asList(path);
+					}
 				}
 			} else if (Intent.ACTION_SEND_MULTIPLE.equals(action) && type != null) {
 				if (type.startsWith("image/") || type.startsWith("video/")) {
-					ArrayList<Uri> imageUris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
-					// FIXME
-					// List<Media> loadImages = new ArrayList<Media>();
-					// if (imageUris != null) {
-					// for (Uri imageUri : imageUris) {
-					// List<Media> tmpImages = Utils.loadMedia(imageUri.toString(), type.startsWith("image/") ? MEDIA_TYPE.photo : MEDIA_TYPE.video, 1);
-					// LOG.debug("imageUri : " + imageUri + ", loadImages : " + loadImages);
-					// loadImages.addAll(tmpImages);
-					// }
-					// if (!loadImages.isEmpty()) {
-					// selectedMedia.clear();
-					// selectedMedia.addAll(loadImages);
-					// confirmUpload();
-					// } else {
-					// Utils.toast("No media found");
-					// }
-					// }
+					List<Uri> imageUris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+					paths = new ArrayList<String>();
+					for (Uri imageUri : imageUris) {
+						String path = Utils.getRealPathFromURI(imageUri);
+						if (path != null) {
+							paths.add(path);
+						}
+					}
+				}
+			}
+			if (paths != null && !paths.isEmpty()) {
+				List<Media> medias = Utils.loadMedia();
+				Iterator<Media> it = medias.iterator();
+				while (it.hasNext()) {
+					Media media = it.next();
+					if (paths.contains(media.getPath())) {
+						selectedMedia.add(media);
+					}
+				}
+				if (selectedMedia.isEmpty()) {
+					Utils.toast("No media found");
+				} else {
+					confirmUpload();
 				}
 			}
 		}
@@ -236,7 +238,7 @@ public class FlickrUploaderActivity extends Activity {
 		for (Media media : medias) {
 			Header header;
 			if (Utils.getViewGroupType() == VIEW_GROUP_TYPE.date) {
-				String id = format.format(new Date(media.getDate()));
+				String id = format.format(new Date(media.getTimestampCreated()));
 				header = headerIds.get(id);
 				if (header == null) {
 					header = new Header(id, id);

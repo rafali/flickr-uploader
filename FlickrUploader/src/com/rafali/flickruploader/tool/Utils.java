@@ -96,6 +96,7 @@ import com.rafali.flickruploader.billing.Purchase;
 import com.rafali.flickruploader.enums.CAN_UPLOAD;
 import com.rafali.flickruploader.enums.MEDIA_TYPE;
 import com.rafali.flickruploader.enums.PRIVACY;
+import com.rafali.flickruploader.enums.STATUS;
 import com.rafali.flickruploader.enums.VIEW_GROUP_TYPE;
 import com.rafali.flickruploader.enums.VIEW_SIZE;
 import com.rafali.flickruploader.model.Folder;
@@ -383,35 +384,35 @@ public final class Utils {
 		}
 	}
 
-//	public static List<Media> getImages(String key) {
-//		String queueIds = getStringProperty(key);
-//		if (ToolString.isNotBlank(queueIds)) {
-//			String filter = Images.Media._ID + " IN (" + queueIds + ")";
-//			List<Media> images = Utils.loadMedia(filter);
-//			LOG.debug(key + " - queueIds : " + queueIds.split(",").length + ", images:" + images.size());
-//			return images;
-//		}
-//		return null;
-//	}
+	// public static List<Media> getImages(String key) {
+	// String queueIds = getStringProperty(key);
+	// if (ToolString.isNotBlank(queueIds)) {
+	// String filter = Images.Media._ID + " IN (" + queueIds + ")";
+	// List<Media> images = Utils.loadMedia(filter);
+	// LOG.debug(key + " - queueIds : " + queueIds.split(",").length + ", images:" + images.size());
+	// return images;
+	// }
+	// return null;
+	// }
 
-//	public static List<Media> getImages(Collection<Integer> ids) {
-//		List<Media> images = null;
-//		if (ids != null && !ids.isEmpty()) {
-//			String filter = Images.Media._ID + " IN (" + Joiner.on(",").join(ids) + ")";
-//			images = Utils.loadMedia(filter);
-//		}
-//		return images;
-//	}
+	// public static List<Media> getImages(Collection<Integer> ids) {
+	// List<Media> images = null;
+	// if (ids != null && !ids.isEmpty()) {
+	// String filter = Images.Media._ID + " IN (" + Joiner.on(",").join(ids) + ")";
+	// images = Utils.loadMedia(filter);
+	// }
+	// return images;
+	// }
 
-//	public static Media getImage(int id) {
-//		String filter = Images.Media._ID + " IN (" + id + ")";
-//		List<Media> images = Utils.loadMedia(filter);
-//		if (!images.isEmpty()) {
-//			return images.get(0);
-//		}
-//		LOG.warn("id " + id + " not found!");
-//		return null;
-//	}
+	// public static Media getImage(int id) {
+	// String filter = Images.Media._ID + " IN (" + id + ")";
+	// List<Media> images = Utils.loadMedia(filter);
+	// if (!images.isEmpty()) {
+	// return images.get(0);
+	// }
+	// LOG.warn("id " + id + " not found!");
+	// return null;
+	// }
 
 	public static void setMapProperty(String property, Map<String, String> map) {
 		Editor editor = sp.edit();
@@ -581,226 +582,233 @@ public final class Utils {
 	static final String[] projPhoto = { Images.Media._ID, Images.Media.DATA, Images.Media.DATE_ADDED, Images.Media.DATE_TAKEN, Images.Media.DISPLAY_NAME, Images.Media.SIZE };
 	static final String[] projVideo = { Video.Media._ID, Video.Media.DATA, Video.Media.DATE_ADDED, Video.Media.DATE_TAKEN, Video.Media.DISPLAY_NAME, Video.Media.SIZE };
 
-//	public static List<Media> loadMedia(String filter) {
-//		return loadMedia(filter, 0);
-//	}
+	// public static List<Media> loadMedia(String filter) {
+	// return loadMedia(filter, 0);
+	// }
 
-//	public static List<Media> loadMedia(String filter, int limit) {
-//		List<Media> photos = Utils.loadMedia(filter, MEDIA_TYPE.photo, limit);
-//		List<Media> videos = Utils.loadMedia(filter, MEDIA_TYPE.video, limit);
-//		List<Media> images = new ArrayList<Media>(photos);
-//		images.addAll(videos);
-//		Collections.sort(images, MEDIA_COMPARATOR);
-//		return images;
-//	}
+	// public static List<Media> loadMedia(String filter, int limit) {
+	// List<Media> photos = Utils.loadMedia(filter, MEDIA_TYPE.photo, limit);
+	// List<Media> videos = Utils.loadMedia(filter, MEDIA_TYPE.video, limit);
+	// List<Media> images = new ArrayList<Media>(photos);
+	// images.addAll(videos);
+	// Collections.sort(images, MEDIA_COMPARATOR);
+	// return images;
+	// }
 
-//	public static List<Media> loadMedia(String filter, MEDIA_TYPE mediaType) {
-//		return loadMedia(filter, mediaType, 0);
-//	}
+	// public static List<Media> loadMedia(String filter, MEDIA_TYPE mediaType) {
+	// return loadMedia(filter, mediaType, 0);
+	// }
 
-//	public static List<Media> loadMedia(String filter, MEDIA_TYPE mediaType, int limit) {
-//		Cursor cursor = null;
-//		List<Media> images = new ArrayList<Media>();
-//		try {
-//
-//			// long oneDayAgo = System.currentTimeMillis() - 24 * 3600 * 1000L;
-//			// String filter = Images.Media.DATE_TAKEN + " > " + oneDayAgo;
-//			// String filter = Images.Media._ID + " IN (54820, 56342)";
-//
-//			String orderBy = Images.Media.DATE_TAKEN + " DESC, " + Images.Media.DATE_ADDED + " DESC";
-//			if (limit > 0) {
-//				orderBy += " LIMIT " + limit;
-//			}
-//			Uri uri;
-//			String[] proj = mediaType == MEDIA_TYPE.photo ? projPhoto : projVideo;
-//			if (filter != null && filter.startsWith("content://")) {
-//				uri = Uri.parse(filter);
-//				cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, null, null, orderBy);
-//			} else {
-//				// uri = mediaType == MediaType.photo ?
-//				// Images.Media.INTERNAL_CONTENT_URI :
-//				// Video.Media.INTERNAL_CONTENT_URI;
-//				uri = mediaType == MEDIA_TYPE.photo ? Images.Media.EXTERNAL_CONTENT_URI : Video.Media.EXTERNAL_CONTENT_URI;
-//				cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, filter, null, orderBy);
-//			}
-//			int idColumn = cursor.getColumnIndex(Images.Media._ID);
-//			int dataColumn = cursor.getColumnIndex(Images.Media.DATA);
-//			int displayNameColumn = cursor.getColumnIndex(Images.Media.DISPLAY_NAME);
-//			int dateTakenColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_TAKEN);
-//			int dateAddedColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_ADDED);
-//			int sizeColumn = cursor.getColumnIndex(Images.Media.SIZE);
-//			cursor.moveToFirst();
-//			LOG.debug("filter = " + filter + ", count = " + cursor.getCount());
-//			int nbErrorConsecutive = 0;
-//			while (cursor.isAfterLast() == false) {
-//				try {
-//					Long date = null;
-//					String dateStr = null;
-//					try {
-//						dateStr = cursor.getString(dateTakenColumn);
-//						if (ToolString.isBlank(dateStr)) {
-//							dateStr = cursor.getString(dateAddedColumn);
-//							if (ToolString.isNotBlank(dateStr)) {
-//								if (dateStr.trim().length() <= 10) {
-//									date = Long.valueOf(dateStr) * 1000L;
-//								} else {
-//									date = Long.valueOf(dateStr);
-//								}
-//							}
-//						} else {
-//							date = Long.valueOf(dateStr);
-//						}
-//					} catch (Throwable e) {
-//						LOG.warn(e.getClass().getSimpleName() + " : " + dateStr);
-//					}
-//					String data = cursor.getString(dataColumn);
-//					if (date == null) {
-//						File file = new File(data);
-//						date = file.lastModified();
-//					}
-//
-//					Media item = new Media();
-//					item.setId(cursor.getInt(idColumn));
-//					item.setMediaType(mediaType);
-//					item.setPath(data);
-//					item.setName(cursor.getString(displayNameColumn));
-//					item.setSize(cursor.getInt(sizeColumn));
-//					item.setDate(date);
-//					images.add(item);
-//					cursor.moveToNext();
-//					nbErrorConsecutive = 0;
-//				} catch (Throwable e) {
-//					nbErrorConsecutive++;
-//					LOG.error(e.getMessage() + ", nbErrorConsecutive=" + nbErrorConsecutive, e);
-//					if (nbErrorConsecutive > 5) {
-//						break;
-//					}
-//				}
-//			}
-//		} catch (Throwable e) {
-//			LOG.error(ToolString.stack2string(e));
-//		} finally {
-//			if (cursor != null)
-//				cursor.close();
-//		}
-//		return images;
-//	}
+	// public static List<Media> loadMedia(String filter, MEDIA_TYPE mediaType, int limit) {
+	// Cursor cursor = null;
+	// List<Media> images = new ArrayList<Media>();
+	// try {
+	//
+	// // long oneDayAgo = System.currentTimeMillis() - 24 * 3600 * 1000L;
+	// // String filter = Images.Media.DATE_TAKEN + " > " + oneDayAgo;
+	// // String filter = Images.Media._ID + " IN (54820, 56342)";
+	//
+	// String orderBy = Images.Media.DATE_TAKEN + " DESC, " + Images.Media.DATE_ADDED + " DESC";
+	// if (limit > 0) {
+	// orderBy += " LIMIT " + limit;
+	// }
+	// Uri uri;
+	// String[] proj = mediaType == MEDIA_TYPE.photo ? projPhoto : projVideo;
+	// if (filter != null && filter.startsWith("content://")) {
+	// uri = Uri.parse(filter);
+	// cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, null, null, orderBy);
+	// } else {
+	// // uri = mediaType == MediaType.photo ?
+	// // Images.Media.INTERNAL_CONTENT_URI :
+	// // Video.Media.INTERNAL_CONTENT_URI;
+	// uri = mediaType == MEDIA_TYPE.photo ? Images.Media.EXTERNAL_CONTENT_URI : Video.Media.EXTERNAL_CONTENT_URI;
+	// cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, filter, null, orderBy);
+	// }
+	// int idColumn = cursor.getColumnIndex(Images.Media._ID);
+	// int dataColumn = cursor.getColumnIndex(Images.Media.DATA);
+	// int displayNameColumn = cursor.getColumnIndex(Images.Media.DISPLAY_NAME);
+	// int dateTakenColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_TAKEN);
+	// int dateAddedColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_ADDED);
+	// int sizeColumn = cursor.getColumnIndex(Images.Media.SIZE);
+	// cursor.moveToFirst();
+	// LOG.debug("filter = " + filter + ", count = " + cursor.getCount());
+	// int nbErrorConsecutive = 0;
+	// while (cursor.isAfterLast() == false) {
+	// try {
+	// Long date = null;
+	// String dateStr = null;
+	// try {
+	// dateStr = cursor.getString(dateTakenColumn);
+	// if (ToolString.isBlank(dateStr)) {
+	// dateStr = cursor.getString(dateAddedColumn);
+	// if (ToolString.isNotBlank(dateStr)) {
+	// if (dateStr.trim().length() <= 10) {
+	// date = Long.valueOf(dateStr) * 1000L;
+	// } else {
+	// date = Long.valueOf(dateStr);
+	// }
+	// }
+	// } else {
+	// date = Long.valueOf(dateStr);
+	// }
+	// } catch (Throwable e) {
+	// LOG.warn(e.getClass().getSimpleName() + " : " + dateStr);
+	// }
+	// String data = cursor.getString(dataColumn);
+	// if (date == null) {
+	// File file = new File(data);
+	// date = file.lastModified();
+	// }
+	//
+	// Media item = new Media();
+	// item.setId(cursor.getInt(idColumn));
+	// item.setMediaType(mediaType);
+	// item.setPath(data);
+	// item.setName(cursor.getString(displayNameColumn));
+	// item.setSize(cursor.getInt(sizeColumn));
+	// item.setDate(date);
+	// images.add(item);
+	// cursor.moveToNext();
+	// nbErrorConsecutive = 0;
+	// } catch (Throwable e) {
+	// nbErrorConsecutive++;
+	// LOG.error(e.getMessage() + ", nbErrorConsecutive=" + nbErrorConsecutive, e);
+	// if (nbErrorConsecutive > 5) {
+	// break;
+	// }
+	// }
+	// }
+	// } catch (Throwable e) {
+	// LOG.error(ToolString.stack2string(e));
+	// } finally {
+	// if (cursor != null)
+	// cursor.close();
+	// }
+	// return images;
+	// }
 
 	static final String[] proj = { FileColumns._ID, FileColumns.DATA, FileColumns.MEDIA_TYPE, FileColumns.DATE_ADDED, FileColumns.DISPLAY_NAME, FileColumns.SIZE, Images.Media.DATE_TAKEN };
 
-	public static List<Media> loadMedia() {
+	static long lastCached = 0;
+	static List<Media> cachedMedias = new ArrayList<Media>();
 
-		long start = System.currentTimeMillis();
-		List<Media> medias = new ArrayList<Media>();
-		Cursor cursor = null;
-		try {
-			ManyQuery<Media> query = Query.many(Media.class, "select * from Media order by id asc");
-			CursorList<Media> cursorList = query.get();
-			Iterator<Media> it = cursorList.iterator();
+	public static synchronized List<Media> loadMedia() {
+		if (System.currentTimeMillis() - lastCached > 1000) {
+			cachedMedias.clear();
+			long start = System.currentTimeMillis();
+			Cursor cursor = null;
+			try {
+				ManyQuery<Media> query = Query.many(Media.class, "select * from Media order by id asc");
+				CursorList<Media> cursorList = query.get();
+				Iterator<Media> it = cursorList.iterator();
 
-			String selection = FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.PHOTO + " OR " + FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.VIDEO;
+				String selection = FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.PHOTO + " OR " + FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.VIDEO;
 
-			String orderBy = FileColumns._ID + " ASC";
-			cursor = FlickrUploader.getAppContext().getContentResolver().query(MediaStore.Files.getContentUri("external"), proj, selection, null, orderBy);
+				String orderBy = FileColumns._ID + " ASC";
+				cursor = FlickrUploader.getAppContext().getContentResolver().query(MediaStore.Files.getContentUri("external"), proj, selection, null, orderBy);
 
-			int idColumn = cursor.getColumnIndex(FileColumns._ID);
-			int dataColumn = cursor.getColumnIndex(FileColumns.DATA);
-			int mediaTypeColumn = cursor.getColumnIndex(FileColumns.MEDIA_TYPE);
-			int displayNameColumn = cursor.getColumnIndex(FileColumns.DISPLAY_NAME);
-			int dateAddedColumn = cursor.getColumnIndexOrThrow(FileColumns.DATE_ADDED);
-			int sizeColumn = cursor.getColumnIndex(FileColumns.SIZE);
-			int dateTakenColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_TAKEN);
-			cursor.moveToFirst();
-			int totalMediaStore = cursor.getCount();
-			int totalDatabase = cursorList.size();
-			LOG.debug("totalMediaStore = " + totalMediaStore + ", totalDatabase = " + totalDatabase);
-			Media currentMedia = null;
-			for (int i = 0; i < Math.max(totalMediaStore, totalDatabase); i++) {
-				if (currentMedia == null && it.hasNext()) {
-					currentMedia = it.next();
-				}
-				if (cursor.isAfterLast()) {
-					LOG.info(i + " : cursor.isAfterLast");
-					if (currentMedia != null) {
-						LOG.info(currentMedia + " no longer exist, we should delete it here too");
-						currentMedia.deleteAsync();
-						currentMedia = null;
+				int idColumn = cursor.getColumnIndex(FileColumns._ID);
+				int dataColumn = cursor.getColumnIndex(FileColumns.DATA);
+				int mediaTypeColumn = cursor.getColumnIndex(FileColumns.MEDIA_TYPE);
+				int displayNameColumn = cursor.getColumnIndex(FileColumns.DISPLAY_NAME);
+				int dateAddedColumn = cursor.getColumnIndexOrThrow(FileColumns.DATE_ADDED);
+				int sizeColumn = cursor.getColumnIndex(FileColumns.SIZE);
+				int dateTakenColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_TAKEN);
+				cursor.moveToFirst();
+				final int totalMediaStore = cursor.getCount();
+				final int totalDatabase = cursorList.size();
+				LOG.debug("totalMediaStore = " + totalMediaStore + ", totalDatabase = " + totalDatabase);
+				Media currentMedia = null;
+				for (int i = 0; i < Math.max(totalMediaStore, totalDatabase); i++) {
+					if (currentMedia == null && it.hasNext()) {
+						currentMedia = it.next();
 					}
-				} else {
-					try {
-						int mediaStoreId = cursor.getInt(idColumn);
-						String data = cursor.getString(dataColumn);
-
-						// LOG.info("i=" + i + ", mediaStoreId=" + mediaStoreId
-						// + ", currentMedia=" + currentMedia);
-
-						if (currentMedia != null && currentMedia.getId() < mediaStoreId) {
-							LOG.info(currentMedia + " no longer exist, we should delete it");
+					if (cursor.isAfterLast()) {
+						LOG.info(i + " : cursor.isAfterLast");
+						if (currentMedia != null) {
+							LOG.info(currentMedia + " no longer exist, we should delete it here too");
 							currentMedia.deleteAsync();
 							currentMedia = null;
-						} else if (currentMedia != null && currentMedia.getId() == mediaStoreId && currentMedia.getPath().equals(data)) {
-							// LOG.info("nothing to do, already in sync");
-							medias.add(currentMedia);
-							currentMedia = null;
-							cursor.moveToNext();
-						} else {
-							Media mediaToPersist;
-							if (currentMedia != null && currentMedia.getId() == mediaStoreId) {
-								mediaToPersist = currentMedia;
-								currentMedia = null;
-							} else {
-								mediaToPersist = new Media();
-							}
-							medias.add(mediaToPersist);
-
-							// LOG.info("creating new Media");
-							Long date = null;
-							String dateStr = null;
-							try {
-								dateStr = cursor.getString(dateTakenColumn);
-								if (ToolString.isBlank(dateStr)) {
-									dateStr = cursor.getString(dateAddedColumn);
-									if (ToolString.isNotBlank(dateStr)) {
-										if (dateStr.trim().length() <= 10) {
-											date = Long.valueOf(dateStr) * 1000L;
-										} else {
-											date = Long.valueOf(dateStr);
-										}
-									}
-								} else {
-									date = Long.valueOf(dateStr);
-								}
-							} catch (Throwable e) {
-								LOG.warn(e.getClass().getSimpleName() + " : " + dateStr);
-							}
-							if (date == null) {
-								File file = new File(data);
-								date = file.lastModified();
-							}
-
-							mediaToPersist.setId(mediaStoreId);
-							mediaToPersist.setMediaType(cursor.getInt(mediaTypeColumn));
-							mediaToPersist.setPath(data);
-							mediaToPersist.setName(cursor.getString(displayNameColumn));
-							mediaToPersist.setSize(cursor.getInt(sizeColumn));
-							mediaToPersist.setDate(date);
-							mediaToPersist.saveAsync();
-
-							cursor.moveToNext();
 						}
-					} catch (Throwable e) {
-						LOG.error(ToolString.stack2string(e));
+					} else {
+						try {
+							int mediaStoreId = cursor.getInt(idColumn);
+							String data = cursor.getString(dataColumn);
+
+							// LOG.info("i=" + i + ", mediaStoreId=" + mediaStoreId
+							// + ", currentMedia=" + currentMedia);
+
+							if (currentMedia != null && currentMedia.getId() < mediaStoreId) {
+								LOG.info(currentMedia + " no longer exist, we should delete it");
+								currentMedia.deleteAsync();
+								currentMedia = null;
+							} else if (currentMedia != null && currentMedia.getId() == mediaStoreId && currentMedia.getPath().equals(data)) {
+								// LOG.info("nothing to do, already in sync");
+								cachedMedias.add(currentMedia);
+								currentMedia = null;
+								cursor.moveToNext();
+							} else {
+								Media mediaToPersist;
+								if (currentMedia != null && currentMedia.getId() == mediaStoreId) {
+									mediaToPersist = currentMedia;
+									currentMedia = null;
+								} else {
+									mediaToPersist = new Media(totalDatabase <= 0 ? STATUS.PAUSED : STATUS.IMPORTED);
+								}
+								cachedMedias.add(mediaToPersist);
+
+								// LOG.info("creating new Media");
+								Long date = null;
+								String dateStr = null;
+								try {
+									dateStr = cursor.getString(dateTakenColumn);
+									if (ToolString.isBlank(dateStr)) {
+										dateStr = cursor.getString(dateAddedColumn);
+										if (ToolString.isNotBlank(dateStr)) {
+											if (dateStr.trim().length() <= 10) {
+												date = Long.valueOf(dateStr) * 1000L;
+											} else {
+												date = Long.valueOf(dateStr);
+											}
+										}
+									} else {
+										date = Long.valueOf(dateStr);
+									}
+								} catch (Throwable e) {
+									LOG.warn(e.getClass().getSimpleName() + " : " + dateStr);
+								}
+								if (date == null) {
+									File file = new File(data);
+									date = file.lastModified();
+								}
+
+								mediaToPersist.setId(mediaStoreId);
+								mediaToPersist.setMediaType(cursor.getInt(mediaTypeColumn));
+								mediaToPersist.setPath(data);
+								mediaToPersist.setName(cursor.getString(displayNameColumn));
+								mediaToPersist.setSize(cursor.getInt(sizeColumn));
+								mediaToPersist.setTimestampCreated(date);
+								mediaToPersist.saveAsync();
+
+								cursor.moveToNext();
+							}
+						} catch (Throwable e) {
+							LOG.error(ToolString.stack2string(e));
+						}
 					}
 				}
+			} catch (Throwable e) {
+				LOG.error(ToolString.stack2string(e));
+			} finally {
+				lastCached = System.currentTimeMillis();
+				if (cursor != null)
+					cursor.close();
 			}
-		} catch (Throwable e) {
-			LOG.error(ToolString.stack2string(e));
-		} finally {
-			if (cursor != null)
-				cursor.close();
+			LOG.info(cachedMedias.size() + " sync done in " + ((System.currentTimeMillis() - start) / 1000) + " sec");
+		} else {
+			LOG.debug("returning " + (System.currentTimeMillis() - lastCached) + " ms old cachedMedias");
 		}
-		LOG.info(medias.size() + " sync done in " + ((System.currentTimeMillis() - start) / 1000) + " sec");
-		return medias;
+		return new ArrayList<Media>(cachedMedias);
 	}
 
 	public static List<Folder> getFolders(List<Media> medias) {
@@ -948,11 +956,15 @@ public final class Utils {
 	static Map<String, String> folderSetNames;
 
 	public static boolean isAutoUpload(Folder folder) {
+		return isAutoUpload(folder.path);
+	}
+
+	public static boolean isAutoUpload(String folderPath) {
 		if (!Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
 			return false;
 		}
 		ensureSyncedFolder();
-		return folderSetNames.containsKey(folder.path);
+		return folderSetNames.containsKey(folderPath);
 	}
 
 	public static void setAutoUploaded(Folder folder, boolean synced, String albumTitle) {
@@ -1098,9 +1110,9 @@ public final class Utils {
 	public static final Comparator<Media> MEDIA_COMPARATOR = new Comparator<Media>() {
 		@Override
 		public int compare(Media arg0, Media arg1) {
-			if (arg0.getDate() > arg1.getDate()) {
+			if (arg0.getTimestampCreated() > arg1.getTimestampCreated()) {
 				return -1;
-			} else if (arg0.getDate() < arg1.getDate()) {
+			} else if (arg0.getTimestampCreated() < arg1.getTimestampCreated()) {
 				return 1;
 			} else {
 				return 0;
@@ -1778,6 +1790,13 @@ public final class Utils {
 		} else {
 			LOG.debug("Not toasted : " + message);
 		}
+	}
+
+	public static String getRealPathFromURI(Uri uri) {
+		Cursor cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, null, null, null, null);
+		cursor.moveToFirst();
+		int idx = cursor.getColumnIndex(MediaStore.Images.ImageColumns.DATA);
+		return cursor.getString(idx);
 	}
 
 }

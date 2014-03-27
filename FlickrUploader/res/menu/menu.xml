@@ -119,7 +119,7 @@
                 android:id="@+id/trial_info"
                 android:icon="@drawable/payment"
                 android:showAsAction="never"
-                android:title="Trial Info"/>
+                android:title="Buy PRO License"/>
             <item
                 android:id="@+id/faq"
                 android:icon="@drawable/help"

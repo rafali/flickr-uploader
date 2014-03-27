@@ -277,7 +277,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 			}
 			subTitle.setText(summary);
 
-			final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(media.getPath() + "_" + item_layout);
+			final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(media.getPath() + "_" + VIEW_SIZE.small);
 			if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
 				// The cache has it, so just display it
 				imageView.setImageDrawable(wrapper);
@@ -295,7 +295,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 						} else {
 							Bitmap bitmap = Utils.getBitmap(media, VIEW_SIZE.small);
 							if (bitmap != null) {
-								bitmapDrawable = Utils.getCache().put(media.getPath() + "_" + item_layout, bitmap);
+								bitmapDrawable = Utils.getCache().put(media.getPath() + "_" + VIEW_SIZE.small, bitmap);
 							} else {
 								bitmapDrawable = null;
 							}

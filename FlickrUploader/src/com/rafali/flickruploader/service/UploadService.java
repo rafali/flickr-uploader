@@ -1,12 +1,9 @@
 package com.rafali.flickruploader.service;
 
 import java.io.File;
-import java.sql.Date;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +14,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.LoggerFactory;
 
+import se.emilsjolander.sprinkles.CursorList;
+import se.emilsjolander.sprinkles.ManyQuery;
 import se.emilsjolander.sprinkles.OneQuery;
 import se.emilsjolander.sprinkles.Query;
 import android.app.Service;
@@ -40,10 +39,10 @@ import com.rafali.flickruploader.broadcast.AlarmBroadcastReceiver;
 import com.rafali.flickruploader.enums.CAN_UPLOAD;
 import com.rafali.flickruploader.enums.MEDIA_TYPE;
 import com.rafali.flickruploader.enums.STATUS;
-import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.tool.Notifications;
 import com.rafali.flickruploader.tool.Utils;
+import com.rafali.flickruploader.tool.Utils.Callback;
 import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
 import com.rafali.flickruploader.ui.activity.PreferencesActivity;
 
@@ -54,15 +53,15 @@ public class UploadService extends Service {
 	private static final Set<UploadProgressListener> uploadProgressListeners = new HashSet<UploadService.UploadProgressListener>();
 
 	public static interface UploadProgressListener {
-		void onProgress(int progress, final Media media);
+		void onProgress(final Media media, final int mediaProgress, final int queueProgress, final int queueTotal);
 
-		void onProcessed(final Media media, boolean success);
+		void onProcessed(final Media media, final boolean success);
 
 		void onPaused();
 
-		void onFinished(int nbUploaded, int nbErrors);
+		void onFinished(final int nbUploaded, final int nbErrors);
 
-		void onQueued(int nbQueued, int nbAlreadyUploaded, int nbAlreadyQueued);
+		void onQueued(final int nbQueued, final int nbAlreadyUploaded, final int nbAlreadyQueued);
 	}
 
 	public static void register(UploadProgressListener uploadProgressListener) {
@@ -84,32 +83,6 @@ public class UploadService extends Service {
 		return null;
 	}
 
-	private UploadProgressListener uploadProgressListener = new UploadProgressListener() {
-		@Override
-		public void onProgress(int progress, Media media) {
-			// FIXME
-			// Notifications.notify(progress, media, uploaded.size() + 1, queue.size() + uploaded.size());
-		}
-
-		@Override
-		public void onPaused() {
-		}
-
-		@Override
-		public void onQueued(int nbQueued, int nbAlreadyUploaded, int nbAlreadyQueued) {
-		}
-
-		@Override
-		public void onFinished(int nbUploaded, int nbError) {
-			Notifications.notifyFinished(nbUploaded, nbError);
-		}
-
-		@Override
-		public void onProcessed(Media media, boolean success) {
-
-		}
-	};
-
 	private static UploadService instance;
 
 	@Override
@@ -118,7 +91,6 @@ public class UploadService extends Service {
 		instance = this;
 		LOG.debug("Service created ...");
 		running = true;
-		register(uploadProgressListener);
 		getContentResolver().registerContentObserver(Images.Media.EXTERNAL_CONTENT_URI, true, imageTableObserver);
 		getContentResolver().registerContentObserver(Video.Media.EXTERNAL_CONTENT_URI, true, imageTableObserver);
 
@@ -167,7 +139,6 @@ public class UploadService extends Service {
 			instance = null;
 		}
 		running = false;
-		unregister(uploadProgressListener);
 		unregisterReceiver(batteryReceiver);
 		getContentResolver().unregisterContentObserver(imageTableObserver);
 	}
@@ -232,7 +203,7 @@ public class UploadService extends Service {
 		return nbQueued;
 	}
 
-	public static void enqueueRetry(Collection<Media> medias) {
+	public static void enqueueRetry(Iterable<Media> medias) {
 		int nbQueued = 0;
 		for (Media media : medias) {
 			if (!media.isQueued() && !FlickrApi.unretryable.contains(media)) {
@@ -247,7 +218,7 @@ public class UploadService extends Service {
 		for (Media media : medias) {
 			if (media.isQueued()) {
 				LOG.debug("dequeueing " + media);
-				media.setStatus(STATUS.IMPORTED);
+				media.setStatus(STATUS.PAUSED);
 				mediaPhotosetTitles.remove(media.getPath());
 			}
 		}
@@ -266,7 +237,7 @@ public class UploadService extends Service {
 	private static long lastUpload = 0;
 
 	public static Media getTopQueued() {
-		OneQuery<Media> one = Query.one(Media.class, "select * from Media where status=? order by date desc limit 1", STATUS.QUEUED);
+		OneQuery<Media> one = Query.one(Media.class, "select * from Media where status=? order by timestampCreated desc limit 1", STATUS.QUEUED);
 		return one.get();
 	}
 
@@ -373,18 +344,6 @@ public class UploadService extends Service {
 		}
 	}
 
-	public static long isRecentlyUploaded(Media media) {
-		// FIXME
-		// if (media != null) {
-		// if (uploaded.containsKey(media)) {
-		// return uploaded.get(media);
-		// } else if (recentlyUploaded.containsKey(media)) {
-		// return recentlyUploaded.get(media);
-		// }
-		// }
-		return -1;
-	}
-
 	public static boolean isQueueEmpty() {
 		OneQuery<Media> one = Query.one(Media.class, "select * from Media where (status=? or status=?) limit 1", STATUS.QUEUED, STATUS.FAILED);
 		return one.get() == null;
@@ -415,31 +374,63 @@ public class UploadService extends Service {
 		return false;
 	}
 
-	private static Comparator<Media> recentlyUploadedComparator = new Comparator<Media>() {
-		@Override
-		public int compare(Media lhs, Media rhs) {
-			return (int) (isRecentlyUploaded(lhs) - isRecentlyUploaded(rhs));
+	public static void updateProgressInfo() {
+		ManyQuery<Media> query = Query.many(Media.class, "select * from Media where timestampQueued>? order by timestampQueued asc", System.currentTimeMillis() - 24 * 3600 * 1000L);
+		CursorList<Media> cursorList = query.get();
+		long timestampQueued = 0;
+		nbTotal = 0;
+		nbUploaded = 0;
+		nbFailed = 0;
+		for (Media media : cursorList) {
+			if (media.isQueued() || media.isUploaded() || media.isFailed()) {
+				if (timestampQueued <= 0 || media.isUploaded() && (media.getTimestampQueued() - timestampQueued) > 15 * 60 * 1000L) {
+					nbTotal = 0;
+					nbUploaded = 0;
+					nbFailed = 0;
+					timestampQueued = media.getTimestampQueued();
+				}
+				nbTotal++;
+				if (media.isUploaded()) {
+					nbUploaded++;
+				} else if (media.isFailed()) {
+					nbFailed++;
+				}
+			}
 		}
-	};
+	}
 
-	public static void onProgress(Media media, int progress) {
+	static int nbFailed;
+	static int nbUploaded;
+	static int nbTotal;
+	static long lastUpdate = 0;
+
+	public static void onProgress(Media media, int mediaProgress) {
 		for (UploadProgressListener uploadProgressListener : uploadProgressListeners) {
-			uploadProgressListener.onProgress(progress, media);
+			if (mediaProgress >= 100 || System.currentTimeMillis() - lastUpdate > 2000L) {
+				lastUpdate = System.currentTimeMillis();
+				updateProgressInfo();
+			}
+			uploadProgressListener.onProgress(media, mediaProgress, nbUploaded, nbTotal);
 		}
 	}
 
-	public static void clearQueued() {
-		// FIXME
-		// queue.clear();
-		// persistQueue();
-	}
-
-	public static void clearFailed() {
-		// FIXME
-		// retryDelay.clear();
-		// failed.clear();
-		// failedCount.clear();
-		// persistFailedCount();
+	public static void clear(final int status, final Callback<Void> callback) {
+		if (status == STATUS.FAILED || status == STATUS.QUEUED) {
+			BackgroundExecutor.execute(new Runnable() {
+				@Override
+				public void run() {
+					ManyQuery<Media> query = Query.many(Media.class, "select * from Media where status=?", status);
+					CursorList<Media> cursorList = query.get();
+					for (Media media : cursorList) {
+						media.setStatus(STATUS.PAUSED);
+					}
+					if (callback != null)
+						callback.onResult(null);
+				}
+			});
+		} else {
+			LOG.error("status " + status + " is not supported");
+		}
 	}
 
 	public static void checkNewFiles() {
@@ -449,22 +440,13 @@ public class UploadService extends Service {
 				LOG.info("canAutoUpload : " + canAutoUpload);
 				return;
 			}
-
-			long lastNewFilesCheckNotEmpty = Utils.getLongProperty(STR.lastNewFilesCheckNotEmpty);
-			List<Media> medias;
-			if (lastNewFilesCheckNotEmpty <= 0) {
-				// FIXME
-				medias = Utils.loadMedia();
-			} else {
-				medias = new ArrayList<Media>();
-				List<Media> all = Utils.loadMedia();
-				for (Media media2 : all) {
-					if (media2.getDate() >= lastNewFilesCheckNotEmpty) {
-						medias.add(media2);
-					}
-				}
-				LOG.debug("found " + medias.size() + " media files since: " + SimpleDateFormat.getDateTimeInstance().format(new Date(lastNewFilesCheckNotEmpty)));
+			
+			if ("".isEmpty()) {
+				//FIXME
+				return;
 			}
+
+			List<Media> medias = Utils.loadMedia();
 
 			if (medias == null || medias.isEmpty()) {
 				LOG.debug("no media found");
@@ -475,57 +457,58 @@ public class UploadService extends Service {
 			long newestFileAge = 0;
 			List<Media> not_uploaded = new ArrayList<Media>();
 			for (Media media : medias) {
-				if (media.getMediaType() == MEDIA_TYPE.PHOTO && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false)) {
-					LOG.debug("not uploading " + media + " because photo upload disabled");
-					continue;
-				} else if (media.getMediaType() == MEDIA_TYPE.VIDEO && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
-					LOG.debug("not uploading " + media + " because video upload disabled");
-					continue;
-				} else {
-					File file = new File(media.getPath());
-					if (file.exists()) {
-						boolean uploaded = media.isUploaded();
-						LOG.debug("uploaded : " + uploaded + ", " + media);
-						if (!uploaded) {
-							if (!Utils.isAutoUpload(new Folder(file.getParent()))) {
-								LOG.debug("Ignored : " + file);
-							} else {
-								int sleep = 0;
-								while (file.length() < 100 && sleep < 5) {
-									LOG.debug("sleeping a bit");
-									sleep++;
-									Thread.sleep(1000);
-								}
-								long fileAge = System.currentTimeMillis() - file.lastModified();
-								LOG.debug("uploadDelayMs:" + uploadDelayMs + ", fileAge:" + fileAge + ", newestFileAge:" + newestFileAge);
-								if (uploadDelayMs > 0 && fileAge < uploadDelayMs) {
-									if (newestFileAge < fileAge) {
-										newestFileAge = fileAge;
-										long delay = Math.max(1000, uploadDelayMs - newestFileAge);
-										LOG.debug("waiting " + ToolString.formatDuration(delay) + " for the " + ToolString.formatDuration(uploadDelayMs) + " delay");
-										if (checkNewFilesTask != null) {
-											checkNewFilesTask.cancel(false);
-										}
-										checkNewFilesTask = new CheckNewFilesTask();
-										checkNewFilesTask.future = scheduledThreadPoolExecutor.schedule(checkNewFilesTask, delay, TimeUnit.MILLISECONDS);
-									}
+				if (media.isImported()) {
+					if (media.getMediaType() == MEDIA_TYPE.PHOTO && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false)) {
+						LOG.debug("not uploading " + media + " because photo upload disabled");
+						continue;
+					} else if (media.getMediaType() == MEDIA_TYPE.VIDEO && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
+						LOG.debug("not uploading " + media + " because video upload disabled");
+						continue;
+					} else {
+						File file = new File(media.getPath());
+						if (file.exists()) {
+							boolean uploaded = media.isUploaded();
+							LOG.debug("uploaded : " + uploaded + ", " + media);
+							if (!uploaded) {
+								if (!Utils.isAutoUpload(file.getParent())) {
+									LOG.debug("Ignored : " + file);
 								} else {
-									not_uploaded.add(media);
+									int sleep = 0;
+									while (file.length() < 100 && sleep < 5) {
+										LOG.debug("sleeping a bit");
+										sleep++;
+										Thread.sleep(1000);
+									}
+									long fileAge = System.currentTimeMillis() - file.lastModified();
+									LOG.debug("uploadDelayMs:" + uploadDelayMs + ", fileAge:" + fileAge + ", newestFileAge:" + newestFileAge);
+									if (uploadDelayMs > 0 && fileAge < uploadDelayMs) {
+										if (newestFileAge < fileAge) {
+											newestFileAge = fileAge;
+											long delay = Math.max(1000, uploadDelayMs - newestFileAge);
+											LOG.debug("waiting " + ToolString.formatDuration(delay) + " for the " + ToolString.formatDuration(uploadDelayMs) + " delay");
+											if (checkNewFilesTask != null) {
+												checkNewFilesTask.cancel(false);
+											}
+											checkNewFilesTask = new CheckNewFilesTask();
+											checkNewFilesTask.future = scheduledThreadPoolExecutor.schedule(checkNewFilesTask, delay, TimeUnit.MILLISECONDS);
+										}
+									} else {
+										not_uploaded.add(media);
+									}
 								}
 							}
+						} else {
+							LOG.debug("Deleted : " + file);
+							media.deleteAsync();
 						}
-					} else {
-						LOG.debug("Deleted : " + file);
 					}
 				}
 			}
 			if (!not_uploaded.isEmpty()) {
-				Utils.setLongProperty(STR.lastNewFilesCheckNotEmpty, System.currentTimeMillis());
 				LOG.debug("enqueuing " + not_uploaded.size() + " media: " + not_uploaded);
 				Map<String, String> foldersSetNames = Utils.getFoldersSetNames();
 				for (Media notUploadedMedia : not_uploaded) {
-					File file = new File(notUploadedMedia.getPath());
-					String uploadSetTitle = foldersSetNames.get(file.getParentFile().getAbsolutePath());
+					String uploadSetTitle = foldersSetNames.get(notUploadedMedia.getFolderPath());
 					if (uploadSetTitle == null) {
 						uploadSetTitle = STR.instantUpload;
 					}
@@ -536,5 +519,20 @@ public class UploadService extends Service {
 		} catch (Throwable e) {
 			LOG.error(ToolString.stack2string(e));
 		}
+	}
+
+	public static int getNbQueued() {
+		updateProgressInfo();
+		return nbTotal - nbUploaded - nbFailed;
+	}
+
+	public static int getNbUploadedTotal() {
+		updateProgressInfo();
+		return nbUploaded;
+	}
+
+	public static int getNbError() {
+		updateProgressInfo();
+		return nbFailed;
 	}
 }

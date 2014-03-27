@@ -77,7 +77,7 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 					public void run() {
 						final Bitmap bitmap = Utils.getBitmap(media, VIEW_SIZE.small);
 						if (bitmap != null) {
-							Utils.getCache().put(media.getPath() + "_" + R.layout.grid_thumb, bitmap);
+							Utils.getCache().put(media.getPath() + "_" + VIEW_SIZE.small, bitmap);
 						}
 					}
 				});
@@ -132,27 +132,26 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 						message.setText("Login into Flickr from the Preferences");
 					} else if (!Utils.isPremium() && !Utils.isTrial() && Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false)) {
 						message.setText("Click on the menu and select 'Trial Info'");
-//					} else if (UploadService.getNbQueued() == 0) {
-						//FIXME
-//						String text = "No media queued";
-//						int nbUploaded = UploadService.getNbUploadedTotal();
-//						if (nbUploaded > 0) {
-//							text += ", " + nbUploaded + " recently uploaded";
-//						}
-//						int nbError = UploadService.getNbError();
-//						if (nbError > 0) {
-//							text += ", " + nbError + " error" + (nbError > 1 ? "s" : "");
-//						}
-//						if (nbError + nbUploaded <= 0) {
-//							if (Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) || Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
-//								if (nbMonitored < 0) {
-//									nbMonitored = Utils.getSyncedFolders().size();
-//								}
-//								text += ", " + nbMonitored + " folders monitored";
-//							}
-//						}
-//
-//						message.setText(text);
+					} else if (UploadService.getNbQueued() == 0) {
+						String text = "No media queued";
+						int nbUploaded = UploadService.getNbUploadedTotal();
+						if (nbUploaded > 0) {
+							text += ", " + nbUploaded + " recently uploaded";
+						}
+						int nbError = UploadService.getNbError();
+						if (nbError > 0) {
+							text += ", " + nbError + " error" + (nbError > 1 ? "s" : "");
+						}
+						if (nbError + nbUploaded <= 0) {
+							if (Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) || Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
+								if (nbMonitored < 0) {
+									nbMonitored = Utils.getSyncedFolders().size();
+								}
+								text += ", " + nbMonitored + " folders monitored";
+							}
+						}
+
+						message.setText(text);
 					} else {
 						if (UploadService.isPaused()) {
 							progressContainer.setVisibility(View.GONE);
@@ -171,8 +170,7 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 								message.setText("Upload paused, waiting for " + canUploadNow);
 							}
 						} else {
-//							message.setText("Uploading " + UploadService.getNbQueued() + " media");
-							//FIXME
+							message.setText("Uploading " + UploadService.getNbQueued() + " media");
 						}
 					}
 				}
@@ -187,10 +185,8 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 	}
 
 	@Override
-	@UiThread
-	public void onProgress(int progress, Media media) {
-		//FIXME
-//		renderProgress(progress, media, UploadService.getNbUploaded() + 1, UploadService.getTotal());
+	public void onProgress(Media media, int mediaProgress, int queueProgress, int queueTotal) {
+		renderProgress(mediaProgress, media, queueProgress, queueTotal);
 	}
 
 	@Override

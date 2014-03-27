@@ -36,6 +36,7 @@ import com.rafali.common.ToolString;
 import com.rafali.flickruploader.Config;
 import com.rafali.flickruploader.api.FlickrApi;
 import com.rafali.flickruploader.enums.PRIVACY;
+import com.rafali.flickruploader.enums.STATUS;
 import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.service.UploadService;
@@ -84,7 +85,8 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 									ModelList.from(query.get()).deleteAllAsync();
 									render();
 									FlickrApi.reset();
-									UploadService.clearQueued();
+									UploadService.clear(STATUS.QUEUED, null);
+									UploadService.clear(STATUS.FAILED, null);
 								}
 							}).setNegativeButton("Cancel", null).show();
 				} else {

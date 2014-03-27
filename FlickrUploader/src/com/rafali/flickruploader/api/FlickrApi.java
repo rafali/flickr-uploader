@@ -2,6 +2,8 @@ package com.rafali.flickruploader.api;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,12 +31,14 @@ import com.googlecode.flickrjandroid.photos.PhotoList;
 import com.googlecode.flickrjandroid.photos.SearchParameters;
 import com.googlecode.flickrjandroid.photosets.Photoset;
 import com.googlecode.flickrjandroid.photosets.Photosets;
+import com.googlecode.flickrjandroid.tags.Tag;
 import com.googlecode.flickrjandroid.uploader.UploadMetaData;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrUploader;
 import com.rafali.flickruploader.enums.CAN_UPLOAD;
 import com.rafali.flickruploader.enums.PRIVACY;
+import com.rafali.flickruploader.enums.STATUS;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader.ui.activity.PreferencesActivity;
@@ -43,7 +47,7 @@ import com.rafali.flickruploader2.R;
 public class FlickrApi {
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrApi.class);
 
-	private static final HashSet<String> EXTRAS_MACHINE_TAGS = Sets.newHashSet("machine_tags");
+	private static final HashSet<String> EXTRAS_MACHINE_TAGS = Sets.newHashSet("machine_tags", "date_upload");
 
 	private static final String API_SECRET = Utils.getString(R.string.flickr_api_secret);
 	private static final String API_KEY = Utils.getString(R.string.flickr_api_key);
@@ -110,7 +114,7 @@ public class FlickrApi {
 						Map<String, PRIVACY> photosPrivacy = new HashMap<String, PRIVACY>();
 						int totalPage = 10;
 						int page = 1;
-						int per_page = 100;
+						int per_page = 200;
 						int count = 0;
 						int nbUploaded = 0;
 						// fetching all uploaded photos
@@ -137,6 +141,8 @@ public class FlickrApi {
 											Media media = hashMedia.get(tag);
 											if (media != null) {
 												media.setFlickrId(flickrId);
+												media.setStatus(STATUS.UPLOADED);
+												media.setTimestampUploaded(photo.getDatePosted());
 												media.setPrivacy(photosPrivacy.get(flickrId));
 												media.saveAsync2();
 												nbUploaded++;
@@ -167,6 +173,9 @@ public class FlickrApi {
 									// Photo not found
 									if ("1".equals(e.getErrorCode())) {
 										LOG.debug(flickrId + "=" + media.getSha1Tag() + " no longer still exist");
+										if (media.getStatus() == STATUS.UPLOADED) {
+											media.setStatus(STATUS.PAUSED);
+										}
 										media.setFlickrId(null);
 										media.setPrivacy(null);
 										media.saveAsync2();
@@ -232,7 +241,24 @@ public class FlickrApi {
 					PhotoList photoList = FlickrApi.get().getPhotosInterface().search(params, 1, 1);
 					if (!photoList.isEmpty()) {
 						LOG.warn("already uploaded : " + photoList.get(0).getId() + " = " + md5tag + " = " + uri);
-						photoId = photoList.get(0).getId();
+						Photo photo = photoList.get(0);
+						photoId = photo.getId();
+						photo = FlickrApi.get().getPhotosInterface().getInfo(photoId, photo.getSecret());
+						if (photo != null) {
+							List<String> tagstr = new ArrayList<String>();
+							Collection<Tag> tags = photo.getTags();
+							for (Tag tag : tags) {
+								String value = tag.getValue();
+								if (value.startsWith("file:sha1sig=") && !value.equals(sha1tag)) {
+								} else {
+									tagstr.add(value);
+								}
+								if (!tagstr.contains(sha1tag)) {
+									tagstr.add(sha1tag);
+									FlickrApi.get().getPhotosInterface().setTags(photoId, tagstr.toArray(new String[tagstr.size()]));
+								}
+							}
+						}
 					} else {
 						if (Utils.canUploadNow() != CAN_UPLOAD.ok)
 							break;
@@ -317,7 +343,8 @@ public class FlickrApi {
 		if (photoId != null) {
 			media.setFlickrId(photoId);
 			if (success) {
-				media.addPhotoSet(photosetId);
+				// FIXME
+				// media.addPhotoSet(photosetId);
 			}
 			media.save();
 		}

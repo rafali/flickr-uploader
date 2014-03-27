@@ -1,13 +1,15 @@
 package com.rafali.flickruploader.ui;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.slf4j.LoggerFactory;
 
+import se.emilsjolander.sprinkles.CursorList;
+import se.emilsjolander.sprinkles.ManyQuery;
+import se.emilsjolander.sprinkles.Query;
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 import uk.co.senab.bitmapcache.CacheableImageView;
 import android.app.Activity;
@@ -33,6 +35,7 @@ import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.api.FlickrApi;
+import com.rafali.flickruploader.enums.STATUS;
 import com.rafali.flickruploader.enums.VIEW_SIZE;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.service.UploadService;
@@ -74,7 +77,9 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 	void render() {
 		if (queueTabView.getCurrentItem() == TAB_UPLOADED_INDEX) {
 			pauseBtn.setVisibility(View.GONE);
+			clearBtn.setVisibility(View.GONE);
 		} else if (queueTabView.getCurrentItem() == TAB_QUEUED_INDEX) {
+			clearBtn.setVisibility(View.VISIBLE);
 			pauseBtn.setVisibility(View.VISIBLE);
 			if (isUploadManuallyPaused()) {
 				pauseBtn.setText("Resume");
@@ -82,6 +87,7 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 				pauseBtn.setText("Pause");
 			}
 		} else if (queueTabView.getCurrentItem() == TAB_FAILED_INDEX) {
+			clearBtn.setVisibility(View.VISIBLE);
 			pauseBtn.setVisibility(View.VISIBLE);
 			pauseBtn.setText("Retry all");
 		}
@@ -130,11 +136,11 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 				dialog.show();
 			}
 		} else if (queueTabView.getCurrentItem() == TAB_FAILED_INDEX) {
-			//FIXME
-//			List<Media> failedMedias = UploadService.getFailedSnapshot();
-//			if (!failedMedias.isEmpty()) {
-//				UploadService.enqueueRetry(failedMedias);
-//			}
+			ManyQuery<Media> query = Query.many(Media.class, "select * from Media where status=?", STATUS.FAILED);
+			CursorList<Media> cursorList = query.get();
+			if (cursorList.size() > 0) {
+				UploadService.enqueueRetry(cursorList);
+			}
 		}
 	}
 
@@ -145,16 +151,15 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 	@Click(R.id.clear_btn)
 	void onClearClick() {
 		Notifications.clear();
-		if (queueTabView.getCurrentItem() == TAB_UPLOADED_INDEX) {
-			//FIXME
-//			UploadService.clearUploaded();
-		} else if (queueTabView.getCurrentItem() == TAB_QUEUED_INDEX) {
-			UploadService.clearQueued();
-		} else if (queueTabView.getCurrentItem() == TAB_FAILED_INDEX) {
-			UploadService.clearFailed();
+		UploadService.clear(queueTabView.getCurrentItem() == TAB_QUEUED_INDEX ? STATUS.QUEUED : STATUS.FAILED, new Utils.Callback<Void>() {
+			@Override
+			public void onResult(Void result) {
+				updateLists();
+			}
+		});
+		if (queueTabView.getCurrentItem() == TAB_FAILED_INDEX) {
 			FlickrApi.unretryable.clear();
 		}
-		updateLists();
 	}
 
 	@AfterViews
@@ -181,18 +186,16 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 					List<Media> uploadedMedias = new ArrayList<Media>();
 					List<Media> failedMedias = new ArrayList<Media>();
 					List<Media> medias = Utils.loadMedia();
+					long now = System.currentTimeMillis();
 					for (Media media : medias) {
 						if (media.isQueued()) {
 							queuedMedias.add(media);
 						} else if (media.isFailed()) {
 							failedMedias.add(media);
+						} else if (media.isUploaded() && (now - media.getTimestampUploaded() < 30 * 60 * 1000L)) {
+							uploadedMedias.add(media);
 						}
 					}
-					//FIXME
-//					List<Media> queuedMedias = UploadService.getQueueSnapshot();
-//					Collections.reverse(queuedMedias);
-//					List<Media> uploadedMedias = UploadService.getRecentlyUploadedSnapshot();
-//					List<Media> failedMedias = UploadService.getFailedSnapshot();
 					notifyDataSetChanged(queuedAdapter, queuedMedias);
 					notifyDataSetChanged(uploadedAdapter, uploadedMedias);
 					notifyDataSetChanged(failedAdapter, failedMedias);
@@ -205,9 +208,11 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 
 	@UiThread
 	void notifyDataSetChanged(PhotoAdapter photoAdapter, List<Media> medias) {
-		photoAdapter.medias.clear();
-		photoAdapter.medias.addAll(medias);
-		photoAdapter.notifyDataSetChanged();
+		if (!medias.equals(photoAdapter.medias)) {
+			photoAdapter.medias.clear();
+			photoAdapter.medias.addAll(medias);
+			photoAdapter.notifyDataSetChanged();
+		}
 	}
 
 	class QueueTabView extends TabView {
@@ -343,17 +348,16 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 				if (FlickrApi.unretryable.contains(media)) {
 					text = "unretryable error";
 				} else {
-					//FIXME
-//					long delay = UploadService.getRetryDelay(media);
-//					if (nbError > 0) {
-//						text = nbError + " error" + (nbError > 1 ? "s" : "");
-//					}
-//					if (delay > 0) {
-//						if (!text.isEmpty()) {
-//							text += ", ";
-//						}
-//						text += "retrying in " + ToolString.formatDuration(delay - System.currentTimeMillis());
-//					}
+					long delay = media.getTimestampRetry();
+					if (nbError > 0) {
+						text = nbError + " error" + (nbError > 1 ? "s" : "");
+					}
+					if (delay > 0) {
+						if (!text.isEmpty()) {
+							text += ", ";
+						}
+						text += "retrying in " + ToolString.formatDuration(delay - System.currentTimeMillis());
+					}
 				}
 				Throwable lastException = FlickrApi.getLastException(media);
 				if (lastException != null) {
@@ -377,7 +381,7 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 							} else {
 								Bitmap bitmap = Utils.getBitmap(media, VIEW_SIZE.small);
 								if (bitmap != null) {
-									bitmapDrawable = Utils.getCache().put(media.getPath() + "_" + R.layout.grid_thumb, bitmap);
+									bitmapDrawable = Utils.getCache().put(media.getPath() + "_" + VIEW_SIZE.small, bitmap);
 								} else {
 									bitmapDrawable = null;
 								}
@@ -402,7 +406,8 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 	}
 
 	@Override
-	public void onProgress(int progress, Media media) {
+	public void onProgress(Media media, int mediaProgress, int queueProgress, int queueTotal) {
+
 	}
 
 	@Override

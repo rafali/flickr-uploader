@@ -82,11 +82,6 @@ public class FlickrUploader extends Application {
 					ACRA.init(FlickrUploader.this);
 					long versionCode = Utils.getLongProperty(STR.versionCode);
 					if (Config.VERSION != versionCode) {
-						if (versionCode == 0) {
-							Utils.setLongProperty(STR.lastNewFilesCheckNotEmpty, System.currentTimeMillis());
-
-						} else {
-						}
 						Utils.saveAndroidDevice();
 						Utils.setLongProperty(STR.versionCode, (long) Config.VERSION);
 					}

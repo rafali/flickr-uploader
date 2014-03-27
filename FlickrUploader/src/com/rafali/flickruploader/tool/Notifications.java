@@ -17,6 +17,8 @@ import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrUploader;
 import com.rafali.flickruploader.enums.VIEW_SIZE;
 import com.rafali.flickruploader.model.Media;
+import com.rafali.flickruploader.service.UploadService;
+import com.rafali.flickruploader.service.UploadService.UploadProgressListener;
 import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity_;
 import com.rafali.flickruploader2.R;
 
@@ -32,6 +34,35 @@ public class Notifications {
 
 	static long lastNotified = 0;
 
+	private static UploadProgressListener uploadProgressListener = new UploadProgressListener() {
+		
+		public void onProgress(Media media, int mediaProgress, int queueProgress, int queueTotal) {
+			Notifications.notify(mediaProgress, media, mediaProgress, queueTotal);
+		};
+
+		@Override
+		public void onPaused() {
+		}
+
+		@Override
+		public void onQueued(int nbQueued, int nbAlreadyUploaded, int nbAlreadyQueued) {
+		}
+
+		@Override
+		public void onFinished(int nbUploaded, int nbError) {
+			Notifications.notifyFinished(nbUploaded, nbError);
+		}
+
+		@Override
+		public void onProcessed(Media media, boolean success) {
+
+		}
+	};
+	
+	public static void init() {
+		UploadService.register(uploadProgressListener);
+	}
+	
 	private static void ensureBuilders() {
 		if (resultPendingIntent == null) {
 			Intent resultIntent = new Intent(FlickrUploader.getAppContext(), FlickrUploaderActivity_.class);
@@ -81,7 +112,7 @@ public class Notifications {
 					public void run() {
 						final Bitmap bitmap = Utils.getBitmap(media, VIEW_SIZE.small);
 						if (bitmap != null) {
-							Utils.getCache().put(media.getPath() + "_" + R.layout.grid_thumb, bitmap);
+							Utils.getCache().put(media.getPath() + "_" + VIEW_SIZE.small, bitmap);
 						}
 					}
 				});
