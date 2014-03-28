@@ -12,9 +12,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.LoggerFactory;
 
+import se.emilsjolander.sprinkles.Transaction;
 import android.content.Context;
 import android.net.ConnectivityManager;
 
@@ -38,7 +40,6 @@ import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrUploader;
 import com.rafali.flickruploader.enums.CAN_UPLOAD;
 import com.rafali.flickruploader.enums.PRIVACY;
-import com.rafali.flickruploader.enums.STATUS;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader.ui.activity.PreferencesActivity;
@@ -106,17 +107,17 @@ public class FlickrApi {
 					try {
 						List<Media> medias = Utils.loadMedia();
 						Collections.reverse(medias);
-						Map<String, Media> hashMedia = new HashMap<String, Media>();
+						final Map<String, Media> hashMedia = new ConcurrentHashMap<String, Media>();
 						for (Media media : medias) {
 							hashMedia.put(media.getSha1Tag(), media);
 						}
-						Map<String, String> uploadedPhotos = new HashMap<String, String>();
-						Map<String, PRIVACY> photosPrivacy = new HashMap<String, PRIVACY>();
+						final Map<String, String> uploadedPhotos = new ConcurrentHashMap<String, String>();
+						final Map<String, PRIVACY> photosPrivacy = new ConcurrentHashMap<String, PRIVACY>();
 						int totalPage = 10;
 						int page = 1;
-						int per_page = 200;
+						int per_page = 100;
 						int count = 0;
-						int nbUploaded = 0;
+
 						// fetching all uploaded photos
 						// the flickr query is not consistent (not all
 						// photos are retrieved)
@@ -126,30 +127,37 @@ public class FlickrApi {
 							params.setMachineTags(new String[] { "file:sha1sig=" });
 							params.setSort(SearchParameters.DATE_POSTED_DESC);
 							params.setExtras(EXTRAS_MACHINE_TAGS);
-							PhotoList photoList = FlickrApi.get().getPhotosInterface().search(params, per_page, page);
+							final PhotoList photoList = FlickrApi.get().getPhotosInterface().search(params, per_page, page);
 							totalPage = photoList.getPages();
 							per_page = photoList.getPerPage();
 							count += photoList.size();
 							if (!photoList.isEmpty()) {
+								Transaction t = new Transaction();
 								LOG.debug(count + " photos with machine tag fetched. page:" + page + "/" + totalPage);
-								for (Photo photo : photoList) {
-									for (String tag : photo.getMachineTags()) {
-										if (tag.startsWith("file:sha1sig")) {
-											String flickrId = photo.getId();
-											uploadedPhotos.put(tag, flickrId);
-											photosPrivacy.put(flickrId, getPrivacy(photo));
-											Media media = hashMedia.get(tag);
-											if (media != null) {
-												media.setFlickrId(flickrId);
-												media.setStatus(STATUS.UPLOADED);
-												media.setTimestampUploaded(photo.getDatePosted());
-												media.setPrivacy(photosPrivacy.get(flickrId));
-												media.saveAsync2();
-												nbUploaded++;
+								try {
+									for (Photo photo : photoList) {
+										for (String tag : photo.getMachineTags()) {
+											if (tag.startsWith("file:sha1sig")) {
+												String flickrId = photo.getId();
+												uploadedPhotos.put(tag, flickrId);
+												photosPrivacy.put(flickrId, getPrivacy(photo));
+												Media media = hashMedia.get(tag);
+												if (media != null) {
+													media.setFlickrId(flickrId);
+													media.setTimestampUploaded(photo.getDatePosted());
+													media.setPrivacy(photosPrivacy.get(flickrId));
+													media.save2(t);
+												}
 											}
 										}
 									}
+									t.setSuccessful(true);
+								} catch (Throwable e) {
+									LOG.error(ToolString.stack2string(e));
+								} finally {
+									t.finish();
 								}
+
 								page++;
 							} else {
 								break;
@@ -166,19 +174,15 @@ public class FlickrApi {
 									if (photo != null) {
 										LOG.debug(persistedFlickrId + "=" + media.getSha1Tag() + " still exist");
 										media.setPrivacy(photosPrivacy.get(flickrId));
-										media.saveAsync2();
-										nbUploaded++;
+										media.save();
 									}
 								} catch (FlickrException e) {
 									// Photo not found
 									if ("1".equals(e.getErrorCode())) {
 										LOG.debug(flickrId + "=" + media.getSha1Tag() + " no longer still exist");
-										if (media.getStatus() == STATUS.UPLOADED) {
-											media.setStatus(STATUS.PAUSED);
-										}
 										media.setFlickrId(null);
 										media.setPrivacy(null);
-										media.saveAsync2();
+										media.save();
 									} else {
 										LOG.error(ToolString.stack2string(e));
 									}
@@ -188,7 +192,16 @@ public class FlickrApi {
 
 							}
 						}
-						LOG.info("nbUploaded = " + nbUploaded);
+
+						Thread.sleep(2000);
+						List<Media> loadMedia = Utils.loadMedia();
+						int nbUp = 0;
+						for (Media media : loadMedia) {
+							if (media.isUploaded()) {
+								nbUp++;
+							}
+						}
+						LOG.info("nbUp : " + nbUp);
 						// FlickrUploaderActivity.staticRefresh(true);
 					} catch (Throwable e) {
 						LOG.error(ToolString.stack2string(e));

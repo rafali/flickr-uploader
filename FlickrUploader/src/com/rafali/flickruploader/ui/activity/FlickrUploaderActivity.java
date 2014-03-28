@@ -93,8 +93,8 @@ public class FlickrUploaderActivity extends Activity {
 	@Override
 	public void onCreate(Bundle bundle) {
 		super.onCreate(bundle);
-		load();
 		LOG.debug("onCreate " + bundle);
+		load();
 		UploadService.wake();
 		if (!FlickrApi.isAuthentified()) {
 			Utils.confirmSignIn(activity);
@@ -170,16 +170,12 @@ public class FlickrUploaderActivity extends Activity {
 	SimpleDateFormat format = new SimpleDateFormat("MMMM, yyyy", Locale.US);
 
 	List<Object> thumbItems;
-	Map<Media, Media[]> mediaRows;
 	List<Media> medias;
 
 	@Background
 	void load() {
-		if ("".isEmpty()) {
-			Media topQueued = UploadService.getTopQueued();
-			LOG.info("topQueued : " + topQueued);
-		}
 		medias = Utils.loadMedia();
+
 		boolean showPhotos = Utils.getShowPhotos();
 		boolean showVideos = Utils.getShowVideos();
 		Iterator<Media> it = medias.iterator();
@@ -192,7 +188,21 @@ public class FlickrUploaderActivity extends Activity {
 			if (media.isUploaded()) {
 				nbUploaded++;
 			}
+			if (media.getId() == 16033) {
+				LOG.info(media + " 1 : " + media.getFlickrId() + " : " + media.getStatus());
+//				media.setFlickrId("toto");
+//				LOG.info(media + " 2 : " + media.getFlickrId() + " : " + media.getStatus());
+//				media.save();
+//				LOG.info(media + " 3 : " + media.getFlickrId() + " : " + media.getStatus());
+			}
+
 		}
+
+		LOG.info("nbUploaded : " + nbUploaded);
+//		if ("".isEmpty()) {
+//			return;
+//		}
+
 		if (nbUploaded <= 0 && FlickrApi.isAuthentified()) {
 			FlickrApi.syncMedia();
 		}
@@ -222,6 +232,13 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	@UiThread
+	void setLoading(int progress) {
+		if (loading != null) {
+			loading.setText("Loading... " + progress + "%");
+		}
+	}
+
+	@UiThread
 	void computeHeaders(boolean clearHeaders) {
 		headers = new ArrayList<Header>();
 		if (clearHeaders) {
@@ -229,7 +246,6 @@ public class FlickrUploaderActivity extends Activity {
 			headerIds = new HashMap<String, Header>();
 		}
 		thumbItems = new ArrayList<Object>();
-		mediaRows = new HashMap<Media, Media[]>();
 		computeNbColumn();
 
 		Media[] mediaRow = null;
@@ -273,7 +289,6 @@ public class FlickrUploaderActivity extends Activity {
 				thumbItems.add(mediaRow);
 			}
 			mediaRow[currentIndex] = media;
-			mediaRows.put(media, mediaRow);
 			currentIndex++;
 		}
 		if (listView != null) {
@@ -351,6 +366,9 @@ public class FlickrUploaderActivity extends Activity {
 
 	PhotoAdapter photoAdapter = new PhotoAdapter();
 
+	@ViewById(R.id.loading)
+	TextView loading;
+
 	@UiThread
 	void init() {
 		if (listView == null) {
@@ -360,6 +378,9 @@ public class FlickrUploaderActivity extends Activity {
 			listView.setAdapter(photoAdapter);
 			listView.setFastScrollEnabled(true);
 			listView.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT));
+
+			relativeLayout.removeView(loading);
+			loading = null;
 			relativeLayout.addView(listView, 0);
 		} else {
 			photoAdapter.notifyDataSetChanged();
@@ -837,6 +858,12 @@ public class FlickrUploaderActivity extends Activity {
 
 	}
 
+	public static void onLoadProgress(int progress) {
+		if (instance != null) {
+			instance.setLoading(progress);
+		}
+	}
+
 	public static void updateStatic(Media media) {
 		if (instance != null) {
 			instance.update(media);
@@ -846,29 +873,11 @@ public class FlickrUploaderActivity extends Activity {
 	Map<Media, View> thumbViews = new HashMap<Media, View>();
 
 	private void update(Media media) {
-		if (medias != null) {
-			int index = medias.indexOf(media);
-			if (index >= 0) {
-				medias.remove(index);
-				medias.add(index, media);
-				if (mediaRows != null) {
-					Media[] mediaRow = mediaRows.get(media);
-					if (mediaRow != null) {
-						for (int i = 0; i < mediaRow.length; i++) {
-							if (media.equals(mediaRow[i])) {
-								mediaRow[i] = media;
-								break;
-							}
-						}
-					}
-				}
-				View thumbView = thumbViews.get(media);
-				if (thumbView != null) {
-					thumbView.setTag(media);
-					renderImageView(thumbView, false);
-					LOG.info(index + " view updated by " + media);
-				}
-			}
+		View thumbView = thumbViews.get(media);
+		if (thumbView != null) {
+			LOG.info("updating " + thumbView.getTag() + " with " + media);
+			// thumbView.setTag(media);
+			renderImageView(thumbView, false);
 		}
 	}
 

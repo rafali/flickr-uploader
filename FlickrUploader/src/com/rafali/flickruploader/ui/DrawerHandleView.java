@@ -117,7 +117,12 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 	int nbMonitored = -1;
 
 	public void onResume() {
-		nbMonitored = Utils.getSyncedFolders().size();
+		BackgroundExecutor.execute(new Runnable() {
+			@Override
+			public void run() {
+				nbMonitored = Utils.getSyncedFolders().size();
+			}
+		});
 	}
 
 	@UiThread(delay = 1000)

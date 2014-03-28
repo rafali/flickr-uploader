@@ -18,6 +18,7 @@ import se.emilsjolander.sprinkles.CursorList;
 import se.emilsjolander.sprinkles.ManyQuery;
 import se.emilsjolander.sprinkles.OneQuery;
 import se.emilsjolander.sprinkles.Query;
+import se.emilsjolander.sprinkles.Transaction;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -182,19 +183,25 @@ public class UploadService extends Service {
 		int nbQueued = 0;
 		int nbAlreadyQueued = 0;
 		int nbAlreadyUploaded = 0;
-		for (Media media : medias) {
-			if (media.isQueued()) {
-				nbAlreadyQueued++;
-			} else if (media.isUploaded()) {
-				nbAlreadyUploaded++;
-			} else if (auto && media.getRetries() > 3) {
-				LOG.debug("not auto enqueueing file with too many retries : " + media);
-			} else {
-				nbQueued++;
-				LOG.debug("enqueueing " + media);
-				media.setStatus(STATUS.QUEUED);
-				mediaPhotosetTitles.put(media.getPath(), photoSetTitle);
+		Transaction t = new Transaction();
+		try {
+			for (Media media : medias) {
+				if (media.isQueued()) {
+					nbAlreadyQueued++;
+				} else if (media.isUploaded()) {
+					nbAlreadyUploaded++;
+				} else if (auto && media.getRetries() > 3) {
+					LOG.debug("not auto enqueueing file with too many retries : " + media);
+				} else {
+					nbQueued++;
+					LOG.debug("enqueueing " + media);
+					media.setStatus(STATUS.QUEUED, t);
+					mediaPhotosetTitles.put(media.getPath(), photoSetTitle);
+				}
 			}
+			t.setSuccessful(true);
+		} finally {
+			t.finish();
 		}
 		for (UploadProgressListener uploadProgressListener : uploadProgressListeners) {
 			uploadProgressListener.onQueued(nbQueued, nbAlreadyUploaded, nbAlreadyQueued);
@@ -205,22 +212,34 @@ public class UploadService extends Service {
 
 	public static void enqueueRetry(Iterable<Media> medias) {
 		int nbQueued = 0;
-		for (Media media : medias) {
-			if (!media.isQueued() && !FlickrApi.unretryable.contains(media)) {
-				nbQueued++;
-				media.setStatus(STATUS.QUEUED);
+		Transaction t = new Transaction();
+		try {
+			for (Media media : medias) {
+				if (!media.isQueued() && !FlickrApi.unretryable.contains(media)) {
+					nbQueued++;
+					media.setStatus(STATUS.QUEUED, t);
+				}
 			}
+			t.setSuccessful(true);
+		} finally {
+			t.finish();
 		}
 		wake(nbQueued > 0);
 	}
 
 	public static void dequeue(Collection<Media> medias) {
-		for (Media media : medias) {
-			if (media.isQueued()) {
-				LOG.debug("dequeueing " + media);
-				media.setStatus(STATUS.PAUSED);
-				mediaPhotosetTitles.remove(media.getPath());
+		Transaction t = new Transaction();
+		try {
+			for (Media media : medias) {
+				if (media.isQueued()) {
+					LOG.debug("dequeueing " + media);
+					media.setStatus(STATUS.PAUSED, t);
+					mediaPhotosetTitles.remove(media.getPath());
+				}
 			}
+			t.setSuccessful(true);
+		} finally {
+			t.finish();
 		}
 		wake();
 	}
@@ -300,10 +319,10 @@ public class UploadService extends Service {
 								lastUpload = System.currentTimeMillis();
 								nbFail = 0;
 								LOG.debug("Upload success : " + time + "ms " + mediaCurrentlyUploading);
-								mediaCurrentlyUploading.setStatus(STATUS.UPLOADED);
+								mediaCurrentlyUploading.setStatus(STATUS.UPLOADED, null);
 								mediaPhotosetTitles.remove(mediaCurrentlyUploading.getPath());
 							} else {
-								mediaCurrentlyUploading.setStatus(STATUS.FAILED);
+								mediaCurrentlyUploading.setStatus(STATUS.FAILED, null);
 								if (FlickrApi.unretryable.contains(mediaCurrentlyUploading)) {
 									mediaCurrentlyUploading.setRetries(3);
 								} else {
@@ -419,10 +438,17 @@ public class UploadService extends Service {
 			BackgroundExecutor.execute(new Runnable() {
 				@Override
 				public void run() {
-					ManyQuery<Media> query = Query.many(Media.class, "select * from Media where status=?", status);
-					CursorList<Media> cursorList = query.get();
-					for (Media media : cursorList) {
-						media.setStatus(STATUS.PAUSED);
+					List<Media> medias = Utils.loadMedia();
+					Transaction t = new Transaction();
+					try {
+						for (Media media : medias) {
+							if (media.getStatus() == status) {
+								media.setStatus(STATUS.PAUSED, t);
+							}
+						}
+						t.setSuccessful(true);
+					} finally {
+						t.finish();
 					}
 					if (callback != null)
 						callback.onResult(null);
@@ -438,11 +464,6 @@ public class UploadService extends Service {
 			String canAutoUpload = Utils.canAutoUpload();
 			if (!"true".equals(canAutoUpload)) {
 				LOG.info("canAutoUpload : " + canAutoUpload);
-				return;
-			}
-			
-			if ("".isEmpty()) {
-				//FIXME
 				return;
 			}
 

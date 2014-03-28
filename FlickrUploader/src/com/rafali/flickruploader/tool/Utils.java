@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import se.emilsjolander.sprinkles.CursorList;
 import se.emilsjolander.sprinkles.ManyQuery;
 import se.emilsjolander.sprinkles.Query;
+import se.emilsjolander.sprinkles.Transaction;
 import uk.co.senab.bitmapcache.BitmapLruCache;
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -56,6 +57,7 @@ import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Environment;
+import android.os.RecoverySystem.ProgressListener;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Files.FileColumns;
@@ -692,123 +694,145 @@ public final class Utils {
 	static long lastCached = 0;
 	static List<Media> cachedMedias = new ArrayList<Media>();
 
-	public static synchronized List<Media> loadMedia() {
-		if (System.currentTimeMillis() - lastCached > 1000) {
-			cachedMedias.clear();
-			long start = System.currentTimeMillis();
-			Cursor cursor = null;
-			try {
-				ManyQuery<Media> query = Query.many(Media.class, "select * from Media order by id asc");
-				CursorList<Media> cursorList = query.get();
-				Iterator<Media> it = cursorList.iterator();
+	public static List<Media> loadMedia() {
+//		LOG.info(ToolString.stack2string(new Exception("loading media")));
+		synchronized (cachedMedias) {
+			if (System.currentTimeMillis() - lastCached > 1000) {
+				cachedMedias.clear();
+				long start = System.currentTimeMillis();
+				Cursor cursor = null;
+				Transaction t = new Transaction();
+				try {
 
-				String selection = FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.PHOTO + " OR " + FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.VIDEO;
+					ManyQuery<Media> query = Query.many(Media.class, "select * from Media order by id asc");
+					CursorList<Media> cursorList = query.get();
+					Iterator<Media> it = cursorList.iterator();
 
-				String orderBy = FileColumns._ID + " ASC";
-				cursor = FlickrUploader.getAppContext().getContentResolver().query(MediaStore.Files.getContentUri("external"), proj, selection, null, orderBy);
+					String selection = FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.PHOTO + " OR " + FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.VIDEO;
 
-				int idColumn = cursor.getColumnIndex(FileColumns._ID);
-				int dataColumn = cursor.getColumnIndex(FileColumns.DATA);
-				int mediaTypeColumn = cursor.getColumnIndex(FileColumns.MEDIA_TYPE);
-				int displayNameColumn = cursor.getColumnIndex(FileColumns.DISPLAY_NAME);
-				int dateAddedColumn = cursor.getColumnIndexOrThrow(FileColumns.DATE_ADDED);
-				int sizeColumn = cursor.getColumnIndex(FileColumns.SIZE);
-				int dateTakenColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_TAKEN);
-				cursor.moveToFirst();
-				final int totalMediaStore = cursor.getCount();
-				final int totalDatabase = cursorList.size();
-				LOG.debug("totalMediaStore = " + totalMediaStore + ", totalDatabase = " + totalDatabase);
-				Media currentMedia = null;
-				for (int i = 0; i < Math.max(totalMediaStore, totalDatabase); i++) {
-					if (currentMedia == null && it.hasNext()) {
-						currentMedia = it.next();
-					}
-					if (cursor.isAfterLast()) {
-						LOG.info(i + " : cursor.isAfterLast");
-						if (currentMedia != null) {
-							LOG.info(currentMedia + " no longer exist, we should delete it here too");
-							currentMedia.deleteAsync();
-							currentMedia = null;
+					String orderBy = FileColumns._ID + " ASC";
+					cursor = FlickrUploader.getAppContext().getContentResolver().query(MediaStore.Files.getContentUri("external"), proj, selection, null, orderBy);
+
+					int idColumn = cursor.getColumnIndex(FileColumns._ID);
+					int dataColumn = cursor.getColumnIndex(FileColumns.DATA);
+					int mediaTypeColumn = cursor.getColumnIndex(FileColumns.MEDIA_TYPE);
+					int displayNameColumn = cursor.getColumnIndex(FileColumns.DISPLAY_NAME);
+					int dateAddedColumn = cursor.getColumnIndexOrThrow(FileColumns.DATE_ADDED);
+					int sizeColumn = cursor.getColumnIndex(FileColumns.SIZE);
+					int dateTakenColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_TAKEN);
+					cursor.moveToFirst();
+					final int totalMediaStore = cursor.getCount();
+					final int totalDatabase = cursorList.size();
+
+					boolean shouldAutoUpload = totalDatabase > 0 && isAutoUpload() && FlickrApi.isAuthentified();
+
+					LOG.debug("totalMediaStore = " + totalMediaStore + ", totalDatabase = " + totalDatabase);
+					int progress = -1;
+					Media currentMedia = null;
+					int max = Math.max(totalMediaStore, totalDatabase);
+					for (int i = 0; i < max; i++) {
+
+						int newprogress = i * 100 / max;
+						if (newprogress != progress) {
+							progress = newprogress;
+//							LOG.info("load progress : " + progress + "%");
+							FlickrUploaderActivity.onLoadProgress(progress);
 						}
-					} else {
-						try {
-							int mediaStoreId = cursor.getInt(idColumn);
-							String data = cursor.getString(dataColumn);
 
-							// LOG.info("i=" + i + ", mediaStoreId=" + mediaStoreId
-							// + ", currentMedia=" + currentMedia);
-
-							if (currentMedia != null && currentMedia.getId() < mediaStoreId) {
-								LOG.info(currentMedia + " no longer exist, we should delete it");
+						if (currentMedia == null && it.hasNext()) {
+							currentMedia = it.next();
+						}
+						if (cursor.isAfterLast()) {
+							LOG.info(i + " : cursor.isAfterLast");
+							if (currentMedia != null) {
+								LOG.info(currentMedia + " no longer exist, we should delete it here too");
 								currentMedia.deleteAsync();
 								currentMedia = null;
-							} else if (currentMedia != null && currentMedia.getId() == mediaStoreId && currentMedia.getPath().equals(data)) {
-								// LOG.info("nothing to do, already in sync");
-								cachedMedias.add(currentMedia);
-								currentMedia = null;
-								cursor.moveToNext();
-							} else {
-								Media mediaToPersist;
-								if (currentMedia != null && currentMedia.getId() == mediaStoreId) {
-									mediaToPersist = currentMedia;
-									currentMedia = null;
-								} else {
-									mediaToPersist = new Media(totalDatabase <= 0 ? STATUS.PAUSED : STATUS.IMPORTED);
-								}
-								cachedMedias.add(mediaToPersist);
-
-								// LOG.info("creating new Media");
-								Long date = null;
-								String dateStr = null;
-								try {
-									dateStr = cursor.getString(dateTakenColumn);
-									if (ToolString.isBlank(dateStr)) {
-										dateStr = cursor.getString(dateAddedColumn);
-										if (ToolString.isNotBlank(dateStr)) {
-											if (dateStr.trim().length() <= 10) {
-												date = Long.valueOf(dateStr) * 1000L;
-											} else {
-												date = Long.valueOf(dateStr);
-											}
-										}
-									} else {
-										date = Long.valueOf(dateStr);
-									}
-								} catch (Throwable e) {
-									LOG.warn(e.getClass().getSimpleName() + " : " + dateStr);
-								}
-								if (date == null) {
-									File file = new File(data);
-									date = file.lastModified();
-								}
-
-								mediaToPersist.setId(mediaStoreId);
-								mediaToPersist.setMediaType(cursor.getInt(mediaTypeColumn));
-								mediaToPersist.setPath(data);
-								mediaToPersist.setName(cursor.getString(displayNameColumn));
-								mediaToPersist.setSize(cursor.getInt(sizeColumn));
-								mediaToPersist.setTimestampCreated(date);
-								mediaToPersist.saveAsync();
-
-								cursor.moveToNext();
 							}
-						} catch (Throwable e) {
-							LOG.error(ToolString.stack2string(e));
+						} else {
+							try {
+								int mediaStoreId = cursor.getInt(idColumn);
+								String data = cursor.getString(dataColumn);
+
+								// LOG.info("i=" + i + ", mediaStoreId=" + mediaStoreId
+								// + ", currentMedia=" + currentMedia);
+
+								if (currentMedia != null && currentMedia.getId() < mediaStoreId) {
+									LOG.info(currentMedia + " no longer exist, we should delete it");
+									currentMedia.deleteAsync();
+									currentMedia = null;
+								} else if (currentMedia != null && currentMedia.getId() == mediaStoreId && currentMedia.getPath().equals(data)) {
+									// LOG.info("nothing to do, already in sync");
+									cachedMedias.add(currentMedia);
+									currentMedia = null;
+									cursor.moveToNext();
+								} else {
+									Media mediaToPersist;
+									if (currentMedia != null && currentMedia.getId() == mediaStoreId) {
+										mediaToPersist = currentMedia;
+										currentMedia = null;
+										mediaToPersist.setExist(true);
+									} else {
+										mediaToPersist = new Media(shouldAutoUpload ? STATUS.IMPORTED : STATUS.PAUSED);
+										mediaToPersist.setExist(false);
+									}
+									cachedMedias.add(mediaToPersist);
+
+									// LOG.info("creating new Media");
+									Long date = null;
+									String dateStr = null;
+									try {
+										dateStr = cursor.getString(dateTakenColumn);
+										if (ToolString.isBlank(dateStr)) {
+											dateStr = cursor.getString(dateAddedColumn);
+											if (ToolString.isNotBlank(dateStr)) {
+												if (dateStr.trim().length() <= 10) {
+													date = Long.valueOf(dateStr) * 1000L;
+												} else {
+													date = Long.valueOf(dateStr);
+												}
+											}
+										} else {
+											date = Long.valueOf(dateStr);
+										}
+									} catch (Throwable e) {
+										LOG.warn(e.getClass().getSimpleName() + " : " + dateStr);
+									}
+									if (date == null) {
+										File file = new File(data);
+										date = file.lastModified();
+									}
+
+									mediaToPersist.setId(mediaStoreId);
+									mediaToPersist.setMediaType(cursor.getInt(mediaTypeColumn));
+									mediaToPersist.setPath(data);
+									mediaToPersist.setName(cursor.getString(displayNameColumn));
+									mediaToPersist.setSize(cursor.getInt(sizeColumn));
+									mediaToPersist.setTimestampCreated(date);
+									mediaToPersist.save(t);
+
+									cursor.moveToNext();
+								}
+							} catch (Throwable e) {
+								LOG.error(ToolString.stack2string(e));
+							}
 						}
 					}
+					t.setSuccessful(true);
+				} catch (Throwable e) {
+					LOG.error(ToolString.stack2string(e));
+				} finally {
+					lastCached = System.currentTimeMillis();
+					t.finish();
+					if (cursor != null)
+						cursor.close();
 				}
-			} catch (Throwable e) {
-				LOG.error(ToolString.stack2string(e));
-			} finally {
-				lastCached = System.currentTimeMillis();
-				if (cursor != null)
-					cursor.close();
+				LOG.info(cachedMedias.size() + " sync done in " + ((System.currentTimeMillis() - start) / 1000) + " sec");
+			} else {
+				LOG.debug("returning " + (System.currentTimeMillis() - lastCached) + " ms old cachedMedias");
 			}
-			LOG.info(cachedMedias.size() + " sync done in " + ((System.currentTimeMillis() - start) / 1000) + " sec");
-		} else {
-			LOG.debug("returning " + (System.currentTimeMillis() - lastCached) + " ms old cachedMedias");
+			return new ArrayList<Media>(cachedMedias);
 		}
-		return new ArrayList<Media>(cachedMedias);
 	}
 
 	public static List<Folder> getFolders(List<Media> medias) {
@@ -827,7 +851,7 @@ public final class Utils {
 	}
 
 	public static String canAutoUpload() {
-		if (!Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
+		if (!Utils.isAutoUpload()) {
 			return "Autoupload disabled";
 		}
 		if (!Utils.isPremium() && !Utils.isTrial()) {
@@ -960,17 +984,21 @@ public final class Utils {
 	}
 
 	public static boolean isAutoUpload(String folderPath) {
-		if (!Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
+		if (!Utils.isAutoUpload()) {
 			return false;
 		}
 		ensureSyncedFolder();
 		return folderSetNames.containsKey(folderPath);
 	}
 
+	public static boolean isAutoUpload() {
+		return Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) || Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false);
+	}
+
 	public static void setAutoUploaded(Folder folder, boolean synced, String albumTitle) {
 		ensureSyncedFolder();
 		if (synced) {
-			if (!Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
+			if (!Utils.isAutoUpload()) {
 				if (Utils.isPremium() || Utils.isTrial()) {
 					Utils.setBooleanProperty(PreferencesActivity.AUTOUPLOAD, true);
 				}

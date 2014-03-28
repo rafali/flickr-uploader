@@ -70,6 +70,7 @@ public class FlickrUploader extends Application {
 			Migration initialMigration = new Migration();
 			initialMigration.createTable(Media.class);
 			sprinkles.addMigration(initialMigration);
+			Sprinkles.getDatabase();
 		} catch (Throwable e) {
 			Log.e("Flickr Uploader", e.getMessage(), e);
 		}

@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import se.emilsjolander.sprinkles.Model;
+import se.emilsjolander.sprinkles.Transaction;
 import se.emilsjolander.sprinkles.annotations.Column;
 import se.emilsjolander.sprinkles.annotations.PrimaryKey;
 import se.emilsjolander.sprinkles.annotations.Table;
@@ -76,7 +77,7 @@ public class Media extends Model {
 
 	@Override
 	public String toString() {
-		return this.id + " - " + path;
+		return this.id + " - " + path + " - " + super.toString();
 	}
 
 	@Override
@@ -178,7 +179,7 @@ public class Media extends Model {
 		if (this.md5Sum == null) {
 			// this call is expensive, around 7 hash/sec on a Moto X
 			this.md5Sum = Utils.getMD5Checksum(path);
-			saveAsync2();
+			saveAsync();
 		}
 		return this.md5Sum;
 	}
@@ -201,6 +202,11 @@ public class Media extends Model {
 
 	public void setFlickrId(String flickrId) {
 		this.flickrId = flickrId;
+		if (flickrId != null) {
+			status = STATUS.UPLOADED;
+		} else if (status == STATUS.UPLOADED) {
+			status = STATUS.PAUSED;
+		}
 	}
 
 	public PRIVACY getPrivacy() {
@@ -257,26 +263,20 @@ public class Media extends Model {
 		this.timestampImported = System.currentTimeMillis();
 	}
 
-	public void saveAsync2() {
+	public void save2(Transaction t) {
 		FlickrUploaderActivity.updateStatic(this);
-		executor.submit(new Runnable() {
-			@Override
-			public void run() {
-				save();
-			}
-		});
-	}
-
-	public void save2() {
-		FlickrUploaderActivity.updateStatic(this);
-		save();
+		if (t == null) {
+			save();
+		} else {
+			save(t);
+		}
 	}
 
 	public int getStatus() {
 		return status;
 	}
 
-	public void setStatus(int status) {
+	public void setStatus(int status, Transaction t) {
 		if (this.status != status) {
 			this.status = status;
 			if (status == STATUS.QUEUED) {
@@ -285,7 +285,7 @@ public class Media extends Model {
 			} else if (status == STATUS.UPLOADED) {
 				setTimestampUploaded(System.currentTimeMillis());
 			}
-			save2();
+			save2(t);
 		}
 	}
 
