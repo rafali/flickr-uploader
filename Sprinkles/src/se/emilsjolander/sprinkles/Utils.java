@@ -13,50 +13,74 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 
-class Utils {
+public class Utils {
 
 	@SuppressWarnings("unchecked")
 	static <T extends Model> T getInstance(Class<T> resultClass, final ModelInfo info, final Cursor c) throws InstantiationException, IllegalAccessException {
-		String key = null;
-		for (ModelInfo.ColumnField column : info.primaryKeys) {
-			int columnIndex = c.getColumnIndex(column.name);
-			int primaryKeyValue = c.getInt(columnIndex);
-			key = resultClass.getSimpleName() + "_" + primaryKeyValue;
+		if (info.cacheable) {
+			String key = null;
+			for (ModelInfo.ColumnField column : info.primaryKeys) {
+				int columnIndex = c.getColumnIndex(column.name);
+				int primaryKeyValue = c.getInt(columnIndex);
+				key = resultClass.getSimpleName() + "_" + primaryKeyValue;
+				Model result = instances.get(key);
+				if (result != null) {
+					// Log.i("Sprinkles", "returning cached object : " + result);
+					return (T) result;
+				}
+			}
+			T newInstance = resultClass.newInstance();
+			instances.put(key, newInstance);
+			return newInstance;
+		} else {
+			return resultClass.newInstance();
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T extends Model> T getOrCreate(Class<T> resultClass, int primaryKeyValue) {
+		try {
+			String key = resultClass.getSimpleName() + "_" + primaryKeyValue;
 			Model result = instances.get(key);
 			if (result != null) {
-//				Log.i("Sprinkles", "returning cached object : " + result);
 				return (T) result;
 			}
+			T newInstance = resultClass.newInstance();
+			instances.put(key, newInstance);
+			return newInstance;
+		} catch (Throwable e) {
+			throw new RuntimeException("Could not instantiate with " + resultClass.getSimpleName() + " with key " + primaryKeyValue + " : " + e.getMessage(), e);
 		}
-		T newInstance = resultClass.newInstance();
-		instances.put(key, newInstance);
-		return newInstance;
 	}
 
 	public static <T extends Model> void putInCache(T instance) {
 		try {
 			Class<? extends Model> resultClass = instance.getClass();
 			final ModelInfo info = ModelInfo.from(resultClass);
-			for (ModelInfo.ColumnField column : info.primaryKeys) {
-				column.field.setAccessible(true);
-				String key = resultClass.getSimpleName() + "_" + column.field.getInt(instance);
-//				Log.i("Sprinkles", "caching object : " + instance);
-				instances.put(key, instance);
+			if (info.cacheable) {
+				for (ModelInfo.ColumnField column : info.primaryKeys) {
+					column.field.setAccessible(true);
+					String key = resultClass.getSimpleName() + "_" + column.field.getInt(instance);
+					// Log.i("Sprinkles", "caching object : " + instance);
+					instances.put(key, instance);
+				}
 			}
 		} catch (Exception e) {
-			throw new RuntimeException(e);
+			throw new RuntimeException("Error with " + instance + " : " + e.getMessage(), e);
 		}
 	}
-	
+
 	public static <T extends Model> void removeFromCache(T instance) {
 		try {
 			Class<? extends Model> resultClass = instance.getClass();
 			final ModelInfo info = ModelInfo.from(resultClass);
-			for (ModelInfo.ColumnField column : info.primaryKeys) {
-				column.field.setAccessible(true);
-				String key = resultClass.getSimpleName() + "_" + column.field.getInt(instance);
-//				Log.i("Sprinkles", "caching object : " + instance);
-				instances.remove(key);
+			if (info.cacheable) {
+				for (ModelInfo.ColumnField column : info.primaryKeys) {
+					column.field.setAccessible(true);
+					String key = resultClass.getSimpleName() + "_" + column.field.getInt(instance);
+					// Log.i("Sprinkles", "caching object : " + instance);
+					instances.remove(key);
+				}
 			}
 		} catch (Exception e) {
 			throw new RuntimeException(e);

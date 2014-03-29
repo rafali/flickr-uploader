@@ -25,7 +25,6 @@ import com.rafali.flickruploader.service.UploadService;
 import com.rafali.flickruploader.service.UploadService.UploadProgressListener;
 import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
-import com.rafali.flickruploader.ui.activity.PreferencesActivity;
 import com.rafali.flickruploader.ui.widget.CustomImageView;
 import com.rafali.flickruploader2.R;
 
@@ -120,7 +119,7 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
-				nbMonitored = Utils.getSyncedFolders().size();
+				nbMonitored = Utils.getFoldersMonitoredNb();
 			}
 		});
 	}
@@ -135,8 +134,8 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 				if (canShow > 4000) {
 					if (!FlickrApi.isAuthentified()) {
 						message.setText("Login into Flickr from the Preferences");
-					} else if (!Utils.isPremium() && !Utils.isTrial() && Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false)) {
-						message.setText("Click on the menu and select 'Trial Info'");
+					} else if (!Utils.isPremium() && !Utils.isTrial()) {
+						message.setText("Trial version as expired");
 					} else if (UploadService.getNbQueued() == 0) {
 						String text = "No media queued";
 						int nbUploaded = UploadService.getNbUploadedTotal();
@@ -148,9 +147,9 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 							text += ", " + nbError + " error" + (nbError > 1 ? "s" : "");
 						}
 						if (nbError + nbUploaded <= 0) {
-							if (Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) || Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
+							if (Utils.isAutoUpload()) {
 								if (nbMonitored < 0) {
-									nbMonitored = Utils.getSyncedFolders().size();
+									nbMonitored = Utils.getFoldersMonitoredNb();
 								}
 								text += ", " + nbMonitored + " folders monitored";
 							}

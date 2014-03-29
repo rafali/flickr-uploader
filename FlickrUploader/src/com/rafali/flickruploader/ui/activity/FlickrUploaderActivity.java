@@ -27,7 +27,6 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -49,10 +48,8 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.google.analytics.tracking.android.EasyTracker;
-import com.google.common.base.Functions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Ordering;
 import com.googlecode.androidannotations.annotations.AfterViews;
 import com.googlecode.androidannotations.annotations.Background;
 import com.googlecode.androidannotations.annotations.EActivity;
@@ -179,33 +176,15 @@ public class FlickrUploaderActivity extends Activity {
 		boolean showPhotos = Utils.getShowPhotos();
 		boolean showVideos = Utils.getShowVideos();
 		Iterator<Media> it = medias.iterator();
-		int nbUploaded = 0;
 		while (it.hasNext()) {
 			Media media = it.next();
 			if (!showPhotos && media.isPhoto() || !showVideos && media.isVideo()) {
 				it.remove();
 			}
-			if (media.isUploaded()) {
-				nbUploaded++;
-			}
-			if (media.getId() == 16033) {
-				LOG.info(media + " 1 : " + media.getFlickrId() + " : " + media.getStatus());
-//				media.setFlickrId("toto");
-//				LOG.info(media + " 2 : " + media.getFlickrId() + " : " + media.getStatus());
-//				media.save();
-//				LOG.info(media + " 3 : " + media.getFlickrId() + " : " + media.getStatus());
-			}
-
 		}
 
-		LOG.info("nbUploaded : " + nbUploaded);
-//		if ("".isEmpty()) {
-//			return;
-//		}
-
-		if (nbUploaded <= 0 && FlickrApi.isAuthentified()) {
-			FlickrApi.syncMedia();
-		}
+		// FIXME
+		LOG.info("getFoldersMonitoredNb : " + Utils.getFoldersMonitoredNb());
 
 		if (Utils.getViewGroupType() == VIEW_GROUP_TYPE.date) {
 			Collections.sort(medias, Utils.MEDIA_COMPARATOR);
@@ -489,69 +468,20 @@ public class FlickrUploaderActivity extends Activity {
 
 	@UiThread
 	void showExistingSetDialog() {
-		showExistingSetDialog(activity, new Callback<String[]>() {
+		Utils.showExistingSetDialog(activity, new Callback<String>() {
 			@Override
-			public void onResult(String[] result) {
-				String photoSetTitle = result[1];
-				enqueue(selectedMedia, photoSetTitle);
+			public void onResult(String result) {
+				enqueue(selectedMedia, result);
 				clearSelection();
 			}
 		}, null);
 	}
 
-	static void showExistingSetDialog(final Activity activity, final Callback<String[]> callback, final Map<String, String> cachedPhotosets) {
-		final ProgressDialog dialog = ProgressDialog.show(activity, "", "Loading photosets", true);
-		BackgroundExecutor.execute(new Runnable() {
-			@Override
-			public void run() {
-				final Map<String, String> photosets = cachedPhotosets == null ? FlickrApi.getPhotoSets(true) : cachedPhotosets;
-				activity.runOnUiThread(new Runnable() {
-					@Override
-					public void run() {
-						dialog.cancel();
-						if (photosets.isEmpty()) {
-							Utils.toast("No photoset found");
-						} else {
-							AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-							final List<String> photosetTitles = new ArrayList<String>();
-							final List<String> photosetIds = new ArrayList<String>(photosets.keySet());
-							Map<String, String> lowerCasePhotosets = new HashMap<String, String>();
-							Iterator<String> it = photosetIds.iterator();
-							while (it.hasNext()) {
-								String photosetId = it.next();
-								String photoSetTitle = photosets.get(photosetId);
-								if (ToolString.isNotBlank(photoSetTitle)) {
-									lowerCasePhotosets.put(photosetId, photoSetTitle.toLowerCase(Locale.US));
-								} else {
-									it.remove();
-								}
-							}
-							Ordering<String> valueComparator = Ordering.natural().onResultOf(Functions.forMap(lowerCasePhotosets));
-							Collections.sort(photosetIds, valueComparator);
-							for (String photosetId : photosetIds) {
-								photosetTitles.add(photosets.get(photosetId));
-							}
-							String[] photosetTitlesArray = photosetTitles.toArray(new String[photosetTitles.size()]);
-							builder.setItems(photosetTitlesArray, new OnClickListener() {
-								@Override
-								public void onClick(DialogInterface dialog, int which) {
-									LOG.debug("selected : " + photosetIds.get(which) + " - " + photosetTitles.get(which));
-									String photoSetId = photosetIds.get(which);
-									String photoSetTitle = photosetTitles.get(which);
-									callback.onResult(new String[] { photoSetId, photoSetTitle });
-								}
-							});
-							builder.show();
-						}
-					}
-				});
-			}
-		});
-	}
+
 
 	@UiThread
 	void showNewSetDialog(final Folder folder) {
-		showNewSetDialog(activity, folder == null ? null : folder.name, new Callback<String>() {
+		showNewSetDialog(activity, folder == null ? null : folder.getName(), new Callback<String>() {
 			@Override
 			public void onResult(final String value) {
 				if (ToolString.isBlank(value)) {

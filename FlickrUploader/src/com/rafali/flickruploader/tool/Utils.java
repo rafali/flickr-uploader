@@ -15,6 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -22,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -38,6 +40,7 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -57,7 +60,6 @@ import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Environment;
-import android.os.RecoverySystem.ProgressListener;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Files.FileColumns;
@@ -101,6 +103,7 @@ import com.rafali.flickruploader.enums.PRIVACY;
 import com.rafali.flickruploader.enums.STATUS;
 import com.rafali.flickruploader.enums.VIEW_GROUP_TYPE;
 import com.rafali.flickruploader.enums.VIEW_SIZE;
+import com.rafali.flickruploader.model.FlickrSet;
 import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
@@ -689,13 +692,13 @@ public final class Utils {
 	// return images;
 	// }
 
-	static final String[] proj = { FileColumns._ID, FileColumns.DATA, FileColumns.MEDIA_TYPE, FileColumns.DATE_ADDED, FileColumns.DISPLAY_NAME, FileColumns.SIZE, Images.Media.DATE_TAKEN };
+	static final String[] proj = { FileColumns._ID, FileColumns.DATA, FileColumns.MEDIA_TYPE, FileColumns.DATE_ADDED, FileColumns.SIZE, Images.Media.DATE_TAKEN };
 
 	static long lastCached = 0;
 	static List<Media> cachedMedias = new ArrayList<Media>();
 
 	public static List<Media> loadMedia() {
-//		LOG.info(ToolString.stack2string(new Exception("loading media")));
+		// LOG.info(ToolString.stack2string(new Exception("loading media")));
 		synchronized (cachedMedias) {
 			if (System.currentTimeMillis() - lastCached > 1000) {
 				cachedMedias.clear();
@@ -716,7 +719,6 @@ public final class Utils {
 					int idColumn = cursor.getColumnIndex(FileColumns._ID);
 					int dataColumn = cursor.getColumnIndex(FileColumns.DATA);
 					int mediaTypeColumn = cursor.getColumnIndex(FileColumns.MEDIA_TYPE);
-					int displayNameColumn = cursor.getColumnIndex(FileColumns.DISPLAY_NAME);
 					int dateAddedColumn = cursor.getColumnIndexOrThrow(FileColumns.DATE_ADDED);
 					int sizeColumn = cursor.getColumnIndex(FileColumns.SIZE);
 					int dateTakenColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_TAKEN);
@@ -735,7 +737,7 @@ public final class Utils {
 						int newprogress = i * 100 / max;
 						if (newprogress != progress) {
 							progress = newprogress;
-//							LOG.info("load progress : " + progress + "%");
+							// LOG.info("load progress : " + progress + "%");
 							FlickrUploaderActivity.onLoadProgress(progress);
 						}
 
@@ -806,7 +808,6 @@ public final class Utils {
 									mediaToPersist.setId(mediaStoreId);
 									mediaToPersist.setMediaType(cursor.getInt(mediaTypeColumn));
 									mediaToPersist.setPath(data);
-									mediaToPersist.setName(cursor.getString(displayNameColumn));
 									mediaToPersist.setSize(cursor.getInt(sizeColumn));
 									mediaToPersist.setTimestampCreated(date);
 									mediaToPersist.save(t);
@@ -833,21 +834,6 @@ public final class Utils {
 			}
 			return new ArrayList<Media>(cachedMedias);
 		}
-	}
-
-	public static List<Folder> getFolders(List<Media> medias) {
-		final Multimap<String, Media> photoFiles = LinkedHashMultimap.create();
-		for (Media media : medias) {
-			int lastIndexOf = media.getPath().lastIndexOf("/");
-			if (lastIndexOf > 0) {
-				photoFiles.put(media.getPath().substring(0, lastIndexOf), media);
-			}
-		}
-		List<Folder> folders = new ArrayList<Folder>();
-		for (String path : photoFiles.keySet()) {
-			folders.add(new Folder(path, photoFiles.get(path)));
-		}
-		return folders;
 	}
 
 	public static String canAutoUpload() {
@@ -977,79 +963,87 @@ public final class Utils {
 		return bitmap;
 	}
 
-	static Map<String, String> folderSetNames;
-
-	public static boolean isAutoUpload(Folder folder) {
-		return isAutoUpload(folder.path);
-	}
-
-	public static boolean isAutoUpload(String folderPath) {
-		if (!Utils.isAutoUpload()) {
-			return false;
-		}
-		ensureSyncedFolder();
-		return folderSetNames.containsKey(folderPath);
-	}
-
 	public static boolean isAutoUpload() {
 		return Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) || Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false);
 	}
 
-	public static void setAutoUploaded(Folder folder, boolean synced, String albumTitle) {
-		ensureSyncedFolder();
-		if (synced) {
-			if (!Utils.isAutoUpload()) {
-				if (Utils.isPremium() || Utils.isTrial()) {
-					Utils.setBooleanProperty(PreferencesActivity.AUTOUPLOAD, true);
-				}
-			}
-			if (albumTitle == null) {
-				folderSetNames.put(folder.path, STR.instantUpload);
-			} else {
-				folderSetNames.put(folder.path, albumTitle);
-			}
-		} else {
-			folderSetNames.remove(folder.path);
+	public static boolean isAutoUpload(int mediaType) {
+		if (mediaType == MEDIA_TYPE.PHOTO) {
+			return Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false);
+		} else if (mediaType == MEDIA_TYPE.VIDEO) {
+			return Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false);
 		}
-		setMapProperty("folderSetNames", folderSetNames);
+		return false;
 	}
 
-	public static Map<String, String> getFoldersSetNames() {
-		ensureSyncedFolder();
-		return folderSetNames;
-	}
-
-	private static void ensureSyncedFolder() {
-		if (folderSetNames == null) {
-			Map<String, String> persisted = getMapProperty("folderSetNames", true);
-			if (persisted == null) {
-				persisted = new HashMap<String, String>();
-				try {
-					addFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), persisted);
-					addFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), persisted);
-					addFolder(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES), persisted);
-					LOG.debug("default synced folders : " + persisted);
-					setMapProperty("folderSetNames", folderSetNames);
-				} catch (Throwable e) {
-					LOG.error(ToolString.stack2string(e));
-				}
-			}
-			folderSetNames = new HashMap<String, String>(persisted);
+	private static boolean isDefaultMediaFolder(String path) {
+		if (Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath().contains(path)) {
+			return true;
+		} else if (Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).getAbsolutePath().contains(path)) {
+			return true;
+		} else if (Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES).getAbsolutePath().contains(path)) {
+			return true;
 		}
+		return false;
+
 	}
 
-	static void addFolder(File folder, Map<String, String> persisted) {
-		if (folder != null) {
-			File[] listFiles = folder.listFiles();
-			if (listFiles != null) {
-				for (File file : listFiles) {
-					if (file.isDirectory() && !file.isHidden()) {
-						persisted.put(file.getAbsolutePath(), STR.instantUpload);
+	static int nbFolderMonitored = -1;
+
+	public static int getFoldersMonitoredNb() {
+		if (nbFolderMonitored < 0) {
+			getFolders(false);
+		}
+		return nbFolderMonitored;
+	}
+
+	public static synchronized Map<String, Folder> getFolders(boolean refresh) {
+		CursorList<Folder> persistedFolders = Query.all(Folder.class).get();
+		Map<String, Folder> persistedFoldersMap = new HashMap<String, Folder>();
+
+		nbFolderMonitored = 0;
+		for (Folder folder : persistedFolders) {
+			persistedFoldersMap.put(folder.getPath(), folder);
+			if (folder.isAutoUploaded()) {
+				nbFolderMonitored++;
+			}
+		}
+		final boolean emptyDatabase = persistedFoldersMap.isEmpty();
+
+		if (emptyDatabase || refresh) {
+			final Multimap<String, Media> photoFiles = LinkedHashMultimap.create();
+			List<Media> medias = loadMedia();
+			for (Media media : medias) {
+				photoFiles.put(media.getFolderPath(), media);
+			}
+
+			Transaction t = new Transaction();
+			try {
+				for (String path : photoFiles.keySet()) {
+					Folder folder = persistedFoldersMap.get(path);
+					List<Media> folderMedias = new ArrayList<Media>(photoFiles.get(path));
+					if (folder == null) {
+						folder = new Folder(path);
+						folder.setExist(false);
+						if (emptyDatabase && (folderMedias.size() > 50 || isDefaultMediaFolder(path))) {
+							folder.setFlickrSetTitle(STR.instantUpload);
+							nbFolderMonitored++;
+						}
+						persistedFoldersMap.put(path, folder);
 					}
+					Collections.sort(folderMedias, MEDIA_COMPARATOR);
+					folder.setMedia(folderMedias.get(0));
+					folder.setSize(folderMedias.size());
+					folder.save(t);
 				}
+				t.setSuccessful(true);
+			} catch (Throwable e) {
+				LOG.error(ToolString.stack2string(e));
+			} finally {
+				t.finish();
 			}
-			persisted.put(folder.getAbsolutePath(), STR.instantUpload);
 		}
+		return persistedFoldersMap;
 	}
 
 	public static List<String> getStringList(String key) {
@@ -1469,6 +1463,41 @@ public final class Utils {
 		builder.setCancelable(false);
 		builder.create().show();
 	}
+	
+	public static void showExistingSetDialog(final Activity activity, final Callback<String> callback, final Set<FlickrSet> cachedPhotosets) {
+		final ProgressDialog dialog = ProgressDialog.show(activity, "", "Loading photosets", true);
+		BackgroundExecutor.execute(new Runnable() {
+			@Override
+			public void run() {
+				final Set<FlickrSet> photosets = cachedPhotosets == null ? FlickrApi.getPhotoSets(true) : cachedPhotosets;
+				final List<String> photosetTitles = new ArrayList<String>();
+				for (FlickrSet flickrSet : photosets) {
+					photosetTitles.add(flickrSet.getName());
+				}
+				Collections.sort(photosetTitles, String.CASE_INSENSITIVE_ORDER);
+				activity.runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						dialog.cancel();
+						if (photosets.isEmpty()) {
+							Utils.toast("No photoset found");
+						} else {
+							AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+							String[] photosetTitlesArray = photosetTitles.toArray(new String[photosetTitles.size()]);
+							builder.setItems(photosetTitlesArray, new OnClickListener() {
+								@Override
+								public void onClick(DialogInterface dialog, int which) {
+									String photoSetTitle = photosetTitles.get(which);
+									callback.onResult(photoSetTitle);
+								}
+							});
+							builder.show();
+						}
+					}
+				});
+			}
+		});
+	}
 
 	private static final String CONFIG_ENVIRONMENT = Config.isDebug() ? PayPalConfiguration.ENVIRONMENT_SANDBOX : PayPalConfiguration.ENVIRONMENT_PRODUCTION;
 	private static final String CONFIG_CLIENT_ID = Utils.getString(R.string.paypal_client_id);
@@ -1778,20 +1807,6 @@ public final class Utils {
 		} else {
 			LOG.warn(file + " already deleted");
 		}
-	}
-
-	public static List<Folder> getSyncedFolders() {
-		List<Folder> syncedFolders = new ArrayList<Folder>();
-		List<Media> media = Utils.loadMedia();
-		if (media != null) {
-			List<Folder> folders = Utils.getFolders(media);
-			for (Folder folder : folders) {
-				if (Utils.isAutoUpload(folder)) {
-					syncedFolders.add(folder);
-				}
-			}
-		}
-		return syncedFolders;
 	}
 
 	public static void toast(final String message) {

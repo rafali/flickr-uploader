@@ -6,6 +6,8 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import se.emilsjolander.sprinkles.annotations.Cacheable;
+
 import se.emilsjolander.sprinkles.Model;
 import se.emilsjolander.sprinkles.Transaction;
 import se.emilsjolander.sprinkles.annotations.Column;
@@ -20,6 +22,7 @@ import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
 
 @Table("Media")
+@Cacheable
 public class Media extends Model {
 
 	@PrimaryKey
@@ -28,9 +31,6 @@ public class Media extends Model {
 
 	@Column("path")
 	private String path;
-
-	@Column("name")
-	private String name;
 
 	@Column("mediaType")
 	private int mediaType;
@@ -55,6 +55,12 @@ public class Media extends Model {
 
 	@Column("flickrId")
 	private String flickrId;
+
+	@Column("flickrSetTitle")
+	private String flickrSetTitle;
+
+	@Column("flickrSetId")
+	private String flickrSetId;
 
 	@Column("privacy")
 	private int privacy;
@@ -99,20 +105,11 @@ public class Media extends Model {
 	}
 
 	public String getFolderPath() {
-		int lastIndexOf = this.path.lastIndexOf("/");
-		if (lastIndexOf > 0) {
-			return this.path.substring(0, lastIndexOf);
-		}
-		return "/";
+		return ToolString.getParentPath(this.path);
 	}
 
 	public String getFolderName() {
-		String folderPath = getFolderPath();
-		int lastIndexOf = folderPath.lastIndexOf("/");
-		if (lastIndexOf > 0) {
-			return folderPath.substring(lastIndexOf);
-		}
-		return "";
+		return ToolString.getFileName(getFolderPath());
 	}
 
 	public int getMediaType() {
@@ -148,11 +145,7 @@ public class Media extends Model {
 	}
 
 	public String getName() {
-		return this.name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
+		return ToolString.getFileName(this.path);
 	}
 
 	public int getSize() {
@@ -349,5 +342,21 @@ public class Media extends Model {
 
 	public void setTimestampRetry(long timestampRetry) {
 		this.timestampRetry = timestampRetry;
+	}
+
+	public String getFlickrSetId() {
+		return flickrSetId;
+	}
+
+	public void setFlickrSetId(String flickrSetId) {
+		this.flickrSetId = flickrSetId;
+	}
+
+	public String getFlickrSetTitle() {
+		return flickrSetTitle;
+	}
+
+	public void setFlickrSetTitle(String flickrSetTitle) {
+		this.flickrSetTitle = flickrSetTitle;
 	}
 }

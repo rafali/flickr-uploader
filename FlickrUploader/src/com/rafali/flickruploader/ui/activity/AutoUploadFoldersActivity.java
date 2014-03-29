@@ -1,10 +1,10 @@
 package com.rafali.flickruploader.ui.activity;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -37,6 +37,7 @@ import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.api.FlickrApi;
 import com.rafali.flickruploader.enums.VIEW_SIZE;
+import com.rafali.flickruploader.model.FlickrSet;
 import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.tool.Utils;
@@ -51,7 +52,6 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 	private static final String NEW_SET = "New set...";
 	private static final String DISABLE_AUTO_UPLOAD = "Disable auto-upload";
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrUploaderActivity.class);
-	private static final int item_layout = R.layout.folder_list_thumb;
 
 	AutoUploadFoldersActivity activity = this;
 
@@ -73,23 +73,19 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 	@ViewById(R.id.list_view)
 	ListView listView;
 
-	private Map<String, String> cachedPhotoSets = Utils.getMapProperty("cachedPhotoSets");
+	private Set<FlickrSet> cachedPhotoSets;
 
 	@Background
 	void load() {
-		List<Media> media = Utils.loadMedia();
-		if (media != null) {
-			folders = Utils.getFolders(media);
-			for (Folder folder : folders) {
-				foldersMap.put(folder.medias.get(0), folder);
+		folders = new ArrayList<Folder>(Utils.getFolders(true).values());
+		Collections.sort(folders, new Comparator<Folder>() {
+			@Override
+			public int compare(Folder lhs, Folder rhs) {
+				return rhs.getSize() - lhs.getSize();
 			}
-			render();
-		}
-		Map<String, String> photoSets = FlickrApi.getPhotoSets(true);
-		if (photoSets != null && !photoSets.isEmpty()) {
-			Utils.setMapProperty("cachedPhotoSets", photoSets);
-			cachedPhotoSets = photoSets;
-		}
+		});
+		render();
+		cachedPhotoSets = FlickrApi.getPhotoSets(true);
 		refresh();
 	}
 
@@ -110,7 +106,6 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 	}
 
 	List<Folder> folders;
-	Map<Media, Folder> foldersMap = new HashMap<Media, Folder>();
 
 	class PhotoAdapter extends BaseAdapter {
 
@@ -124,7 +119,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 
 		@Override
 		public Object getItem(int position) {
-			return folders.get(position).medias.get(0);
+			return folders.get(position);
 		}
 
 		@Override
@@ -136,33 +131,33 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 		public View getView(int position, View convertView, ViewGroup parent) {
 			Object item = getItem(position);
 			if (convertView == null) {
-				convertView = getLayoutInflater().inflate(item_layout, parent, false);
+				convertView = getLayoutInflater().inflate(R.layout.folder_list_thumb, parent, false);
 				convertView.setTag(R.id.image_view, convertView.findViewById(R.id.image_view));
 				convertView.setTag(R.id.title, convertView.findViewById(R.id.title));
+				convertView.setTag(R.id.size, convertView.findViewById(R.id.size));
 				convertView.setTag(R.id.sub_title, convertView.findViewById(R.id.sub_title));
 			}
-			final Media media = (Media) item;
-			if (convertView.getTag() != media) {
-				convertView.setTag(media);
+			if (convertView.getTag() != item) {
+				convertView.setTag(item);
 				renderImageView(convertView);
 			}
 			return convertView;
 		}
 	}
 
-	String[] previousSet;
+	String previousSet;
 
 	@Override
 	public void onItemClick(final AdapterView<?> arg0, final View convertView, final int arg2, final long arg3) {
 		if (Utils.isPremium() || Utils.isTrial()) {
-			if (convertView.getTag() instanceof Media) {
-				final Folder folder = foldersMap.get(convertView.getTag());
-				String title = "Auto-upload " + folder.name + " to";
+			if (convertView.getTag() instanceof Folder) {
+				final Folder folder = (Folder) convertView.getTag();
+				String title = "Auto-upload " + folder.getName() + " to";
 				ArrayList<String> itemsList = Lists.newArrayList(DEFAULT_SET, NEW_SET, EXISTING_SET);
 				if (previousSet != null) {
-					itemsList.add(PREVIOUS_SET + previousSet[1]);
+					itemsList.add(PREVIOUS_SET + previousSet);
 				}
-				if (Utils.isAutoUpload(folder)) {
+				if (folder.isAutoUploaded()) {
 					itemsList.add(DISABLE_AUTO_UPLOAD);
 				}
 				final String[] items = itemsList.toArray(new String[0]);
@@ -173,24 +168,23 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 						LOG.debug(item);
 						if (which <= 2) {
 							if (item.equals(DEFAULT_SET)) {
-								setAutoUploaded(folder, true, STR.instantUpload);
+								setAutoUploaded(folder, STR.instantUpload);
 							} else if (item.equals(NEW_SET)) {
-								FlickrUploaderActivity.showNewSetDialog(activity, folder.name, new Utils.Callback<String>() {
+								FlickrUploaderActivity.showNewSetDialog(activity, folder.getName(), new Utils.Callback<String>() {
 									@Override
 									public void onResult(String result) {
 										LOG.debug(result);
 										if (ToolString.isNotBlank(result)) {
-											createSetForFolder(folder, result);
+											setAutoUploaded(folder, result);
 										}
 									}
 								});
 							} else if (item.equals(EXISTING_SET)) {
-								FlickrUploaderActivity.showExistingSetDialog(activity, new Utils.Callback<String[]>() {
+								Utils.showExistingSetDialog(activity, new Utils.Callback<String>() {
 									@Override
-									public void onResult(String[] result) {
+									public void onResult(String result) {
 										previousSet = result;
-										LOG.debug(Arrays.toString(result));
-										setAutoUploaded(folder, true, result[1]);
+										setAutoUploaded(folder, result);
 									}
 								}, cachedPhotoSets);
 							} else {
@@ -198,9 +192,9 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 							}
 						} else {
 							if (item.equals(DISABLE_AUTO_UPLOAD)) {
-								setAutoUploaded(folder, false, null);
-							} else if (previousSet != null && item.contains(PREVIOUS_SET) && item.contains(previousSet[1])) {
-								setAutoUploaded(folder, true, previousSet[1]);
+								setAutoUploaded(folder, null);
+							} else if (previousSet != null && item.contains(PREVIOUS_SET) && item.contains(previousSet)) {
+								setAutoUploaded(folder, previousSet);
 							} else {
 								LOG.error("unknown item:" + item);
 							}
@@ -222,8 +216,9 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 	}
 
 	@Background
-	void setAutoUploaded(Folder folder, boolean synced, String setTitle) {
-		Utils.setAutoUploaded(folder, synced, setTitle);
+	void setAutoUploaded(Folder folder, String setTitle) {
+		folder.setFlickrSetTitle(setTitle);
+		folder.save();
 		refresh();
 	}
 
@@ -247,33 +242,25 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 		}
 	}
 
-	@Background
-	void createSetForFolder(Folder folder, String photoSetTitle) {
-		setAutoUploaded(folder, true, photoSetTitle);
-	}
-
 	ExecutorService executorService = Executors.newSingleThreadExecutor();
 
 	private void renderImageView(final View convertView) {
-		if (convertView.getTag() instanceof Media) {
-			final Media media = (Media) convertView.getTag();
+		if (convertView.getTag() instanceof Folder) {
+			final Folder folder = (Folder) convertView.getTag();
+			final Media media = folder.getMedia();
 			final CacheableImageView imageView = (CacheableImageView) convertView.getTag(R.id.image_view);
 			imageView.setTag(media);
-			Folder folder = foldersMap.get(media);
-			((TextView) convertView.getTag(R.id.title)).setText(folder.name + " (" + folder.size + ")");
-			boolean autoUpload = Utils.isAutoUpload(folder);
+			((TextView) convertView.getTag(R.id.title)).setText(folder.getName());
+			((TextView) convertView.getTag(R.id.size)).setText("(" + folder.getSize() + ")");
 			String summary;
 			TextView subTitle = (TextView) convertView.getTag(R.id.sub_title);
-			if (autoUpload) {
-				String photoSetTitle = Utils.getFoldersSetNames().get(folder.path);
-				if (photoSetTitle == null) {
-					photoSetTitle = STR.instantUpload;
-				}
-				summary = "⇒ Flickr (" + photoSetTitle + ")";
-				subTitle.setTextColor(Color.WHITE);
-			} else {
+			String photoSetTitle = folder.getFlickrSetTitle();
+			if (ToolString.isBlank(photoSetTitle)) {
 				summary = "not monitored";
 				subTitle.setTextColor(getResources().getColor(R.color.midgray));
+			} else {
+				summary = "⇒ Flickr (" + photoSetTitle + ")";
+				subTitle.setTextColor(Color.WHITE);
 			}
 			subTitle.setText(summary);
 

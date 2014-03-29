@@ -21,6 +21,7 @@ import static org.acra.ReportField.USER_CRASH_DATE;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.util.Map;
 
 import org.acra.ACRA;
 import org.acra.ReportingInteractionMode;
@@ -46,6 +47,8 @@ import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
+import com.rafali.flickruploader.model.FlickrSet;
+import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader2.R;
@@ -69,6 +72,8 @@ public class FlickrUploader extends Application {
 			Sprinkles sprinkles = Sprinkles.init(getApplicationContext());
 			Migration initialMigration = new Migration();
 			initialMigration.createTable(Media.class);
+			initialMigration.createTable(FlickrSet.class);
+			initialMigration.createTable(Folder.class);
 			sprinkles.addMigration(initialMigration);
 			Sprinkles.getDatabase();
 		} catch (Throwable e) {
@@ -85,6 +90,12 @@ public class FlickrUploader extends Application {
 					if (Config.VERSION != versionCode) {
 						Utils.saveAndroidDevice();
 						Utils.setLongProperty(STR.versionCode, (long) Config.VERSION);
+						if (versionCode < 40) {
+							Map<String, String> persisted = Utils.getMapProperty("folderSetNames", true);
+							if (persisted != null) {
+								//FIXME
+							}
+						}
 					}
 				} catch (Throwable e) {
 					LOG.error(ToolString.stack2string(e));

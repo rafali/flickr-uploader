@@ -1,7 +1,6 @@
 package com.rafali.flickruploader.service;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -32,7 +31,6 @@ import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Video;
 
 import com.googlecode.androidannotations.api.BackgroundExecutor;
-import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrUploader;
 import com.rafali.flickruploader.api.FlickrApi;
@@ -40,12 +38,12 @@ import com.rafali.flickruploader.broadcast.AlarmBroadcastReceiver;
 import com.rafali.flickruploader.enums.CAN_UPLOAD;
 import com.rafali.flickruploader.enums.MEDIA_TYPE;
 import com.rafali.flickruploader.enums.STATUS;
+import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.tool.Notifications;
 import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader.tool.Utils.Callback;
 import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
-import com.rafali.flickruploader.ui.activity.PreferencesActivity;
 
 public class UploadService extends Service {
 
@@ -107,6 +105,7 @@ public class UploadService extends Service {
 				checkNewFiles();
 			}
 		});
+		Notifications.init();
 	}
 
 	ContentObserver imageTableObserver = new ContentObserver(new Handler()) {
@@ -195,8 +194,8 @@ public class UploadService extends Service {
 				} else {
 					nbQueued++;
 					LOG.debug("enqueueing " + media);
+					media.setFlickrSetTitle(photoSetTitle);
 					media.setStatus(STATUS.QUEUED, t);
-					mediaPhotosetTitles.put(media.getPath(), photoSetTitle);
 				}
 			}
 			t.setSuccessful(true);
@@ -234,7 +233,6 @@ public class UploadService extends Service {
 				if (media.isQueued()) {
 					LOG.debug("dequeueing " + media);
 					media.setStatus(STATUS.PAUSED, t);
-					mediaPhotosetTitles.remove(media.getPath());
 				}
 			}
 			t.setSuccessful(true);
@@ -243,8 +241,6 @@ public class UploadService extends Service {
 		}
 		wake();
 	}
-
-	private static Map<String, String> mediaPhotosetTitles = Utils.getMapProperty("mediaPhotosetTitles");
 
 	private static boolean paused = true;
 
@@ -307,7 +303,7 @@ public class UploadService extends Service {
 						if (FlickrApi.isAuthentified()) {
 							long start = System.currentTimeMillis();
 							onProgress(mediaCurrentlyUploading, 0);
-							String photosetTitle = mediaPhotosetTitles.get(mediaCurrentlyUploading.getPath());
+							String photosetTitle = mediaCurrentlyUploading.getFlickrSetTitle();
 							boolean success = mediaCurrentlyUploading.isUploaded();
 							if (!success) {
 								LOG.debug("Starting upload : " + mediaCurrentlyUploading);
@@ -320,7 +316,6 @@ public class UploadService extends Service {
 								nbFail = 0;
 								LOG.debug("Upload success : " + time + "ms " + mediaCurrentlyUploading);
 								mediaCurrentlyUploading.setStatus(STATUS.UPLOADED, null);
-								mediaPhotosetTitles.remove(mediaCurrentlyUploading.getPath());
 							} else {
 								mediaCurrentlyUploading.setStatus(STATUS.FAILED, null);
 								if (FlickrApi.unretryable.contains(mediaCurrentlyUploading)) {
@@ -470,19 +465,25 @@ public class UploadService extends Service {
 			List<Media> medias = Utils.loadMedia();
 
 			if (medias == null || medias.isEmpty()) {
-				LOG.debug("no media found");
+				LOG.info("no media found");
+				return;
+			}
+
+			Map<String, Folder> pathFolders = Utils.getFolders(false);
+
+			if (pathFolders.isEmpty()) {
+				LOG.info("no folder monitored");
 				return;
 			}
 
 			long uploadDelayMs = Utils.getUploadDelayMs();
 			long newestFileAge = 0;
-			List<Media> not_uploaded = new ArrayList<Media>();
 			for (Media media : medias) {
 				if (media.isImported()) {
-					if (media.getMediaType() == MEDIA_TYPE.PHOTO && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false)) {
+					if (media.getMediaType() == MEDIA_TYPE.PHOTO && !Utils.isAutoUpload(MEDIA_TYPE.PHOTO)) {
 						LOG.debug("not uploading " + media + " because photo upload disabled");
 						continue;
-					} else if (media.getMediaType() == MEDIA_TYPE.VIDEO && !Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false)) {
+					} else if (media.getMediaType() == MEDIA_TYPE.VIDEO && !Utils.isAutoUpload(MEDIA_TYPE.VIDEO)) {
 						LOG.debug("not uploading " + media + " because video upload disabled");
 						continue;
 					} else {
@@ -491,8 +492,9 @@ public class UploadService extends Service {
 							boolean uploaded = media.isUploaded();
 							LOG.debug("uploaded : " + uploaded + ", " + media);
 							if (!uploaded) {
-								if (!Utils.isAutoUpload(file.getParent())) {
-									LOG.debug("Ignored : " + file);
+								Folder folder = pathFolders.get(media.getFolderPath());
+								if (folder == null || !folder.isAutoUploaded()) {
+									LOG.debug(media.getFolderPath() + " not monitored : " + file);
 								} else {
 									int sleep = 0;
 									while (file.length() < 100 && sleep < 5) {
@@ -514,7 +516,7 @@ public class UploadService extends Service {
 											checkNewFilesTask.future = scheduledThreadPoolExecutor.schedule(checkNewFilesTask, delay, TimeUnit.MILLISECONDS);
 										}
 									} else {
-										not_uploaded.add(media);
+										enqueue(true, Arrays.asList(media), folder.getFlickrSetTitle());
 									}
 								}
 							}
@@ -524,18 +526,6 @@ public class UploadService extends Service {
 						}
 					}
 				}
-			}
-			if (!not_uploaded.isEmpty()) {
-				LOG.debug("enqueuing " + not_uploaded.size() + " media: " + not_uploaded);
-				Map<String, String> foldersSetNames = Utils.getFoldersSetNames();
-				for (Media notUploadedMedia : not_uploaded) {
-					String uploadSetTitle = foldersSetNames.get(notUploadedMedia.getFolderPath());
-					if (uploadSetTitle == null) {
-						uploadSetTitle = STR.instantUpload;
-					}
-					enqueue(true, Arrays.asList(notUploadedMedia), uploadSetTitle);
-				}
-				FlickrUploaderActivity.staticRefresh(true);
 			}
 		} catch (Throwable e) {
 			LOG.error(ToolString.stack2string(e));

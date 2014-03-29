@@ -172,12 +172,13 @@ public class ToolString {
 		}
 		return map;
 	}
-	
+
 	public static String readableFileSize(long size) {
-	    if(size <= 0) return "0";
-	    final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
-	    int digitGroups = (int) (Math.log10(size)/Math.log10(1024));
-	    return new DecimalFormat("#,##0.#").format(size/Math.pow(1024, digitGroups)) + " " + units[digitGroups];
+		if (size <= 0)
+			return "0";
+		final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
+		int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
+		return new DecimalFormat("#,##0.#").format(size / Math.pow(1024, digitGroups)) + " " + units[digitGroups];
 	}
 
 	public static String stack2string(Throwable e) {
@@ -188,6 +189,30 @@ public class ToolString {
 			return "------\r\n" + sw.toString() + "------\r\n";
 		} catch (Throwable e2) {
 			return "bad stack2string";
+		}
+	}
+
+	public static String getFileName(String path) {
+		if (path.endsWith("/")) {
+			return getFileName(path.substring(0, path.length() - 1));
+		} else {
+			int lastIndexOf = path.lastIndexOf("/");
+			if (lastIndexOf > 0) {
+				return path.substring(lastIndexOf + 1);
+			}
+			return "";
+		}
+	}
+	
+	public static String getParentPath(String path) {
+		if (path.endsWith("/")) {
+			return getParentPath(path.substring(0, path.length() - 1));
+		} else {
+			int lastIndexOf = path.lastIndexOf("/");
+			if (lastIndexOf > 0) {
+				return path.substring(0, lastIndexOf);
+			}
+			return "/";
 		}
 	}
 }

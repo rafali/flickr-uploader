@@ -1,22 +1,77 @@
 package com.rafali.flickruploader.model;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import se.emilsjolander.sprinkles.Model;
+import se.emilsjolander.sprinkles.annotations.Cacheable;
+import se.emilsjolander.sprinkles.annotations.Column;
+import se.emilsjolander.sprinkles.annotations.PrimaryKey;
+import se.emilsjolander.sprinkles.annotations.Table;
 
-public class Folder {
+import com.rafali.common.ToolString;
+
+@Table("Folder")
+@Cacheable
+public class Folder extends Model {
+
+	@PrimaryKey
+	@Column("id")
+	private int id;
+
+	@Column("path")
+	private String path;
+
+	@Column("flickrSetTitle")
+	private String flickrSetTitle;
+
+	private int size;
+
+	private Media media;
+
+	public Folder() {
+	}
+	 
 	public Folder(String path) {
+		this.id = path.hashCode();
 		this.path = path;
-		this.name = new File(path).getName();
 	}
-	public Folder(String path, Collection<Media> images) {
-		this(path);
-		this.medias = new ArrayList<Media>(images);
-		this.size = images.size();
+
+	public String getPath() {
+		return this.path;
 	}
-	public int size;
-	public List<Media> medias;
-	public final String path;
-	public final String name;
+
+	public String getName() {
+		return ToolString.getFileName(this.path);
+	}
+
+	public int getSize() {
+		return this.size;
+	}
+
+	public void setSize(int size) {
+		this.size = size;
+	}
+
+	public Media getMedia() {
+		return media;
+	}
+
+	public void setMedia(Media media) {
+		this.media = media;
+	}
+
+	public String getFlickrSetTitle() {
+		return flickrSetTitle;
+	}
+
+	public void setFlickrSetTitle(String flickrSetTitle) {
+		if (ToolString.isBlank(flickrSetTitle)) {
+			this.flickrSetTitle = null;
+		} else {
+			this.flickrSetTitle = flickrSetTitle;
+		}
+	}
+
+	public boolean isAutoUploaded() {
+		return ToolString.isNotBlank(flickrSetTitle);
+	}
+
 }

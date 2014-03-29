@@ -24,6 +24,18 @@
         android:textSize="18sp" />
 
     <TextView
+        android:id="@+id/size"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="4dp"
+        android:layout_toRightOf="@id/title"
+        android:padding="3dp"
+        android:singleLine="true"
+        android:textColor="@color/midgray"
+        android:textSize="18sp" />
+
+    <TextView
         android:id="@+id/sub_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

@@ -37,7 +37,6 @@ import com.rafali.flickruploader.Config;
 import com.rafali.flickruploader.api.FlickrApi;
 import com.rafali.flickruploader.enums.PRIVACY;
 import com.rafali.flickruploader.enums.STATUS;
-import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.service.UploadService;
 import com.rafali.flickruploader.tool.Utils;
@@ -77,7 +76,6 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 									editor.remove(STR.userId);
 									editor.remove(STR.accessToken);
 									editor.remove(STR.accessTokenSecret);
-									editor.remove(STR.userDateCreated);
 									editor.remove(STR.userName);
 									editor.apply();
 									editor.commit();
@@ -222,8 +220,7 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 			@Override
 			public void run() {
 				try {
-					List<Folder> syncedFolders = Utils.getSyncedFolders();
-					nbSynced = syncedFolders.size();
+					nbSynced = Utils.getFoldersMonitoredNb();
 					runOnUiThread(new Runnable() {
 						@Override
 						public void run() {

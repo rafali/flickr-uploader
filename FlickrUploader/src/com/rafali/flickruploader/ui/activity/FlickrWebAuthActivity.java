@@ -134,7 +134,6 @@ public class FlickrWebAuthActivity extends Activity {
 				Utils.setStringProperty(STR.accessTokenSecret, appInstall.getFlickrTokenSecret());
 				Utils.setStringProperty(STR.userId, appInstall.getFlickrUserId());
 				Utils.setStringProperty(STR.userName, appInstall.getFlickrUserName());
-				Utils.setLongProperty(STR.userDateCreated, System.currentTimeMillis());
 				FlickrApi.reset();
 				FlickrApi.syncMedia();
 				setResult(RESULT_CODE_AUTH);
