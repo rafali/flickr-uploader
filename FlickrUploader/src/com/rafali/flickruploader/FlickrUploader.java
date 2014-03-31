@@ -93,7 +93,14 @@ public class FlickrUploader extends Application {
 						if (versionCode < 40) {
 							Map<String, String> persisted = Utils.getMapProperty("folderSetNames", true);
 							if (persisted != null) {
-								//FIXME
+								Map<String, Folder> folders = Utils.getFolders(false);
+								for (String path : persisted.keySet()) {
+									Folder folder = folders.get(path);
+									if (folder != null) {
+										folder.setFlickrSetTitle(persisted.get(path));
+										folder.saveAsync();
+									}
+								}
 							}
 						}
 					}

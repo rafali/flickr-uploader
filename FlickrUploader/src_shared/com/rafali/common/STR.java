@@ -21,4 +21,5 @@ public class STR {
 	public static final String lastServerDeviceSaved = "lastServerDeviceSaved";
 	public static final String supportEmail = "flickruploader@rafali.com";
 	public static final String robotEmail = "script@rafali.com";
+	public static final String show_sliding_demo = "show_sliding_demo";
 }

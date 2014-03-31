@@ -6,12 +6,19 @@
     android:layout_height="match_parent" >
 
     <TextView
-        android:id="@+id/loading"
+        android:id="@+id/message"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
-        android:textSize="18sp"
-        android:text="Loading..." />
+        android:text="Loading..."
+        android:textSize="18sp" />
+
+    <com.rafali.flickruploader.ui.widget.StickyHeaderListView
+        android:id="@+id/list_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="48dp" />
 
     <com.rafali.flickruploader.ui.widget.SlidingDrawer
         android:id="@+id/slidingDrawer"

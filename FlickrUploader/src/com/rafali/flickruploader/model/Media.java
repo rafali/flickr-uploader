@@ -194,11 +194,12 @@ public class Media extends Model {
 	}
 
 	public void setFlickrId(String flickrId) {
-		this.flickrId = flickrId;
-		if (flickrId != null) {
-			status = STATUS.UPLOADED;
+		if (ToolString.isNotBlank(flickrId)) {
+			this.flickrId = flickrId;
+			setStatus(STATUS.UPLOADED, null);
 		} else if (status == STATUS.UPLOADED) {
-			status = STATUS.PAUSED;
+			this.flickrId = null;
+			setStatus(STATUS.PAUSED, null);
 		}
 	}
 

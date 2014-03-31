@@ -73,6 +73,9 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 	@ViewById(R.id.list_view)
 	ListView listView;
 
+	@ViewById(R.id.loading)
+	TextView loading;
+
 	private Set<FlickrSet> cachedPhotoSets;
 
 	@Background
@@ -99,6 +102,10 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 
 	@UiThread
 	void render() {
+		if (loading != null) {
+			((ViewGroup) loading.getParent()).removeView(loading);
+			loading = null;
+		}
 		if (folders != null && listView != null) {
 			listView.setAdapter(new PhotoAdapter());
 			listView.setOnItemClickListener(this);

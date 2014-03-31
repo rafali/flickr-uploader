@@ -44,7 +44,6 @@ import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.google.analytics.tracking.android.EasyTracker;
@@ -68,6 +67,7 @@ import com.rafali.flickruploader.enums.VIEW_SIZE;
 import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.service.UploadService;
+import com.rafali.flickruploader.service.UploadService.UploadProgressListener;
 import com.rafali.flickruploader.tool.Notifications;
 import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader.tool.Utils.Callback;
@@ -79,7 +79,7 @@ import com.rafali.flickruploader.ui.widget.StickyHeaderListView.Header;
 import com.rafali.flickruploader.ui.widget.StickyHeaderListView.HeaderAdapter;
 import com.rafali.flickruploader2.R;
 
-@EActivity(R.layout.flickr_uploader_slider_activity)
+@EActivity(R.layout.flickr_uploader_activity)
 public class FlickrUploaderActivity extends Activity {
 
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrUploaderActivity.class);
@@ -175,16 +175,17 @@ public class FlickrUploaderActivity extends Activity {
 
 		boolean showPhotos = Utils.getShowPhotos();
 		boolean showVideos = Utils.getShowVideos();
+		boolean showUploaded = Utils.getShowUploaded();
+		boolean showNotUploaded = Utils.getShowNotUploaded();
 		Iterator<Media> it = medias.iterator();
 		while (it.hasNext()) {
 			Media media = it.next();
 			if (!showPhotos && media.isPhoto() || !showVideos && media.isVideo()) {
 				it.remove();
+			} else if (!showUploaded && media.isUploaded() || !showNotUploaded && !media.isUploaded()) {
+				it.remove();
 			}
 		}
-
-		// FIXME
-		LOG.info("getFoldersMonitoredNb : " + Utils.getFoldersMonitoredNb());
 
 		if (Utils.getViewGroupType() == VIEW_GROUP_TYPE.date) {
 			Collections.sort(medias, Utils.MEDIA_COMPARATOR);
@@ -207,13 +208,13 @@ public class FlickrUploaderActivity extends Activity {
 
 		computeHeaders(true);
 
-		init();
+		renderListView();
 	}
 
 	@UiThread
 	void setLoading(int progress) {
-		if (loading != null) {
-			loading.setText("Loading... " + progress + "%");
+		if (message != null) {
+			message.setText("Loading... " + progress + "%");
 		}
 	}
 
@@ -338,6 +339,7 @@ public class FlickrUploaderActivity extends Activity {
 		destroyed = true;
 		UploadService.unregister(drawerHandleView);
 		UploadService.unregister(drawerContentView);
+		UploadService.unregister(uploadProgressListener);
 		stopService(new Intent(this, PayPalService.class));
 	}
 
@@ -345,24 +347,29 @@ public class FlickrUploaderActivity extends Activity {
 
 	PhotoAdapter photoAdapter = new PhotoAdapter();
 
-	@ViewById(R.id.loading)
-	TextView loading;
+	@ViewById(R.id.message)
+	TextView message;
 
 	@UiThread
-	void init() {
-		if (listView == null) {
-			final RelativeLayout relativeLayout = (RelativeLayout) findViewById(R.id.container);
-			listView = (StickyHeaderListView) View.inflate(activity, R.layout.grid, null);
-			listView.setDividerHeight(0);
-			listView.setAdapter(photoAdapter);
-			listView.setFastScrollEnabled(true);
-			listView.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT));
-
-			relativeLayout.removeView(loading);
-			loading = null;
-			relativeLayout.addView(listView, 0);
-		} else {
-			photoAdapter.notifyDataSetChanged();
+	void renderListView() {
+		if (listView != null) {
+			if (listView.getAdapter() == null) {
+				listView.setDividerHeight(0);
+				listView.setAdapter(photoAdapter);
+				listView.setFastScrollEnabled(true);
+			} else {
+				photoAdapter.notifyDataSetChanged();
+			}
+			if (medias != null && medias.isEmpty()) {
+				message.setVisibility(View.VISIBLE);
+				if (Utils.loadMedia().isEmpty()) {
+					message.setText("No media found");
+				} else {
+					message.setText("No media matching your filter");
+				}
+			} else {
+				message.setVisibility(View.GONE);
+			}
 		}
 	}
 
@@ -379,10 +386,46 @@ public class FlickrUploaderActivity extends Activity {
 	void afterViews() {
 		UploadService.register(drawerHandleView);
 		UploadService.register(drawerContentView);
+		UploadService.register(uploadProgressListener);
 		getActionBar().setTitle(null);
 		getActionBar().setIcon(null);
 		getActionBar().setDisplayShowHomeEnabled(false);
+
+		if (Utils.getBooleanProperty(STR.show_sliding_demo, true)) {
+			slidingDrawer.setOnDrawerOpenListener(new SlidingDrawer.OnDrawerOpenListener() {
+				@Override
+				public void onDrawerOpened() {
+					Utils.setBooleanProperty(STR.show_sliding_demo, false);
+				}
+			});
+		}
 	}
+
+	UploadProgressListener uploadProgressListener = new UploadProgressListener() {
+
+		@Override
+		public void onQueued(int nbQueued, int nbAlreadyUploaded, int nbAlreadyQueued) {
+		}
+
+		@Override
+		public void onProgress(Media media, int mediaProgress, int queueProgress, int queueTotal) {
+		}
+
+		@Override
+		public void onProcessed(Media media, boolean success) {
+			if (!Utils.getShowUploaded() || !Utils.getShowNotUploaded()) {
+				load();
+			}
+		}
+
+		@Override
+		public void onPaused() {
+		}
+
+		@Override
+		public void onFinished(int nbUploaded, int nbErrors) {
+		}
+	};
 
 	void computeNbColumn() {
 		Point size = new Point();
@@ -477,8 +520,6 @@ public class FlickrUploaderActivity extends Activity {
 		}, null);
 	}
 
-
-
 	@UiThread
 	void showNewSetDialog(final Folder folder) {
 		showNewSetDialog(activity, folder == null ? null : folder.getName(), new Callback<String>() {
@@ -551,7 +592,9 @@ public class FlickrUploaderActivity extends Activity {
 			runOnUiThread(new Runnable() {
 				@Override
 				public void run() {
-					slidingDrawer.animateOpen();
+					if (Utils.getBooleanProperty(STR.show_sliding_demo, true)) {
+						slidingDrawer.demo();
+					}
 					drawerContentView.setCurrentTab(DrawerContentView.TAB_QUEUED_INDEX);
 				}
 			});
@@ -895,7 +938,8 @@ public class FlickrUploaderActivity extends Activity {
 
 	private Menu menu;
 
-	private StickyHeaderListView listView;
+	@ViewById(R.id.list_view)
+	StickyHeaderListView listView;
 
 	private boolean paused = false;
 
@@ -941,6 +985,8 @@ public class FlickrUploaderActivity extends Activity {
 			}
 			menu.findItem(R.id.filter_photos).setChecked(Utils.getShowPhotos());
 			menu.findItem(R.id.filter_videos).setChecked(Utils.getShowVideos());
+			menu.findItem(R.id.filter_uploaded).setChecked(Utils.getShowUploaded());
+			menu.findItem(R.id.filter_not_uploaded).setChecked(Utils.getShowNotUploaded());
 			switch (Utils.getViewGroupType()) {
 			case date:
 				menu.findItem(R.id.group_by_date).setChecked(true);
@@ -994,6 +1040,16 @@ public class FlickrUploaderActivity extends Activity {
 		case R.id.filter_videos:
 			item.setChecked(!item.isChecked());
 			Utils.setShowVideos(item.isChecked());
+			load();
+			break;
+		case R.id.filter_uploaded:
+			item.setChecked(!item.isChecked());
+			Utils.setShowUploaded(item.isChecked());
+			load();
+			break;
+		case R.id.filter_not_uploaded:
+			item.setChecked(!item.isChecked());
+			Utils.setShowNotUploaded(item.isChecked());
 			load();
 			break;
 		case R.id.select_all:
@@ -1064,7 +1120,7 @@ public class FlickrUploaderActivity extends Activity {
 		paused = false;
 		super.onResume();
 		UploadService.wake();
-		drawerHandleView.onResume();
+		drawerHandleView.onActivityResume();
 	}
 
 	@UiThread

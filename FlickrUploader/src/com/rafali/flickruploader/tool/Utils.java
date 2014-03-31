@@ -221,7 +221,7 @@ public final class Utils {
 		return show_photos;
 	}
 
-	public static void setShowPhotos(Boolean show_photos) {
+	public static void setShowPhotos(boolean show_photos) {
 		Utils.show_photos = show_photos;
 		setBooleanProperty("show_photos", show_photos);
 	}
@@ -240,6 +240,34 @@ public final class Utils {
 		setBooleanProperty("show_videos", show_videos);
 	}
 
+	static Boolean show_uploaded;
+
+	public static void setShowUploaded(boolean show_uploaded) {
+		Utils.show_uploaded = show_uploaded;
+		setBooleanProperty("show_uploaded", show_uploaded);
+	}
+
+	public static boolean getShowUploaded() {
+		if (show_uploaded == null) {
+			show_uploaded = getBooleanProperty("show_uploaded", true);
+		}
+		return show_uploaded;
+	}
+	
+	static Boolean show_not_uploaded;
+
+	public static void setShowNotUploaded(boolean show_not_uploaded) {
+		Utils.show_not_uploaded = show_not_uploaded;
+		setBooleanProperty("show_not_uploaded", show_not_uploaded);
+	}
+
+	public static boolean getShowNotUploaded() {
+		if (show_not_uploaded == null) {
+			show_not_uploaded = getBooleanProperty("show_not_uploaded", true);
+		}
+		return show_not_uploaded;
+	}
+	
 	public static void dialogPrivacy(final Activity context, final PRIVACY privacy, final Callback<PRIVACY> callback) {
 		context.runOnUiThread(new Runnable() {
 			@Override

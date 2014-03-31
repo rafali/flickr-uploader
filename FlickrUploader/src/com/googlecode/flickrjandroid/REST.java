@@ -229,7 +229,7 @@ public class REST extends Transport {
 	}
 
 	void reportProgress(Media media, int progress) {
-		UploadService.onProgress(media, progress);
+		UploadService.onUploadProgress(media, progress);
 	}
 
 	/*

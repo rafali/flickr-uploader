@@ -97,6 +97,7 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 			str += ", " + nbAlreadyUploaded + " already uploaded";
 		}
 		setMessage(str, 4000);
+		checkStatus();
 	}
 
 	long messageUntil = System.currentTimeMillis();
@@ -115,21 +116,22 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 
 	int nbMonitored = -1;
 
-	public void onResume() {
+	public void onActivityResume() {
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
 				nbMonitored = Utils.getFoldersMonitoredNb();
 			}
 		});
+		checkStatus();
 	}
 
-	@UiThread(delay = 1000)
+	@UiThread
 	void checkStatus() {
 		FlickrUploaderActivity activity = null;
 		try {
 			activity = (FlickrUploaderActivity) getContext();
-			if (activity != null && !activity.isPaused()) {
+			if (message != null && activity != null && !activity.isPaused()) {
 				long canShow = System.currentTimeMillis() - messageUntil;
 				if (canShow > 4000) {
 					if (!FlickrApi.isAuthentified()) {
@@ -181,10 +183,6 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 			}
 		} catch (Throwable e) {
 			LOG.error(ToolString.stack2string(e));
-		} finally {
-			if (activity != null && !activity.destroyed) {
-				checkStatus();
-			}
 		}
 	}
 
