@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.rafali.flickruploader2"
     android:installLocation="internalOnly"
-    android:versionCode="40"
-    android:versionName="2.1" >
+    android:versionCode="41"
+    android:versionName="2.2" >
 
     <uses-sdk
         android:minSdkVersion="14"
@@ -124,6 +124,7 @@
             android:name="com.rafali.flickruploader.ui.activity.AutoUploadFoldersActivity_"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:label="Auto Upload Folders"
+            android:logo="@drawable/preferences"
             android:windowSoftInputMode="adjustResize" />
         <activity android:name="com.paypal.android.sdk.payments.PaymentActivity" />
         <activity android:name="com.paypal.android.sdk.payments.LoginActivity" />
