@@ -2,29 +2,23 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="5dp" >
+    android:paddingBottom="0.5dp" >
 
     <com.rafali.flickruploader.ui.widget.CustomImageView
         android:id="@+id/image_view"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_margin="2dp"
         android:background="@color/midgray" />
 
     <TextView
         android:id="@+id/title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
         android:layout_marginLeft="5dp"
         android:layout_toRightOf="@+id/image_view"
-        android:text="@string/lorem_ipsum_small" />
-
-    <TextView
-        android:id="@+id/sub_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/title"
-        android:layout_marginLeft="5dp"
-        android:layout_toRightOf="@+id/image_view"
-        android:text="@string/lorem_ipsum_medium" />
+        android:text="@string/lorem_ipsum_long"
+        android:textSize="14sp" />
 
 </RelativeLayout>

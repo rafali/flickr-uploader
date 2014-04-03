@@ -23,6 +23,7 @@
             android:layout_marginLeft="5dp"
             android:layout_toRightOf="@id/image"
             android:gravity="bottom"
+            android:singleLine="true"
             android:text="@string/lorem_ipsum_small"
             android:textColor="@android:color/white" />
 
@@ -34,6 +35,7 @@
             android:layout_marginLeft="5dp"
             android:layout_toRightOf="@id/image"
             android:gravity="top"
+            android:singleLine="true"
             android:text="@string/lorem_ipsum_small"
             android:textColor="@android:color/darker_gray" />
     </RelativeLayout>

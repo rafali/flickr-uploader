@@ -74,6 +74,9 @@ public class Media extends Model {
 	@Column("timestampRetry")
 	private long timestampRetry;
 
+	@Column("errorMessage")
+	private String errorMessage;
+
 	public Media() {
 	}
 
@@ -83,7 +86,7 @@ public class Media extends Model {
 
 	@Override
 	public String toString() {
-		return this.id + " - " + path + " - " + super.toString();
+		return this.id + " - " + path + " - retries:" + retries;
 	}
 
 	@Override
@@ -196,10 +199,10 @@ public class Media extends Model {
 	public void setFlickrId(String flickrId) {
 		if (ToolString.isNotBlank(flickrId)) {
 			this.flickrId = flickrId;
-			setStatus(STATUS.UPLOADED, null);
+			setStatus(STATUS.UPLOADED);
 		} else if (status == STATUS.UPLOADED) {
 			this.flickrId = null;
-			setStatus(STATUS.PAUSED, null);
+			setStatus(STATUS.PAUSED);
 		}
 	}
 
@@ -270,16 +273,22 @@ public class Media extends Model {
 		return status;
 	}
 
+	public void setStatus(int status) {
+		setStatus(status, null);
+	}
+
 	public void setStatus(int status, Transaction t) {
 		if (this.status != status) {
 			this.status = status;
 			if (status == STATUS.QUEUED) {
-				this.retries = 0;
+				setRetries(0);
 				setTimestampQueued(System.currentTimeMillis());
 			} else if (status == STATUS.UPLOADED) {
 				setTimestampUploaded(System.currentTimeMillis());
 			}
-			save2(t);
+			if (t != null) {
+				save2(t);
+			}
 		}
 	}
 
@@ -302,7 +311,14 @@ public class Media extends Model {
 	}
 
 	public void setRetries(int retries) {
-		this.retries = Math.max(0, retries);
+		if (this.retries != retries) {
+			this.retries = Math.max(0, retries);
+			if (this.retries == 0) {
+				setTimestampRetry(0);
+			} else {
+				setTimestampRetry((long) (System.currentTimeMillis() + Math.min(3600 * 1000L, Math.pow(3, this.retries) * 1000L)));
+			}
+		}
 	}
 
 	public long getTimestampUploaded() {
@@ -360,4 +376,23 @@ public class Media extends Model {
 	public void setFlickrSetTitle(String flickrSetTitle) {
 		this.flickrSetTitle = flickrSetTitle;
 	}
+
+	public String getErrorMessage() {
+		return errorMessage;
+	}
+
+	public void setErrorMessage(String errorMessage) {
+		this.errorMessage = errorMessage;
+	}
+
+	public int getProgress() {
+		return progress;
+	}
+
+	public void setProgress(int progress) {
+		this.progress = progress;
+	}
+
+	private int progress = 0;
+
 }

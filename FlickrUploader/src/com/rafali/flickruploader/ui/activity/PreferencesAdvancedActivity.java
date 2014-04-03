@@ -65,7 +65,7 @@ public class PreferencesAdvancedActivity extends PreferenceActivity implements O
 				runOnUiThread(new Runnable() {
 					@Override
 					public void run() {
-						findPreference("check_premium_status").setSummary("Checking from server...");
+						findPreference("check_premium_status").setSummary("Checking from server…");
 					}
 				});
 				BackgroundExecutor.execute(new Runnable() {
@@ -79,10 +79,10 @@ public class PreferencesAdvancedActivity extends PreferenceActivity implements O
 									public void run() {
 										String message;
 										if (result) {
-											message = "Premium status confirmed!";
+											message = "PRO status confirmed!";
 										} else {
 											if (Utils.customSku == null) {
-												message = "No premium info found for your device email: " + Joiner.on(", ").join(Utils.getAccountEmails());
+												message = "No PRO info found for your device email: " + Joiner.on(", ").join(Utils.getAccountEmails());
 											} else {
 												message = "Your coupon has been applied to the device!";
 											}
@@ -133,8 +133,8 @@ public class PreferencesAdvancedActivity extends PreferenceActivity implements O
 
 				alert.setNegativeButton("Cancel", null);
 			} else {
-				alert.setMessage("A Premium account is needed to customize this branding feature");
-				alert.setPositiveButton("Get Premium Now", new OnClickListener() {
+				alert.setMessage("A PRO account is needed to customize this branding feature");
+				alert.setPositiveButton("Buy PRO Now", new OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
 						Utils.startGooglePayment(PreferencesAdvancedActivity.this, new Utils.Callback<Boolean>() {

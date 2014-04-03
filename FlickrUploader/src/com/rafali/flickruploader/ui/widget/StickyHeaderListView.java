@@ -1,9 +1,5 @@
 package com.rafali.flickruploader.ui.widget;
 
-import org.slf4j.LoggerFactory;
-
-import com.rafali.common.ToolString;
-
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
@@ -17,8 +13,6 @@ import android.widget.ListAdapter;
 import android.widget.ListView;
 
 public class StickyHeaderListView extends ListView implements AbsListView.OnScrollListener {
-
-	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(StickyHeaderListView.class);
 
 	protected OnScrollListener subclassOnScrollListener;
 
@@ -206,7 +200,6 @@ public class StickyHeaderListView extends ListView implements AbsListView.OnScro
 	}
 
 	protected void clickFloatingSectionHeader(final MotionEvent ev) {
-		LOG.info("CLICK");
 		post(new Runnable() {
 			@Override
 			public void run() {
@@ -260,16 +253,13 @@ public class StickyHeaderListView extends ListView implements AbsListView.OnScro
 				ViewGroup.LayoutParams layoutParams = headerView.getLayoutParams();
 				if (layoutParams != null && layoutParams.height > 0) {
 					heightMeasure = MeasureSpec.makeMeasureSpec(layoutParams.height, MeasureSpec.EXACTLY);
-					LOG.info("EXACTLY widthMeasure : " + widthMeasure + ", heightMeasure : " + heightMeasure);
 				} else {
 					heightMeasure = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
-					LOG.info("widthMeasure : " + widthMeasure + ", heightMeasure : " + heightMeasure);
 				}
 
 				headerView.measure(widthMeasure, heightMeasure);
 				headerView.layout(0, 0, headerView.getMeasuredWidth(), headerView.getMeasuredHeight());
 			} catch (Throwable e) {
-				LOG.error(ToolString.stack2string(e));
 			}
 		}
 	}

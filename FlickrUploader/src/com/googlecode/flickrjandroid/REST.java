@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -229,7 +230,245 @@ public class REST extends Transport {
 	}
 
 	void reportProgress(Media media, int progress) {
-		UploadService.onUploadProgress(media, progress);
+		media.setProgress(progress);
+		UploadService.onUploadProgress(media);
+	}
+
+	static Map<Media, UploadThread> uploadThreads = new ConcurrentHashMap<Media, UploadThread>();
+
+	public static void kill(Media media) {
+		try {
+			UploadThread uploadThread = uploadThreads.get(media);
+			LOG.warn("killing " + media + ", uploadThread=" + uploadThread);
+			if (uploadThread != null) {
+				uploadThread.kill();
+			}
+		} catch (Exception e) {
+			LOG.error(ToolString.stack2string(e));
+		}
+	}
+
+	class UploadThread extends Thread {
+		private final Media media;
+		private final String path;
+		private final List<Parameter> parameters;
+		private final Object[] responseContainer;
+		HttpURLConnection conn = null;
+		DataOutputStream out = null;
+		private InputStream in;
+
+		public UploadThread(Media media, String path, List<Parameter> parameters, Object[] responseContainer) {
+			this.media = media;
+			this.path = path;
+			this.parameters = parameters;
+			this.responseContainer = responseContainer;
+		}
+
+		boolean killed = false;
+
+		void kill() {
+			killed = true;
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					if (out != null) {
+						try {
+							out.close();
+							LOG.warn("DataOutputStream closed");
+						} catch (Throwable e) {
+							LOG.error(ToolString.stack2string(e));
+						}
+					} else {
+						LOG.warn("DataOutputStream is null");
+					}
+					if (in != null) {
+						try {
+							in.close();
+							LOG.warn("InputStream closed");
+						} catch (Throwable e) {
+							LOG.error(ToolString.stack2string(e));
+						}
+					} else {
+						LOG.warn("InputStream is null");
+					}
+					if (conn != null) {
+						try {
+							conn.setConnectTimeout(50);
+							conn.setReadTimeout(50);
+							conn.disconnect();
+						} catch (Throwable e) {
+							LOG.error(ToolString.stack2string(e));
+						}
+					} else {
+						LOG.warn("HttpURLConnection is null");
+					}
+					try {
+						UploadThread.this.interrupt();
+						LOG.warn(this + " is interrupted : " + UploadThread.this.isInterrupted());
+					} catch (Throwable e) {
+						LOG.error(ToolString.stack2string(e));
+					}
+					onFinish();
+				}
+			}).start();
+			;
+		}
+
+		@Override
+		public void run() {
+			// String data = null;
+			int progress = 0;
+			reportProgress(media, 0);
+			try {
+				URL url = UrlUtilities.buildPostUrl(getHost(), getPort(), path);
+
+				if (Config.isDebug()) {
+					LOG.debug("Post URL: {}", url.toString());
+				}
+				conn = (HttpURLConnection) url.openConnection();
+				conn.setRequestMethod("POST");
+
+				String boundary = "---------------------------7d273f7a0d3";
+				conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+				conn.setRequestProperty("Host", "api.flickr.com");
+				conn.setDoInput(true);
+				conn.setDoOutput(true);
+
+				boundary = "--" + boundary;
+
+				boolean shouldStream = false;
+				int contentLength = 0;
+				contentLength += boundary.getBytes("UTF-8").length;
+				for (Parameter parameter : parameters) {
+					contentLength += "\r\n".getBytes("UTF-8").length;
+					if (parameter.getValue() instanceof String) {
+						contentLength += ("Content-Disposition: form-data; name=\"" + parameter.getName() + "\"\r\n").getBytes("UTF-8").length;
+						contentLength += ("Content-Type: text/plain; charset=UTF-8\r\n\r\n").getBytes("UTF-8").length;
+						contentLength += ((String) parameter.getValue()).getBytes("UTF-8").length;
+					} else if (parameter instanceof ImageParameter && parameter.getValue() instanceof File) {
+						ImageParameter imageParam = (ImageParameter) parameter;
+						File file = (File) parameter.getValue();
+						if (file.length() > 4 * 1024 * 1024L) {
+							shouldStream = true;
+						}
+						contentLength += String.format(Locale.US, "Content-Disposition: form-data; name=\"%s\"; filename=\"%s\";\r\n", parameter.getName(), imageParam.getImageName())
+								.getBytes("UTF-8").length;
+						contentLength += String.format(Locale.US, "Content-Type: image/%s\r\n\r\n", imageParam.getImageType()).getBytes("UTF-8").length;
+
+						LOG.debug("set to upload " + file + " : " + file.length() + " bytes");
+						contentLength += file.length();
+						break;
+					}
+					contentLength += "\r\n".getBytes("UTF-8").length;
+					contentLength += boundary.getBytes("UTF-8").length;
+				}
+				contentLength += "--\r\n\r\n".getBytes("UTF-8").length;
+
+				contentLength += 213;// dirty hack to account for missing param somewhere
+				LOG.debug("contentLength : " + contentLength);
+
+				if (shouldStream) {// may be buggy due to the aforementioned dirty hack so only on big files
+					conn.setRequestProperty("Content-Length", "" + contentLength);
+					conn.setFixedLengthStreamingMode(contentLength);
+				}
+
+				conn.connect();
+				progress = 1;
+				reportProgress(media, progress);
+				out = new DataOutputStream(conn.getOutputStream());
+				out.writeBytes(boundary);
+				progress = 2;
+				reportProgress(media, progress);
+
+				for (Parameter parameter : parameters) {
+					progress = writeParam(progress, parameter, out, boundary, media);
+				}
+
+				out.writeBytes("--\r\n\r\n");
+				out.flush();
+
+				LOG.debug("out.size() : " + out.size());
+
+				out.close();
+
+				progress = 51;
+				reportProgress(media, progress);
+				int responseCode = -1;
+				final int[] progressArray = new int[] { progress };
+				try {
+					new Thread(new Runnable() {
+						@Override
+						public void run() {
+							int progress = progressArray[0];
+							while (UploadThread.this.isAlive() && !UploadThread.this.isInterrupted() && progressArray[0] <= 51 && progress < 98) {
+								progress = Math.min(98, progress + 1);
+								reportProgress(media, progress);
+								try {
+									Thread.sleep(Math.max(1000, (progress - 65) * 700));
+								} catch (InterruptedException ignore) {
+								}
+							}
+						}
+					}).start();
+					responseCode = conn.getResponseCode();
+				} catch (IOException e) {
+					LOG.error("Failed to get the POST response code\n" + ToolString.stack2string(e));
+					if (conn.getErrorStream() != null) {
+						responseCode = conn.getResponseCode();
+					}
+					responseContainer[0] = e;
+				} finally {
+					progress = 99;
+					progressArray[0] = progress;
+					reportProgress(media, progress);
+				}
+				if (responseCode < 0) {
+					LOG.error("some error occured : " + responseCode);
+				} else if ((responseCode != HttpURLConnection.HTTP_OK)) {
+					String errorMessage = readFromStream(conn.getErrorStream());
+					String detailMessage = "Connection Failed. Response Code: " + responseCode + ", Response Message: " + conn.getResponseMessage() + ", Error: " + errorMessage;
+					LOG.error("detailMessage : " + detailMessage);
+					throw new IOException(detailMessage);
+				}
+				if (killed) {
+					LOG.warn("thread was killed");
+					if (responseContainer[0] == null) {
+						responseContainer[0] = new UploadService.UploadException("upload cancelled by user", false);
+					}
+				} else {
+					UploaderResponse response = new UploaderResponse();
+					in = conn.getInputStream();
+					Document document = builder.parse(in);
+					response.parse(document);
+					responseContainer[0] = response;
+				}
+			} catch (Throwable t) {
+				responseContainer[0] = t;
+			} finally {
+				try {
+					progress = 100;
+					reportProgress(media, progress);
+					IOUtilities.close(out);
+					if (conn != null)
+						conn.disconnect();
+				} catch (Throwable e) {
+					LOG.error(ToolString.stack2string(e));
+				}
+				onFinish();
+			}
+		}
+
+		private void onFinish() {
+			try {
+				LOG.debug("finishing thread : " + responseContainer[0]);
+				uploadThreads.remove(media);
+				synchronized (responseContainer) {
+					responseContainer.notifyAll();
+				}
+			} catch (Throwable e) {
+				LOG.error(ToolString.stack2string(e));
+			}
+		}
 	}
 
 	/*
@@ -237,142 +476,64 @@ public class REST extends Transport {
 	 * 
 	 * @see com.gmail.yuyang226.flickr.Transport#sendUpload(java.lang.String, java.util.List)
 	 */
-	public Response sendUpload(String path, List<Parameter> parameters, final Media media) throws IOException, FlickrException, SAXException {
+	public Response sendUpload(final String path, final List<Parameter> parameters, final Media media) throws IOException, FlickrException, SAXException {
 		if (Config.isDebug()) {
 			LOG.debug("Send Upload Input Params: path '{}'; parameters {}", path, parameters);
 		}
-		HttpURLConnection conn = null;
-		DataOutputStream out = null;
-		// String data = null;
-		int progress = 0;
-		reportProgress(media, 0);
-		try {
-			URL url = UrlUtilities.buildPostUrl(getHost(), getPort(), path);
-			if (Config.isDebug()) {
-				LOG.debug("Post URL: {}", url.toString());
-			}
-			conn = (HttpURLConnection) url.openConnection();
-			conn.setRequestMethod("POST");
-			String boundary = "---------------------------7d273f7a0d3";
-			conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-			conn.setRequestProperty("Host", "api.flickr.com");
-			conn.setDoInput(true);
-			conn.setDoOutput(true);
 
-			boundary = "--" + boundary;
+		final Object[] responseContainer = new Object[1];
 
-			boolean shouldStream = false;
-			int contentLength = 0;
-			contentLength += boundary.getBytes("UTF-8").length;
-			for (Parameter parameter : parameters) {
-				contentLength += "\r\n".getBytes("UTF-8").length;
-				if (parameter.getValue() instanceof String) {
-					contentLength += ("Content-Disposition: form-data; name=\"" + parameter.getName() + "\"\r\n").getBytes("UTF-8").length;
-					contentLength += ("Content-Type: text/plain; charset=UTF-8\r\n\r\n").getBytes("UTF-8").length;
-					contentLength += ((String) parameter.getValue()).getBytes("UTF-8").length;
-				} else if (parameter instanceof ImageParameter && parameter.getValue() instanceof File) {
-					ImageParameter imageParam = (ImageParameter) parameter;
-					File file = (File) parameter.getValue();
-					if (file.length() > 4 * 1024 * 1024L) {
-						shouldStream = true;
-					}
-					contentLength += String.format(Locale.US, "Content-Disposition: form-data; name=\"%s\"; filename=\"%s\";\r\n", parameter.getName(), imageParam.getImageName()).getBytes("UTF-8").length;
-					contentLength += String.format(Locale.US, "Content-Type: image/%s\r\n\r\n", imageParam.getImageType()).getBytes("UTF-8").length;
+		UploadThread uploadThread = new UploadThread(media, path, parameters, responseContainer);
+		uploadThreads.put(media, uploadThread);
+		uploadThread.start();
 
-					LOG.debug("set to upload " + file + " : " + file.length() + " bytes");
-					contentLength += file.length();
-					break;
-				}
-				contentLength += "\r\n".getBytes("UTF-8").length;
-				contentLength += boundary.getBytes("UTF-8").length;
-			}
-			contentLength += "--\r\n\r\n".getBytes("UTF-8").length;
-
-			contentLength += 213;// dirty hack to account for missing param somewhere
-			LOG.debug("contentLength : " + contentLength);
-
-			if (shouldStream) {// may be buggy due to the aforementioned dirty hack so only on big files
-				conn.setRequestProperty("Content-Length", "" + contentLength);
-				conn.setFixedLengthStreamingMode(contentLength);
-			}
-			conn.connect();
-			progress = 1;
-			reportProgress(media, progress);
-			out = new DataOutputStream(conn.getOutputStream());
-			out.writeBytes(boundary);
-			progress = 2;
-			reportProgress(media, progress);
-
-			for (Parameter parameter : parameters) {
-				progress = writeParam(progress, parameter, out, boundary, media);
-			}
-
-			out.writeBytes("--\r\n\r\n");
-			out.flush();
-
-			LOG.debug("out.size() : " + out.size());
-
-			out.close();
-
-			progress = 51;
-			reportProgress(media, progress);
-			int responseCode = -1;
-			final int[] progressArray = new int[] { progress };
+		synchronized (responseContainer) {
 			try {
-				new Thread(new Runnable() {
-					@Override
-					public void run() {
-						int progress = progressArray[0];
-						while (progressArray[0] <= 51 && progress < 98) {
-							progress = Math.min(98, progress + 1);
-							reportProgress(media, progress);
-							try {
-								Thread.sleep(1000);
-							} catch (InterruptedException ignore) {
-							}
-						}
-					}
-				}).start();
-				responseCode = conn.getResponseCode();
-			} catch (IOException e) {
-				LOG.error("Failed to get the POST response code\n" + ToolString.stack2string(e));
-				if (conn.getErrorStream() != null) {
-					responseCode = conn.getResponseCode();
-				}
-			} finally {
-				progress = 99;
-				progressArray[0] = progress;
-				reportProgress(media, progress);
+				responseContainer.wait();
+			} catch (InterruptedException e) {
 			}
-			if (responseCode < 0) {
-				LOG.error("some error occured");
-			} else if ((responseCode != HttpURLConnection.HTTP_OK)) {
-				String errorMessage = readFromStream(conn.getErrorStream());
-				String detailMessage = "Connection Failed. Response Code: " + responseCode + ", Response Message: " + conn.getResponseMessage() + ", Error: " + errorMessage;
-				LOG.error("detailMessage : " + detailMessage);
-				throw new IOException(detailMessage);
-			}
-			UploaderResponse response = new UploaderResponse();
-			Document document = builder.parse(conn.getInputStream());
-			response.parse(document);
-			return response;
-		} finally {
-			IOUtilities.close(out);
-			if (conn != null)
-				conn.disconnect();
-			progress = 100;
-			reportProgress(media, progress);
 		}
+
+		if (responseContainer[0] == null) {
+			LOG.debug("response is null, waiting a bit more in case of thread interruption");
+			synchronized (responseContainer) {
+				try {
+					responseContainer.wait(1000);
+				} catch (InterruptedException e) {
+				}
+			}
+		}
+
+		LOG.debug("response : " + responseContainer[0]);
+
+		if (responseContainer[0] instanceof Response) {
+			return (Response) responseContainer[0];
+		} else if (responseContainer[0] instanceof IOException) {
+			throw (IOException) responseContainer[0];
+		} else if (responseContainer[0] instanceof FlickrException) {
+			throw (FlickrException) responseContainer[0];
+		} else if (responseContainer[0] instanceof SAXException) {
+			throw (SAXException) responseContainer[0];
+		} else if (responseContainer[0] instanceof Throwable) {
+			Throwable throwable = (Throwable) responseContainer[0];
+			throw new UploadService.UploadException(throwable.getMessage(), throwable);
+		}
+		return null;
+
 	}
 
 	public String sendPost(String path, List<Parameter> parameters) throws IOException {
-		if (Config.isDebug()) {
-			for (Parameter parameter : parameters) {
-				if (parameter.getName().equals("method")) {
-					LOG.debug("API " + parameter.getValue());
-					break;
-				}
+		String method = null;
+		int timeout = 0;
+		for (Parameter parameter : parameters) {
+			if (parameter.getName().equalsIgnoreCase("method")) {
+				method = (String) parameter.getValue();
+			} else if (parameter.getName().equalsIgnoreCase("machine_tags") && ((String) parameter.getValue()).contains("file:md5sum")) {
+				timeout = 10000;
 			}
+		}
+		if (Config.isDebug()) {
+			LOG.debug("API " + method + ", timeout=" + timeout);
 			LOG.trace("Send Post Input Params: path '{}'; parameters {}", path, parameters);
 		}
 		HttpURLConnection conn = null;
@@ -394,6 +555,10 @@ public class REST extends Transport {
 			conn.setUseCaches(false);
 			conn.setDoOutput(true);
 			conn.setDoInput(true);
+			if (timeout > 0) {
+				conn.setConnectTimeout(timeout);
+				conn.setReadTimeout(timeout);
+			}
 			conn.connect();
 			out = new DataOutputStream(conn.getOutputStream());
 			out.write(bytes);

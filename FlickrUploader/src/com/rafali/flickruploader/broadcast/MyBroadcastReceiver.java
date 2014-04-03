@@ -2,23 +2,18 @@ package com.rafali.flickruploader.broadcast;
 
 import org.slf4j.LoggerFactory;
 
-import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-import com.rafali.flickruploader.api.FlickrApi;
-import com.rafali.flickruploader.enums.PRIVACY;
-import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.service.UploadService;
-import com.rafali.flickruploader.tool.Utils;
 
 public class MyBroadcastReceiver extends BroadcastReceiver {
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(MyBroadcastReceiver.class);
 
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		LOG.info("intent : " + intent);
+//		LOG.info("intent : " + intent);
 		if ("com.rafali.intent.SHARE_PHOTO".equals(intent.getAction())) {
 //			LOG.debug("share intent : " + intent);
 //			int imageId = intent.getIntExtra("imageId", -1);

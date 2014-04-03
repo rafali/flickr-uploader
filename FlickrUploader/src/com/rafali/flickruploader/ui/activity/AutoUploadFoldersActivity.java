@@ -48,8 +48,8 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 
 	private static final String DEFAULT_SET = "Default set (" + STR.instantUpload + ")";
 	private static final String PREVIOUS_SET = "Existing set: ";
-	private static final String EXISTING_SET = "Existing set...";
-	private static final String NEW_SET = "New set...";
+	private static final String EXISTING_SET = "Existing set…";
+	private static final String NEW_SET = "New set…";
 	private static final String DISABLE_AUTO_UPLOAD = "Disable auto-upload";
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrUploaderActivity.class);
 

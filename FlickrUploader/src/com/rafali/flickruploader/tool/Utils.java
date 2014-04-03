@@ -23,8 +23,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -253,7 +253,7 @@ public final class Utils {
 		}
 		return show_uploaded;
 	}
-	
+
 	static Boolean show_not_uploaded;
 
 	public static void setShowNotUploaded(boolean show_not_uploaded) {
@@ -267,7 +267,7 @@ public final class Utils {
 		}
 		return show_not_uploaded;
 	}
-	
+
 	public static void dialogPrivacy(final Activity context, final PRIVACY privacy, final Callback<PRIVACY> callback) {
 		context.runOnUiThread(new Runnable() {
 			@Override
@@ -612,123 +612,15 @@ public final class Utils {
 		}
 	}
 
-	static final String[] projPhoto = { Images.Media._ID, Images.Media.DATA, Images.Media.DATE_ADDED, Images.Media.DATE_TAKEN, Images.Media.DISPLAY_NAME, Images.Media.SIZE };
-	static final String[] projVideo = { Video.Media._ID, Video.Media.DATA, Video.Media.DATE_ADDED, Video.Media.DATE_TAKEN, Video.Media.DISPLAY_NAME, Video.Media.SIZE };
-
-	// public static List<Media> loadMedia(String filter) {
-	// return loadMedia(filter, 0);
-	// }
-
-	// public static List<Media> loadMedia(String filter, int limit) {
-	// List<Media> photos = Utils.loadMedia(filter, MEDIA_TYPE.photo, limit);
-	// List<Media> videos = Utils.loadMedia(filter, MEDIA_TYPE.video, limit);
-	// List<Media> images = new ArrayList<Media>(photos);
-	// images.addAll(videos);
-	// Collections.sort(images, MEDIA_COMPARATOR);
-	// return images;
-	// }
-
-	// public static List<Media> loadMedia(String filter, MEDIA_TYPE mediaType) {
-	// return loadMedia(filter, mediaType, 0);
-	// }
-
-	// public static List<Media> loadMedia(String filter, MEDIA_TYPE mediaType, int limit) {
-	// Cursor cursor = null;
-	// List<Media> images = new ArrayList<Media>();
-	// try {
-	//
-	// // long oneDayAgo = System.currentTimeMillis() - 24 * 3600 * 1000L;
-	// // String filter = Images.Media.DATE_TAKEN + " > " + oneDayAgo;
-	// // String filter = Images.Media._ID + " IN (54820, 56342)";
-	//
-	// String orderBy = Images.Media.DATE_TAKEN + " DESC, " + Images.Media.DATE_ADDED + " DESC";
-	// if (limit > 0) {
-	// orderBy += " LIMIT " + limit;
-	// }
-	// Uri uri;
-	// String[] proj = mediaType == MEDIA_TYPE.photo ? projPhoto : projVideo;
-	// if (filter != null && filter.startsWith("content://")) {
-	// uri = Uri.parse(filter);
-	// cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, null, null, orderBy);
-	// } else {
-	// // uri = mediaType == MediaType.photo ?
-	// // Images.Media.INTERNAL_CONTENT_URI :
-	// // Video.Media.INTERNAL_CONTENT_URI;
-	// uri = mediaType == MEDIA_TYPE.photo ? Images.Media.EXTERNAL_CONTENT_URI : Video.Media.EXTERNAL_CONTENT_URI;
-	// cursor = FlickrUploader.getAppContext().getContentResolver().query(uri, proj, filter, null, orderBy);
-	// }
-	// int idColumn = cursor.getColumnIndex(Images.Media._ID);
-	// int dataColumn = cursor.getColumnIndex(Images.Media.DATA);
-	// int displayNameColumn = cursor.getColumnIndex(Images.Media.DISPLAY_NAME);
-	// int dateTakenColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_TAKEN);
-	// int dateAddedColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_ADDED);
-	// int sizeColumn = cursor.getColumnIndex(Images.Media.SIZE);
-	// cursor.moveToFirst();
-	// LOG.debug("filter = " + filter + ", count = " + cursor.getCount());
-	// int nbErrorConsecutive = 0;
-	// while (cursor.isAfterLast() == false) {
-	// try {
-	// Long date = null;
-	// String dateStr = null;
-	// try {
-	// dateStr = cursor.getString(dateTakenColumn);
-	// if (ToolString.isBlank(dateStr)) {
-	// dateStr = cursor.getString(dateAddedColumn);
-	// if (ToolString.isNotBlank(dateStr)) {
-	// if (dateStr.trim().length() <= 10) {
-	// date = Long.valueOf(dateStr) * 1000L;
-	// } else {
-	// date = Long.valueOf(dateStr);
-	// }
-	// }
-	// } else {
-	// date = Long.valueOf(dateStr);
-	// }
-	// } catch (Throwable e) {
-	// LOG.warn(e.getClass().getSimpleName() + " : " + dateStr);
-	// }
-	// String data = cursor.getString(dataColumn);
-	// if (date == null) {
-	// File file = new File(data);
-	// date = file.lastModified();
-	// }
-	//
-	// Media item = new Media();
-	// item.setId(cursor.getInt(idColumn));
-	// item.setMediaType(mediaType);
-	// item.setPath(data);
-	// item.setName(cursor.getString(displayNameColumn));
-	// item.setSize(cursor.getInt(sizeColumn));
-	// item.setDate(date);
-	// images.add(item);
-	// cursor.moveToNext();
-	// nbErrorConsecutive = 0;
-	// } catch (Throwable e) {
-	// nbErrorConsecutive++;
-	// LOG.error(e.getMessage() + ", nbErrorConsecutive=" + nbErrorConsecutive, e);
-	// if (nbErrorConsecutive > 5) {
-	// break;
-	// }
-	// }
-	// }
-	// } catch (Throwable e) {
-	// LOG.error(ToolString.stack2string(e));
-	// } finally {
-	// if (cursor != null)
-	// cursor.close();
-	// }
-	// return images;
-	// }
-
 	static final String[] proj = { FileColumns._ID, FileColumns.DATA, FileColumns.MEDIA_TYPE, FileColumns.DATE_ADDED, FileColumns.SIZE, Images.Media.DATE_TAKEN };
 
 	static long lastCached = 0;
 	static List<Media> cachedMedias = new ArrayList<Media>();
 
-	public static List<Media> loadMedia() {
+	public static List<Media> loadMedia(boolean sync) {
 		// LOG.info(ToolString.stack2string(new Exception("loading media")));
 		synchronized (cachedMedias) {
-			if (System.currentTimeMillis() - lastCached > 1000) {
+			if (cachedMedias.isEmpty() || sync) {
 				cachedMedias.clear();
 				long start = System.currentTimeMillis();
 				Cursor cursor = null;
@@ -737,6 +629,7 @@ public final class Utils {
 
 					ManyQuery<Media> query = Query.many(Media.class, "select * from Media order by id asc");
 					CursorList<Media> cursorList = query.get();
+					final int totalDatabase = cursorList.size();
 					Iterator<Media> it = cursorList.iterator();
 
 					String selection = FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.PHOTO + " OR " + FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.VIDEO;
@@ -752,7 +645,6 @@ public final class Utils {
 					int dateTakenColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_TAKEN);
 					cursor.moveToFirst();
 					final int totalMediaStore = cursor.getCount();
-					final int totalDatabase = cursorList.size();
 
 					boolean shouldAutoUpload = totalDatabase > 0 && isAutoUpload() && FlickrApi.isAuthentified();
 
@@ -773,7 +665,6 @@ public final class Utils {
 							currentMedia = it.next();
 						}
 						if (cursor.isAfterLast()) {
-							LOG.info(i + " : cursor.isAfterLast");
 							if (currentMedia != null) {
 								LOG.info(currentMedia + " no longer exist, we should delete it here too");
 								currentMedia.deleteAsync();
@@ -856,7 +747,7 @@ public final class Utils {
 					if (cursor != null)
 						cursor.close();
 				}
-				LOG.info(cachedMedias.size() + " sync done in " + ((System.currentTimeMillis() - start) / 1000) + " sec");
+				LOG.info(cachedMedias.size() + " sync done in " + (System.currentTimeMillis() - start) + " ms");
 			} else {
 				LOG.debug("returning " + (System.currentTimeMillis() - lastCached) + " ms old cachedMedias");
 			}
@@ -1040,7 +931,7 @@ public final class Utils {
 
 		if (emptyDatabase || refresh) {
 			final Multimap<String, Media> photoFiles = LinkedHashMultimap.create();
-			List<Media> medias = loadMedia();
+			List<Media> medias = loadMedia(false);
 			for (Media media : medias) {
 				photoFiles.put(media.getFolderPath(), media);
 			}
@@ -1169,7 +1060,21 @@ public final class Utils {
 			}
 		}
 	};
-
+	
+	
+	public static final Comparator<Media> MEDIA_COMPARATOR_UPLOAD = new Comparator<Media>() {
+		@Override
+		public int compare(Media arg0, Media arg1) {
+			if (arg0.getTimestampUploaded() > arg1.getTimestampUploaded()) {
+				return -1;
+			} else if (arg0.getTimestampUploaded() < arg1.getTimestampUploaded()) {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+	};
+	
 	private static boolean charging = false;
 
 	public static final void sendMail(final String subject, final String bodyHtml) {
@@ -1393,7 +1298,7 @@ public final class Utils {
 		setBooleanProperty(STR.couponInfo, true);
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-		builder.setTitle("Coupons available").setMessage("You can get the Premium for a lower price or even for free if you help advertise it a bit.");
+		builder.setTitle("Coupons available").setMessage("You can get the PRO version for a lower price or even for free if you help advertise it a bit.");
 		builder.setNegativeButton("Later", new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
@@ -1417,10 +1322,10 @@ public final class Utils {
 		AlertDialog.Builder builder = new AlertDialog.Builder(activity);
 		TextView description = (TextView) view.findViewById(R.id.description);
 		if (Utils.isTrial()) {
-			description.setText("This app can be used for free during 7 days. So after " + new SimpleDateFormat("dd MMMM", Locale.US).format(new Date(Utils.trialUntil()))
-					+ ", a one time payment will be required to continue to use the app.");
+			description.setText("This app can be used for free during 7 days. After " + new SimpleDateFormat("dd MMMM", Locale.US).format(new Date(Utils.trialUntil()))
+					+ ", a one time payment will be required to get the PRO version and continue to use the app.");
 		} else {
-			description.setText("The 7-day trial of this app is now over. A one time payment is required to continue to use the app.");
+			description.setText("The 7-day trial of this app is now over. A one time payment is required to get the PRO version and continue to use the app.");
 		}
 
 		builder.setView(view);
@@ -1431,7 +1336,7 @@ public final class Utils {
 			public void onClick(DialogInterface dialog, int which) {
 				LOG.debug("premium for later then");
 			}
-		}).setPositiveButton("Purchase Now", new OnClickListener() {
+		}).setPositiveButton("Buy PRO Now", new OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				if (googleRadio.isChecked()) {
@@ -1491,7 +1396,7 @@ public final class Utils {
 		builder.setCancelable(false);
 		builder.create().show();
 	}
-	
+
 	public static void showExistingSetDialog(final Activity activity, final Callback<String> callback, final Set<FlickrSet> cachedPhotosets) {
 		final ProgressDialog dialog = ProgressDialog.show(activity, "", "Loading photosets", true);
 		BackgroundExecutor.execute(new Runnable() {

@@ -16,8 +16,6 @@ package com.rafali.flickruploader.ui.widget;
  * limitations under the License.
  */
 
-import org.slf4j.LoggerFactory;
-
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -80,8 +78,6 @@ import com.rafali.flickruploader2.R;
  * 
  */
 public class SlidingDrawer extends ViewGroup {
-
-	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(SlidingDrawer.class);
 
 	public static final int ORIENTATION_HORIZONTAL = 0;
 	public static final int ORIENTATION_VERTICAL = 1;
@@ -438,8 +434,6 @@ public class SlidingDrawer extends ViewGroup {
 		mAnimationPosition = position;
 		mAnimatedVelocity = velocity;
 
-		LOG.info("position=" + position + ", getHeight()=" + getHeight());
-
 		if (mExpanded) {
 			if (always || (velocity > mMaximumMajorVelocity || (position > mTopOffset + (mHandleHeight) && velocity > -mMaximumMajorVelocity))) {
 				// We are expanded, but they didn't move sufficiently to cause
@@ -551,7 +545,7 @@ public class SlidingDrawer extends ViewGroup {
 			content.measure(MeasureSpec.makeMeasureSpec(getRight() - getLeft(), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
 			content.layout(0, mTopOffset + childHeight, content.getMeasuredWidth(), mTopOffset + childHeight + content.getMeasuredHeight());
 		}
-		// Try only once... we should really loop but it's not a big deal
+		// Try only once… we should really loop but it's not a big deal
 		// if the draw was cancelled, it will only be temporary anyway
 		content.getViewTreeObserver().dispatchOnPreDraw();
 		if (!content.isHardwareAccelerated())
@@ -576,7 +570,6 @@ public class SlidingDrawer extends ViewGroup {
 
 	private void doAnimation() {
 		if (mAnimating) {
-			LOG.info("mAnimationPosition = " + mAnimationPosition + ", getHeight()=" + getHeight());
 			incrementAnimation();
 			if (mAnimationPosition >= mBottomOffset + (getHeight()) - 1) {
 				mAnimating = false;
@@ -586,7 +579,6 @@ public class SlidingDrawer extends ViewGroup {
 				openDrawer();
 			} else {
 				if (demo && !mExpanded && mAnimationPosition <= getHeight() / 3) {
-					LOG.info("BACK");
 					mAnimating = false;
 					mHandler.removeMessages(MSG_ANIMATE);
 					mExpanded = true;

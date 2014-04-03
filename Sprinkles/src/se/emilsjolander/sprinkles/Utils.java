@@ -136,6 +136,7 @@ public class Utils {
 		return Utils.insertSqlArgs(where.toString(), args);
 	}
 
+	@SuppressWarnings("unchecked")
 	static ContentValues getContentValues(Model model) {
 		final ModelInfo info = ModelInfo.from(model.getClass());
 		final ContentValues values = new ContentValues();
@@ -168,6 +169,7 @@ public class Utils {
 		throw new NoTableAnnotationException();
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	static String insertSqlArgs(String sql, Object[] args) {
 		if (args == null) {
 			return sql;
@@ -189,6 +191,7 @@ public class Utils {
 		return result;
 	}
 
+	@SuppressWarnings("unchecked")
 	static <T> T[] concatArrays(T[] one, T[] two) {
 		if (one == null) {
 			return two;

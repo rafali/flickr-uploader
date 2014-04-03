@@ -265,20 +265,20 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 			login.setTitle("Sign into Flickr");
 			login.setSummary("Account required for upload");
 		} else {
-			login.setTitle("Sign out");
-			login.setSummary(Utils.getStringProperty(STR.userName) + " is currently logged in");
+			login.setTitle("Signed into Flickr");
+			login.setSummary("Click here to sign out " + Utils.getStringProperty(STR.userName));
 		}
 		Preference premium = findPreference(STR.premium);
 		if (Utils.isPremium()) {
-			premium.setTitle("You are a Premium user");
+			premium.setTitle("You are using the PRO version");
 			premium.setSummary("Thank you!");
 		} else {
 			if (Utils.isTrial()) {
-				premium.setTitle("Premium Trial");
-				premium.setSummary("It ends on " + SimpleDateFormat.getDateInstance().format(new Date(Utils.trialUntil())));
+				premium.setTitle("PRO version usable for free");
+				premium.setSummary("until " + SimpleDateFormat.getDateInstance().format(new Date(Utils.trialUntil())));
 			} else {
-				premium.setTitle("Premium Trial Ended");
-				premium.setSummary("Click here to go Premium");
+				premium.setTitle("Your trial of the app has ended");
+				premium.setSummary("Click here to buy the PRO version");
 				((CheckBoxPreference) findPreference(AUTOUPLOAD)).setChecked(false);
 				((CheckBoxPreference) findPreference(AUTOUPLOAD_VIDEOS)).setChecked(false);
 				OnPreferenceClickListener onPreferenceClickListener = new OnPreferenceClickListener() {

@@ -62,9 +62,9 @@ public class ToolString {
 		}
 	}
 
-	public static String formatDuration(long duration) {
+	public static String formatDuration(long durationMs) {
 		StringBuffer strb = new StringBuffer();
-		long diffInSeconds = duration / 1000L;
+		long diffInSeconds = durationMs / 1000L;
 		long sec, min, hours, days = 0;
 		sec = (diffInSeconds >= 60 ? diffInSeconds % 60 : diffInSeconds);
 		min = (diffInSeconds = (diffInSeconds / 60)) >= 60 ? diffInSeconds % 60 : diffInSeconds;
@@ -82,9 +82,7 @@ public class ToolString {
 			}
 		} else if (min > 0) {
 			strb.append(min + "m");
-			if (sec > 0) {
-				strb.append(" " + sec + "s");
-			}
+			strb.append(" " + String.format("%02d", sec) + "s");
 		} else {
 			strb.append(sec + "s");
 		}
@@ -100,7 +98,7 @@ public class ToolString {
 	public static String ellipsis(String str, int max) {
 		if (str == null || str.length() <= max || max <= 3)
 			return str;
-		return str.substring(0, max - 3) + "...";
+		return str.substring(0, max - 3) + "…";
 	}
 
 	public static String trimExtension(String filename) {
@@ -203,7 +201,7 @@ public class ToolString {
 			return "";
 		}
 	}
-	
+
 	public static String getParentPath(String path) {
 		if (path.endsWith("/")) {
 			return getParentPath(path.substring(0, path.length() - 1));

@@ -311,7 +311,7 @@ public final class RPC {
 	static void notifyNetworkError() {
 		if (System.currentTimeMillis() - lastNotifyNetworkError > 10000) {
 			lastNotifyNetworkError = System.currentTimeMillis();
-			Utils.toast("Network error, retrying...");
+			Utils.toast("Network error, retrying…");
 		}
 	}
 

@@ -18,7 +18,9 @@ import com.rafali.flickruploader.FlickrUploader;
 import com.rafali.flickruploader.enums.VIEW_SIZE;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.service.UploadService;
+import com.rafali.flickruploader.service.UploadService.BasicUploadProgressListener;
 import com.rafali.flickruploader.service.UploadService.UploadProgressListener;
+import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
 import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity_;
 import com.rafali.flickruploader2.R;
 
@@ -34,35 +36,24 @@ public class Notifications {
 
 	static long lastNotified = 0;
 
-	private static UploadProgressListener uploadProgressListener = new UploadProgressListener() {
-		
-		public void onProgress(Media media, int mediaProgress, int queueProgress, int queueTotal) {
-			Notifications.notify(mediaProgress, media, mediaProgress, queueTotal);
+	private static UploadProgressListener uploadProgressListener = new BasicUploadProgressListener() {
+
+		@Override
+		public void onProgress(Media media) {
+			Notifications.notifyProgress(media);
 		};
-
-		@Override
-		public void onPaused() {
-		}
-
-		@Override
-		public void onQueued(int nbQueued, int nbAlreadyUploaded, int nbAlreadyQueued) {
-		}
 
 		@Override
 		public void onFinished(int nbUploaded, int nbError) {
 			Notifications.notifyFinished(nbUploaded, nbError);
 		}
 
-		@Override
-		public void onProcessed(Media media, boolean success) {
-
-		}
 	};
-	
+
 	public static void init() {
 		UploadService.register(uploadProgressListener);
 	}
-	
+
 	private static void ensureBuilders() {
 		if (resultPendingIntent == null) {
 			Intent resultIntent = new Intent(FlickrUploader.getAppContext(), FlickrUploaderActivity_.class);
@@ -90,18 +81,22 @@ public class Notifications {
 		}
 	}
 
-	public static void notify(int progress, final Media media, int currentPosition, int total) {
+	public static void notifyProgress(final Media media) {
 		try {
 			if (!Utils.getBooleanProperty("notification_progress", true)) {
 				return;
 			}
+
+			int currentPosition = UploadService.getRecentlyUploaded().size();
+			int total = UploadService.getNbTotal();
+			int progress = media.getProgress();
 
 			ensureBuilders();
 
 			int realProgress = (int) (100 * (currentPosition - 1 + Double.valueOf(progress) / 100) / total);
 
 			Builder builder = builderUploading;
-			builder.setProgress(100, realProgress, false);
+			builder.setProgress(100, progress, false);
 			builder.setContentText(media.getName());
 			builder.setContentInfo(currentPosition + " / " + total);
 
@@ -135,24 +130,26 @@ public class Notifications {
 	public static void notifyFinished(int nbUploaded, int nbError) {
 		try {
 			manager.cancelAll();
+			if (FlickrUploaderActivity.getInstance() == null || FlickrUploaderActivity.getInstance().isPaused()) {
 
-			if (!Utils.getBooleanProperty("notification_finished", true)) {
-				return;
+				if (!Utils.getBooleanProperty("notification_finished", true)) {
+					return;
+				}
+
+				ensureBuilders();
+
+				Builder builder = builderUploaded;
+				String text = nbUploaded + " media recently uploaded to Flickr";
+				if (nbError > 0) {
+					text += ", " + nbError + " error" + (nbError > 1 ? "s" : "");
+				}
+				builder.setContentText(text);
+
+				Notification notification = builder.build();
+				notification.icon = android.R.drawable.stat_sys_upload_done;
+				// notification.iconLevel = progress / 10;
+				manager.notify(0, notification);
 			}
-
-			ensureBuilders();
-
-			Builder builder = builderUploaded;
-			String text = nbUploaded + " media sent to Flickr";
-			if (nbError > 0) {
-				text += ", " + nbError + " error" + (nbError > 1 ? "s" : "");
-			}
-			builder.setContentText(text);
-
-			Notification notification = builder.build();
-			notification.icon = android.R.drawable.stat_sys_upload_done;
-			// notification.iconLevel = progress / 10;
-			manager.notify(0, notification);
 		} catch (Throwable e) {
 			LOG.error(ToolString.stack2string(e));
 		}

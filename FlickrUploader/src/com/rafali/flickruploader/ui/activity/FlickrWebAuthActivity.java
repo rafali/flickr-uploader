@@ -60,7 +60,7 @@ public class FlickrWebAuthActivity extends Activity {
 	@SuppressLint({ "SetJavaScriptEnabled", "NewApi" })
 	@AfterViews
 	protected void onAfterViews() {
-		setLoading("Opening browser...");
+		setLoading("Opening browser…");
 		loadAuthorizationUrl();
 	}
 
@@ -72,7 +72,7 @@ public class FlickrWebAuthActivity extends Activity {
 			Intent i = new Intent(Intent.ACTION_VIEW);
 			i.setData(Uri.parse(url));
 			startActivity(i);
-			setLoading("Waiting for browser info...");
+			setLoading("Waiting for browser info…");
 		} catch (Throwable e) {
 			setError(e);
 		}
@@ -124,7 +124,7 @@ public class FlickrWebAuthActivity extends Activity {
 
 	@Background
 	void doDataCallback() {
-		setLoading("Almost done...");
+		setLoading("Almost done…");
 		try {
 			AppInstall appInstall = RPC.getRpcService().ensureInstall(Utils.createAndroidDevice());
 			if (ToolString.isBlank(appInstall.getFlickrToken())) {

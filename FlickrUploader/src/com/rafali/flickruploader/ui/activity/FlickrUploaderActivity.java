@@ -48,6 +48,7 @@ import android.widget.TextView;
 
 import com.google.analytics.tracking.android.EasyTracker;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.googlecode.androidannotations.annotations.AfterViews;
 import com.googlecode.androidannotations.annotations.Background;
@@ -67,8 +68,8 @@ import com.rafali.flickruploader.enums.VIEW_SIZE;
 import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.service.UploadService;
+import com.rafali.flickruploader.service.UploadService.BasicUploadProgressListener;
 import com.rafali.flickruploader.service.UploadService.UploadProgressListener;
-import com.rafali.flickruploader.tool.Notifications;
 import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader.tool.Utils.Callback;
 import com.rafali.flickruploader.ui.DrawerContentView;
@@ -116,7 +117,6 @@ public class FlickrUploaderActivity extends Activity {
 				public void onResult(Boolean result) {
 				}
 			});
-		} else {
 		}
 	}
 
@@ -147,7 +147,7 @@ public class FlickrUploaderActivity extends Activity {
 				}
 			}
 			if (paths != null && !paths.isEmpty()) {
-				List<Media> medias = Utils.loadMedia();
+				List<Media> medias = Utils.loadMedia(true);
 				Iterator<Media> it = medias.iterator();
 				while (it.hasNext()) {
 					Media media = it.next();
@@ -171,7 +171,8 @@ public class FlickrUploaderActivity extends Activity {
 
 	@Background
 	void load() {
-		medias = Utils.loadMedia();
+		medias = Utils.loadMedia(sync);
+		sync = false;
 
 		boolean showPhotos = Utils.getShowPhotos();
 		boolean showVideos = Utils.getShowVideos();
@@ -214,7 +215,7 @@ public class FlickrUploaderActivity extends Activity {
 	@UiThread
 	void setLoading(int progress) {
 		if (message != null) {
-			message.setText("Loading... " + progress + "%");
+			message.setText("Loading… " + progress + "%");
 		}
 	}
 
@@ -311,25 +312,6 @@ public class FlickrUploaderActivity extends Activity {
 		return instance;
 	}
 
-	void testNotification() {
-		BackgroundExecutor.execute(new Runnable() {
-			Media media = medias.get(0);
-
-			@Override
-			public void run() {
-				for (int i = 0; i <= 100; i++) {
-					Notifications.notify(i, media, 1, 1);
-					try {
-						Thread.sleep(200);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-			}
-		});
-	}
-
 	@Override
 	protected void onDestroy() {
 		LOG.debug("onDestroy");
@@ -362,7 +344,7 @@ public class FlickrUploaderActivity extends Activity {
 			}
 			if (medias != null && medias.isEmpty()) {
 				message.setVisibility(View.VISIBLE);
-				if (Utils.loadMedia().isEmpty()) {
+				if (Utils.loadMedia(false).isEmpty()) {
 					message.setText("No media found");
 				} else {
 					message.setText("No media matching your filter");
@@ -391,39 +373,22 @@ public class FlickrUploaderActivity extends Activity {
 		getActionBar().setIcon(null);
 		getActionBar().setDisplayShowHomeEnabled(false);
 
-		if (Utils.getBooleanProperty(STR.show_sliding_demo, true)) {
-			slidingDrawer.setOnDrawerOpenListener(new SlidingDrawer.OnDrawerOpenListener() {
-				@Override
-				public void onDrawerOpened() {
-					Utils.setBooleanProperty(STR.show_sliding_demo, false);
-				}
-			});
-		}
+		slidingDrawer.setOnDrawerOpenListener(new SlidingDrawer.OnDrawerOpenListener() {
+			@Override
+			public void onDrawerOpened() {
+				Utils.setBooleanProperty(STR.show_sliding_demo, false);
+				drawerContentView.updateLists();
+			}
+		});
 	}
 
-	UploadProgressListener uploadProgressListener = new UploadProgressListener() {
-
+	UploadProgressListener uploadProgressListener = new BasicUploadProgressListener() {
 		@Override
-		public void onQueued(int nbQueued, int nbAlreadyUploaded, int nbAlreadyQueued) {
-		}
-
-		@Override
-		public void onProgress(Media media, int mediaProgress, int queueProgress, int queueTotal) {
-		}
-
-		@Override
-		public void onProcessed(Media media, boolean success) {
+		public void onProcessed(Media media) {
 			if (!Utils.getShowUploaded() || !Utils.getShowNotUploaded()) {
 				load();
 			}
-		}
-
-		@Override
-		public void onPaused() {
-		}
-
-		@Override
-		public void onFinished(int nbUploaded, int nbErrors) {
+			update(media);
 		}
 	};
 
@@ -464,12 +429,12 @@ public class FlickrUploaderActivity extends Activity {
 	void confirmUpload() {
 		if (FlickrApi.isAuthentified()) {
 			new AlertDialog.Builder(activity).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
-					.setItems(new String[] { "Default set (" + STR.instantUpload + ")", "One set per folder", "New set...", "Existing set..." }, new DialogInterface.OnClickListener() {
+					.setItems(new String[] { "Default set (" + STR.instantUpload + ")", "One set per folder", "New set…", "Existing set…" }, new DialogInterface.OnClickListener() {
 						@Override
 						public void onClick(DialogInterface dialog, int which) {
 							switch (which) {
 							case 0:
-								enqueue(selectedMedia, STR.instantUpload);
+								enqueue(Lists.newArrayList(selectedMedia), STR.instantUpload);
 								clearSelection();
 								break;
 							case 1:
@@ -506,7 +471,7 @@ public class FlickrUploaderActivity extends Activity {
 		for (Header header : headers) {
 			header.selected = false;
 		}
-		refresh(false);
+		refresh();
 	}
 
 	@UiThread
@@ -514,7 +479,7 @@ public class FlickrUploaderActivity extends Activity {
 		Utils.showExistingSetDialog(activity, new Callback<String>() {
 			@Override
 			public void onResult(String result) {
-				enqueue(selectedMedia, result);
+				enqueue(Lists.newArrayList(selectedMedia), result);
 				clearSelection();
 			}
 		}, null);
@@ -532,7 +497,7 @@ public class FlickrUploaderActivity extends Activity {
 					BackgroundExecutor.execute(new Runnable() {
 						@Override
 						public void run() {
-							enqueue(selectedMedia, value);
+							enqueue(Lists.newArrayList(selectedMedia), value);
 							clearSelection();
 						}
 					});
@@ -707,7 +672,7 @@ public class FlickrUploaderActivity extends Activity {
 										}
 									}
 								}
-								refresh(false);
+								refresh();
 							}
 						});
 						thumbView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
@@ -771,7 +736,7 @@ public class FlickrUploaderActivity extends Activity {
 								}
 							}
 						}
-						refresh(false);
+						refresh();
 					}
 				});
 				title = (TextView) convertView.findViewById(R.id.title);
@@ -848,9 +813,10 @@ public class FlickrUploaderActivity extends Activity {
 	private void update(Media media) {
 		View thumbView = thumbViews.get(media);
 		if (thumbView != null) {
-			LOG.info("updating " + thumbView.getTag() + " with " + media);
-			// thumbView.setTag(media);
 			renderImageView(thumbView, false);
+		}
+		if (medias != null && !medias.contains(media)) {
+			load();
 		}
 	}
 
@@ -942,6 +908,7 @@ public class FlickrUploaderActivity extends Activity {
 	StickyHeaderListView listView;
 
 	private boolean paused = false;
+	private boolean sync = true;
 
 	@Override
 	public void onBackPressed() {
@@ -1057,14 +1024,14 @@ public class FlickrUploaderActivity extends Activity {
 				header.selected = true;
 			}
 			selectedMedia.addAll(medias);
-			refresh(false);
+			refresh();
 			break;
 		case R.id.select_none:
 			for (Header header : headers) {
 				header.selected = false;
 			}
 			selectedMedia.clear();
-			refresh(false);
+			refresh();
 			break;
 		case R.id.group_by_date:
 			item.setChecked(true);
@@ -1115,12 +1082,27 @@ public class FlickrUploaderActivity extends Activity {
 	@Override
 	protected void onResume() {
 		if (paused) {
-			refresh(true);
+			sync = true;
+			load();
 		}
 		paused = false;
 		super.onResume();
 		UploadService.wake();
 		drawerHandleView.onActivityResume();
+		renderLoop();
+	}
+
+	@UiThread(delay = 1000)
+	void renderLoop() {
+		if (!paused && !destroyed) {
+			if (drawerHandleView != null) {
+				drawerHandleView.render();
+				if (slidingDrawer.isOpened()) {
+					drawerContentView.renderCurrentView();
+				}
+			}
+			renderLoop();
+		}
 	}
 
 	@UiThread
@@ -1139,27 +1121,23 @@ public class FlickrUploaderActivity extends Activity {
 	}
 
 	@UiThread(delay = 100)
-	public void refresh(boolean reload) {
-		if (reload) {
-			load();
-		} else {
-			if (listView != null) {
-				renderMenu();
-				int childCount = listView.getChildCount();
-				for (int i = 0; i < childCount; i++) {
-					View convertView = listView.getChildAt(i);
-					if (convertView instanceof LinearLayout && convertView.getTag() instanceof Media[]) {
-						LinearLayout linearLayout = (LinearLayout) convertView;
-						for (int j = 0; j < linearLayout.getChildCount(); j++) {
-							renderImageView(linearLayout.getChildAt(j), false);
-						}
+	public void refresh() {
+		if (listView != null) {
+			renderMenu();
+			int childCount = listView.getChildCount();
+			for (int i = 0; i < childCount; i++) {
+				View convertView = listView.getChildAt(i);
+				if (convertView instanceof LinearLayout && convertView.getTag() instanceof Media[]) {
+					LinearLayout linearLayout = (LinearLayout) convertView;
+					for (int j = 0; j < linearLayout.getChildCount(); j++) {
+						renderImageView(linearLayout.getChildAt(j), false);
 					}
 				}
-				for (View headerView : attachedHeaderViews) {
-					renderHeader(headerView);
-				}
-				renderHeader(listView.getFloatingSectionHeader());
 			}
+			for (View headerView : attachedHeaderViews) {
+				renderHeader(headerView);
+			}
+			renderHeader(listView.getFloatingSectionHeader());
 		}
 		if (selectedMedia.isEmpty()) {
 			getActionBar().setTitle(null);
@@ -1184,12 +1162,6 @@ public class FlickrUploaderActivity extends Activity {
 		return R.drawable.uploaded;
 	}
 
-	public static void staticRefresh(boolean reload) {
-		if (instance != null) {
-			instance.refresh(reload);
-		}
-	}
-
 	@Override
 	protected void onPause() {
 		paused = true;
@@ -1200,4 +1172,7 @@ public class FlickrUploaderActivity extends Activity {
 		return paused;
 	}
 
+	public SlidingDrawer getSlidingDrawer() {
+		return slidingDrawer;
+	}
 }

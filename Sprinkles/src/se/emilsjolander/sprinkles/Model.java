@@ -134,13 +134,15 @@ public abstract class Model {
 			}
 		}
 
-//		t.addOnTransactionCommittedListener(new OnTransactionCommittedListener() {
-//
-//			@Override
-//			public void onTransactionCommitted() {
-//				Sprinkles.sInstance.mContext.getContentResolver().notifyChange(Utils.getNotificationUri(Model.this.getClass()), null, true);
-//			}
-//		});
+		// t.addOnTransactionCommittedListener(new OnTransactionCommittedListener() {
+		//
+		// @Override
+		// public void onTransactionCommitted() {
+		// Sprinkles.sInstance.mContext.getContentResolver().notifyChange(Utils.getNotificationUri(Model.this.getClass()), null, true);
+		// }
+		// });
+
+		setExist(true);
 
 		return true;
 	}
@@ -196,13 +198,13 @@ public abstract class Model {
 	final public void delete(Transaction t) {
 		t.delete(Utils.getTableName(getClass()), Utils.getWhereStatement(this));
 		Utils.removeFromCache(this);
-//		t.addOnTransactionCommittedListener(new OnTransactionCommittedListener() {
-//
-//			@Override
-//			public void onTransactionCommitted() {
-//				Sprinkles.sInstance.mContext.getContentResolver().notifyChange(Utils.getNotificationUri(Model.this.getClass()), null);
-//			}
-//		});
+		// t.addOnTransactionCommittedListener(new OnTransactionCommittedListener() {
+		//
+		// @Override
+		// public void onTransactionCommitted() {
+		// Sprinkles.sInstance.mContext.getContentResolver().notifyChange(Utils.getNotificationUri(Model.this.getClass()), null);
+		// }
+		// });
 		afterDelete();
 	}
 

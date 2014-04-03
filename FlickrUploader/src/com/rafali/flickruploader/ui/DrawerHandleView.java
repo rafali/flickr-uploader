@@ -36,6 +36,7 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 	public DrawerHandleView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		setOrientation(LinearLayout.VERTICAL);
+		activity = (FlickrUploaderActivity) getContext();
 	}
 
 	@ViewById(R.id.image)
@@ -58,33 +59,7 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 		progressContainer.setVisibility(View.GONE);
 		message.setVisibility(View.VISIBLE);
 		message.setText("");
-		checkStatus();
-	}
-
-	@UiThread
-	void renderProgress(int progress, final Media media, int currentPosition, int total) {
-		if (System.currentTimeMillis() > messageUntil) {
-			progressContainer.setVisibility(View.VISIBLE);
-			message.setVisibility(View.GONE);
-			title.setText(media.getName());
-			subTitle.setText(progress + "% - " + currentPosition + " / " + total);
-
-			CacheableBitmapDrawable bitmapDrawable = Utils.getCache().getFromMemoryCache(media.getPath() + "_" + VIEW_SIZE.small);
-			if (bitmapDrawable == null || bitmapDrawable.getBitmap().isRecycled()) {
-				BackgroundExecutor.execute(new Runnable() {
-					@Override
-					public void run() {
-						final Bitmap bitmap = Utils.getBitmap(media, VIEW_SIZE.small);
-						if (bitmap != null) {
-							Utils.getCache().put(media.getPath() + "_" + VIEW_SIZE.small, bitmap);
-						}
-					}
-				});
-				imageView.setImageDrawable(null);
-			} else {
-				imageView.setImageDrawable(bitmapDrawable);
-			}
-		}
+		render();
 	}
 
 	@Override
@@ -96,22 +71,27 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 		if (nbAlreadyUploaded > 0) {
 			str += ", " + nbAlreadyUploaded + " already uploaded";
 		}
-		setMessage(str, 4000);
-		checkStatus();
+		setMessage(str, 3000);
+		render();
+	}
+
+	@Override
+	public void onDequeued(int nbDequeued) {
+		if (nbDequeued > 0) {
+			setMessage(nbDequeued + " media removed from queue", 3000);
+			render();
+		}
 	}
 
 	long messageUntil = System.currentTimeMillis();
 
 	@UiThread
 	void setMessage(String text, int duration) {
-		long canShow = System.currentTimeMillis() - messageUntil;
-		LOG.debug(canShow + " : " + text);
-		if (canShow > 0) {
-			messageUntil = System.currentTimeMillis() + duration;
-			progressContainer.setVisibility(View.GONE);
-			message.setVisibility(View.VISIBLE);
-			message.setText(text);
-		}
+		messageUntil = System.currentTimeMillis() + duration;
+		progressContainer.setVisibility(View.GONE);
+		message.setVisibility(View.VISIBLE);
+		message.setText(text);
+		LOG.debug("message:" + text + ", duration:" + duration);
 	}
 
 	int nbMonitored = -1;
@@ -121,30 +101,36 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 			@Override
 			public void run() {
 				nbMonitored = Utils.getFoldersMonitoredNb();
+				render();
 			}
 		});
-		checkStatus();
+	}
+
+	FlickrUploaderActivity activity = null;
+
+	private void setMessage(String text) {
+		progressContainer.setVisibility(View.GONE);
+		message.setVisibility(View.VISIBLE);
+		message.setText(text);
 	}
 
 	@UiThread
-	void checkStatus() {
-		FlickrUploaderActivity activity = null;
+	public void render() {
 		try {
-			activity = (FlickrUploaderActivity) getContext();
 			if (message != null && activity != null && !activity.isPaused()) {
-				long canShow = System.currentTimeMillis() - messageUntil;
-				if (canShow > 4000) {
+				if (System.currentTimeMillis() > messageUntil) {
+
 					if (!FlickrApi.isAuthentified()) {
-						message.setText("Login into Flickr from the Preferences");
+						setMessage("Login into Flickr from the Preferences");
 					} else if (!Utils.isPremium() && !Utils.isTrial()) {
-						message.setText("Trial version as expired");
-					} else if (UploadService.getNbQueued() == 0) {
+						setMessage("Trial version as expired");
+					} else if (UploadService.getCurrentlyQueued().size() == 0) {
 						String text = "No media queued";
-						int nbUploaded = UploadService.getNbUploadedTotal();
+						int nbUploaded = UploadService.getRecentlyUploaded().size();
 						if (nbUploaded > 0) {
 							text += ", " + nbUploaded + " recently uploaded";
 						}
-						int nbError = UploadService.getNbError();
+						int nbError = UploadService.getFailed().size();
 						if (nbError > 0) {
 							text += ", " + nbError + " error" + (nbError > 1 ? "s" : "");
 						}
@@ -157,26 +143,70 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 							}
 						}
 
-						message.setText(text);
+						setMessage(text);
 					} else {
 						if (UploadService.isPaused()) {
-							progressContainer.setVisibility(View.GONE);
-							message.setVisibility(View.VISIBLE);
 							CAN_UPLOAD canUploadNow = Utils.canUploadNow();
 							if (canUploadNow == CAN_UPLOAD.ok) {
-								message.setText("Upload paused, should resume soon");
+								setMessage("Upload paused, should resume soon");
 							} else if (canUploadNow == CAN_UPLOAD.manually) {
 								long pausedUntil = Utils.getLongProperty(STR.manuallyPaused);
 								if (pausedUntil == Long.MAX_VALUE) {
-									message.setText("Upload paused by user");
+									setMessage("Upload paused by user");
 								} else {
-									message.setText("Upload paused by user, will auto resume in " + ToolString.formatDuration(pausedUntil - System.currentTimeMillis()));
+									setMessage("Upload paused by user, will auto resume in " + ToolString.formatDuration(pausedUntil - System.currentTimeMillis()));
 								}
 							} else {
-								message.setText("Upload paused, waiting for " + canUploadNow);
+								setMessage("Upload paused, waiting for " + canUploadNow.getDescription());
 							}
 						} else {
-							message.setText("Uploading " + UploadService.getNbQueued() + " media");
+							final Media media = UploadService.getMediaCurrentlyUploading();
+							if (media == null) {
+								setMessage("Uploading " + UploadService.getCurrentlyQueued().size() + " media");
+							} else {
+								int currentPosition = UploadService.getRecentlyUploaded().size();
+								int total = UploadService.getNbTotal();
+								int progress = media.getProgress();
+								progressContainer.setVisibility(View.VISIBLE);
+								message.setVisibility(View.GONE);
+								title.setText(media.getName());
+								long pause = 0;
+								if (media.getTimestampRetry() > 0 && media.getTimestampRetry() < Long.MAX_VALUE) {
+									pause = Math.max(0, media.getTimestampRetry() - System.currentTimeMillis());
+								}
+								if (media.getRetries() > 0) {
+									String duration;
+									if (pause > 0) {
+										duration = " in " + ToolString.formatDuration(pause) + " : ";
+									} else {
+										duration = " : ";
+									}
+									subTitle.setText("retry #" + media.getRetries() + duration + progress + "% - " + currentPosition + " / " + total);
+								} else {
+									if (pause > 0) {
+										subTitle.setText("uploading in " + ToolString.formatDuration(pause));
+									} else {
+										subTitle.setText(progress + "% - " + currentPosition + " / " + total);
+									}
+								}
+
+								CacheableBitmapDrawable bitmapDrawable = Utils.getCache().getFromMemoryCache(media.getPath() + "_" + VIEW_SIZE.small);
+								if (bitmapDrawable == null || bitmapDrawable.getBitmap().isRecycled()) {
+									BackgroundExecutor.execute(new Runnable() {
+										@Override
+										public void run() {
+											final Bitmap bitmap = Utils.getBitmap(media, VIEW_SIZE.small);
+											if (bitmap != null) {
+												Utils.getCache().put(media.getPath() + "_" + VIEW_SIZE.small, bitmap);
+											}
+										}
+									});
+									imageView.setImageDrawable(null);
+								} else {
+									imageView.setImageDrawable(bitmapDrawable);
+								}
+							}
+
 						}
 					}
 				}
@@ -187,31 +217,25 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 	}
 
 	@Override
-	public void onProgress(Media media, int mediaProgress, int queueProgress, int queueTotal) {
-		renderProgress(mediaProgress, media, queueProgress, queueTotal);
-	}
-
-	@Override
-	public void onPaused() {
-		// TODO Auto-generated method stub
-
+	public void onProgress(Media media) {
+		render();
 	}
 
 	@Override
 	@UiThread
 	public void onFinished(int nbUploaded, int nbError) {
-		String text = nbUploaded + " media uploaded";
+		String text = nbUploaded + " media recently uploaded";
 		if (nbError > 0) {
 			text += ", " + nbError + " error" + (nbError > 1 ? "s" : "");
 		}
-		setMessage(text, 5000);
+		setMessage(text, 3000);
 	}
 
 	@Override
 	@UiThread
-	public void onProcessed(Media media, boolean success) {
-		if (!success) {
-			setMessage("Error uploading " + media.getName(), 5000);
+	public void onProcessed(Media media) {
+		if (media.isFailed()) {
+			setMessage("Error uploading " + media.getName(), 3000);
 		}
 	}
 }
