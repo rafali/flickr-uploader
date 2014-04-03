@@ -292,6 +292,7 @@ public class UploadService extends Service {
 						mediaPreviouslyUploading = null;
 						if (mediaCurrentlyUploading == null) {
 							onUploadFinished();
+							FlickrUploader.cleanLogs();
 						}
 					}
 
@@ -404,8 +405,6 @@ public class UploadService extends Service {
 							running = false;
 						}
 					}
-
-					FlickrUploader.cleanLogs();
 
 				} catch (InterruptedException e) {
 					LOG.warn("Thread interrupted");

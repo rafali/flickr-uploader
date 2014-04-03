@@ -28,7 +28,12 @@ public class Folder extends Model {
 
 	public Folder() {
 	}
-	 
+
+	@Override
+	public String toString() {
+		return path + ":" + flickrSetTitle + ":" + size;
+	}
+
 	public Folder(String path) {
 		this.id = path.hashCode();
 		this.path = path;

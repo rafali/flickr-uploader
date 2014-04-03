@@ -21,7 +21,6 @@ import static org.acra.ReportField.USER_CRASH_DATE;
 
 import java.io.File;
 import java.nio.charset.Charset;
-import java.util.Map;
 
 import org.acra.ACRA;
 import org.acra.ReportingInteractionMode;
@@ -47,6 +46,7 @@ import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
+import com.rafali.flickruploader.api.FlickrApi;
 import com.rafali.flickruploader.model.FlickrSet;
 import com.rafali.flickruploader.model.Folder;
 import com.rafali.flickruploader.model.Media;
@@ -86,21 +86,13 @@ public class FlickrUploader extends Application {
 				try {
 					initLogs();
 					ACRA.init(FlickrUploader.this);
-					long versionCode = Utils.getLongProperty(STR.versionCode);
-					if (Config.VERSION != versionCode) {
+					final long previousVersionCode = Utils.getLongProperty(STR.versionCode);
+					if (Config.VERSION != previousVersionCode) {
 						Utils.saveAndroidDevice();
 						Utils.setLongProperty(STR.versionCode, (long) Config.VERSION);
-						if (versionCode < 40) {
-							Map<String, String> persisted = Utils.getMapProperty("folderSetNames", true);
-							if (persisted != null) {
-								Map<String, Folder> folders = Utils.getFolders(false);
-								for (String path : persisted.keySet()) {
-									Folder folder = folders.get(path);
-									if (folder != null) {
-										folder.setFlickrSetTitle(persisted.get(path));
-										folder.saveAsync();
-									}
-								}
+						if (previousVersionCode < 40) {
+							if (FlickrApi.isAuthentified()) {
+								FlickrApi.syncMedia();
 							}
 						}
 					}

@@ -20,6 +20,7 @@ import java.util.concurrent.Executors;
 
 import org.slf4j.LoggerFactory;
 
+import se.emilsjolander.sprinkles.Transaction;
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 import uk.co.senab.bitmapcache.CacheableImageView;
 import android.app.Activity;

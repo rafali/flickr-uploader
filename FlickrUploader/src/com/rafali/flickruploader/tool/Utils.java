@@ -936,6 +936,8 @@ public final class Utils {
 				photoFiles.put(media.getFolderPath(), media);
 			}
 
+			Map<String, String> folderSetNames = Utils.getMapProperty("folderSetNames", true);
+
 			Transaction t = new Transaction();
 			try {
 				for (String path : photoFiles.keySet()) {
@@ -944,7 +946,11 @@ public final class Utils {
 					if (folder == null) {
 						folder = new Folder(path);
 						folder.setExist(false);
-						if (emptyDatabase && (folderMedias.size() > 50 || isDefaultMediaFolder(path))) {
+						if (folderSetNames != null) {
+							String flickrSetTitle = folderSetNames.get(path);
+							LOG.info("version migration path : " + path + ", folder : " + folder + ", flickrSetTitle : " + flickrSetTitle);
+							folder.setFlickrSetTitle(flickrSetTitle);
+						} else if (emptyDatabase && (folderMedias.size() > 50 || isDefaultMediaFolder(path))) {
 							folder.setFlickrSetTitle(STR.instantUpload);
 							nbFolderMonitored++;
 						}
@@ -960,6 +966,9 @@ public final class Utils {
 				LOG.error(ToolString.stack2string(e));
 			} finally {
 				t.finish();
+			}
+			if (folderSetNames != null) {
+				Utils.setMapProperty("folderSetNames", null);
 			}
 		}
 		return persistedFoldersMap;
@@ -1060,8 +1069,7 @@ public final class Utils {
 			}
 		}
 	};
-	
-	
+
 	public static final Comparator<Media> MEDIA_COMPARATOR_UPLOAD = new Comparator<Media>() {
 		@Override
 		public int compare(Media arg0, Media arg1) {
@@ -1074,7 +1082,7 @@ public final class Utils {
 			}
 		}
 	};
-	
+
 	private static boolean charging = false;
 
 	public static final void sendMail(final String subject, final String bodyHtml) {
@@ -1241,6 +1249,7 @@ public final class Utils {
 						intent.putExtra(Intent.EXTRA_TEXT, message);
 
 						if (attachLogs) {
+							FlickrUploader.flushLogs();
 							File log = new File(FlickrUploader.getLogFilePath());
 							if (log.exists()) {
 								File publicDownloadDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
