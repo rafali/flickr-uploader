@@ -6,7 +6,7 @@ It works like [Google+ Instant Upload](http://support.google.com/plus/answer/291
 
 The main benefit of this app over Google+ Instant Upload is the fact that you can upload ONE FREAKING TERABYTE of photos&videos in **high resolution** for free!
 
-You can download it at : https://play.google.com/store/apps/details?id=com.rafali.flickruploader2
+You can download it on Google Play Store: https://play.google.com/store/apps/details?id=com.rafali.flickruploader2
 
 You can fork this project or use the source code for any project. It is licensed under the GPL v2. I just request that you do not blatantly copy the app to republish it on the Play Store.
 You may however use it as a base to create an uploader to a service other than Flickr. You should just have to republish the source code as the GPL v2 demand.
@@ -18,3 +18,7 @@ It uses a few open source libraries:
 - [ACRA](https://github.com/ACRA/acra) : sends crash report to a configurable url
 - [AndroidAnnotation](https://github.com/excilys/androidannotations) : simplifies Android development with annotations to define code scope (UI thread, background thread…)
 - [google-collections](https://code.google.com/p/google-collections/) : simplifies use of lists, maps and multimaps 
+- [Sprinkles](https://github.com/emilsjolander/sprinkles) : simplifies the use of SQLite database on Android
+
+
+Follow me on Twitter: https://twitter.com/rafali
