@@ -65,4 +65,9 @@ public class FlickrSet extends Model {
 		}
 		return super.equals(o);
 	}
+
+	@Override
+	public String toString() {
+		return id + " : " + name;
+	}
 }

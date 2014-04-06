@@ -297,7 +297,7 @@ public class UploadService extends Service {
 					}
 
 					CAN_UPLOAD canUploadNow = Utils.canUploadNow();
-					LOG.debug("mediaCurrentlyUploading : " + mediaCurrentlyUploading + ", canUploadNow:" + canUploadNow);
+
 					if (mediaCurrentlyUploading == null || canUploadNow != CAN_UPLOAD.ok) {
 						paused = true;
 
@@ -308,6 +308,7 @@ public class UploadService extends Service {
 										&& System.currentTimeMillis() - lastUpload > 5 * 60 * 1000) {
 									running = false;
 									LOG.debug("stopping service after waiting for 5 minutes");
+									checkForFilesToDelete();
 								} else {
 									if (Utils.canAutoUploadBool()) {
 										mPauseLock.wait();
@@ -486,6 +487,7 @@ public class UploadService extends Service {
 			context.startService(new Intent(context, UploadService.class));
 			AlarmBroadcastReceiver.initAlarm();
 		}
+		checkForFilesToDelete();
 		synchronized (mPauseLock) {
 			mPauseLock.notifyAll();
 		}
@@ -654,4 +656,44 @@ public class UploadService extends Service {
 		return failed;
 	}
 
+	static long lastDeleteCheck = Utils.getLongProperty("lastDeleteCheck");
+
+	static void checkForFilesToDelete() {
+		if (Utils.isAutoDelete() && System.currentTimeMillis() - lastDeleteCheck > 3600 * 1000L) {
+			lastDeleteCheck = System.currentTimeMillis();
+			Utils.setLongProperty("lastDeleteCheck", lastDeleteCheck);
+			BackgroundExecutor.execute(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						long firstInstallTime = FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime;
+						long yesterday = System.currentTimeMillis() - 24 * 3600 * 1000L;
+						List<Media> loadMedia = Utils.loadMedia(false);
+						int nbFileDeleted = 0;
+						for (Media media : loadMedia) {
+							if (media.isUploaded() && media.getTimestampUploaded() > firstInstallTime && media.getTimestampUploaded() < yesterday) {
+								boolean stillOnFlickr = FlickrApi.isStillOnFlickr(media);
+								LOG.info("poundering deletion of : " + media + " : stillOnFlickr=" + stillOnFlickr);
+								if (stillOnFlickr) {
+									boolean deleted = new File(media.getPath()).delete();
+									LOG.warn("Deleting " + media + " " + ToolString.formatDuration(System.currentTimeMillis() - media.getTimestampUploaded()) + " after upload : deleted=" + deleted);
+									media.delete();
+									nbFileDeleted++;
+								} else if (FlickrApi.isNetworkOk()) {
+									media.setFlickrId(null);
+									media.save2(null);
+								}
+							}
+						}
+						if (nbFileDeleted > 0) {
+							LOG.warn(nbFileDeleted + " files deleted");
+							Utils.loadMedia(true);
+						}
+					} catch (Throwable e) {
+						LOG.error(ToolString.stack2string(e));
+					}
+				}
+			});
+		}
+	}
 }

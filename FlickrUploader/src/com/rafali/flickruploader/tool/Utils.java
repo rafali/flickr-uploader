@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -749,7 +748,9 @@ public final class Utils {
 				}
 				LOG.info(cachedMedias.size() + " sync done in " + (System.currentTimeMillis() - start) + " ms");
 			} else {
-				LOG.debug("returning " + (System.currentTimeMillis() - lastCached) + " ms old cachedMedias");
+				if (Config.isDebug()) {
+					LOG.debug("returning " + (System.currentTimeMillis() - lastCached) + " ms old cachedMedias");
+				}
 			}
 			return new ArrayList<Media>(cachedMedias);
 		}
@@ -884,6 +885,10 @@ public final class Utils {
 
 	public static boolean isAutoUpload() {
 		return Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD, false) || Utils.getBooleanProperty(PreferencesActivity.AUTOUPLOAD_VIDEOS, false);
+	}
+
+	public static boolean isAutoDelete() {
+		return Utils.getBooleanProperty("autodeletemedia", false);
 	}
 
 	public static boolean isAutoUpload(int mediaType) {
@@ -1406,16 +1411,13 @@ public final class Utils {
 		builder.create().show();
 	}
 
-	public static void showExistingSetDialog(final Activity activity, final Callback<String> callback, final Set<FlickrSet> cachedPhotosets) {
+	public static void showExistingSetDialog(final Activity activity, final Callback<String> callback, final Map<String, FlickrSet> cachedPhotosets) {
 		final ProgressDialog dialog = ProgressDialog.show(activity, "", "Loading photosets", true);
 		BackgroundExecutor.execute(new Runnable() {
 			@Override
 			public void run() {
-				final Set<FlickrSet> photosets = cachedPhotosets == null ? FlickrApi.getPhotoSets(true) : cachedPhotosets;
-				final List<String> photosetTitles = new ArrayList<String>();
-				for (FlickrSet flickrSet : photosets) {
-					photosetTitles.add(flickrSet.getName());
-				}
+				final Map<String, FlickrSet> photosets = cachedPhotosets == null ? FlickrApi.getPhotoSets(true) : cachedPhotosets;
+				final List<String> photosetTitles = new ArrayList<String>(photosets.keySet());
 				Collections.sort(photosetTitles, String.CASE_INSENSITIVE_ORDER);
 				activity.runOnUiThread(new Runnable() {
 					@Override

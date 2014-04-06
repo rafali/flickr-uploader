@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -76,7 +76,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 	@ViewById(R.id.loading)
 	TextView loading;
 
-	private Set<FlickrSet> cachedPhotoSets;
+	private Map<String, FlickrSet> cachedPhotoSets;
 
 	@Background
 	void load() {

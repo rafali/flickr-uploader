@@ -172,7 +172,7 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 							.setNegativeButton("Later", null).setPositiveButton("See the FAQ", new OnClickListener() {
 								@Override
 								public void onClick(DialogInterface dialog, int which) {
-									String url = "https://github.com/rafali/flickr-uploader/wiki/FAQ#how-to-make-sure-it-wont-use-my-precious-data-plan";
+									String url = "https://github.com/rafali/flickr-uploader/wiki/FAQ2#how-to-make-sure-it-wont-use-my-precious-data-plan";
 									Intent i = new Intent(Intent.ACTION_VIEW);
 									i.setData(Uri.parse(url));
 									startActivity(i);

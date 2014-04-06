@@ -289,32 +289,47 @@ public class FlickrApi {
 				}
 			}
 			if (media.getFlickrId() != null) {
-				String flickrSetId = getPhotoSetId(media.getFlickrSetTitle());
+				Map<String, FlickrSet> photoSets = getPhotoSets(false);
+				FlickrSet flickrSet = photoSets.get(media.getFlickrSetTitle());
+				if (flickrSet == null) {
+					photoSets = getPhotoSets(true);
+					flickrSet = photoSets.get(media.getFlickrSetTitle());
+				}
 				try {
-					if (flickrSetId != null && flickrSetId.equals(media.getFlickrSetId())) {
-						LOG.info(media.getFlickrId() + " photo is already in set " + flickrSetId + ", no need to call API");
-					} else if (ToolString.isBlank(flickrSetId)) {
+					if (flickrSet != null && flickrSet.getId().equals(media.getFlickrSetId())) {
+						LOG.info(media.getFlickrId() + " photo is already in set " + flickrSet + ", no need to call API");
+					} else if (flickrSet == null) {
 						Photoset photoset = FlickrApi.get().getPhotosetsInterface().create(media.getFlickrSetTitle(), Utils.getUploadDescription(), media.getFlickrId());
-						flickrSetId = photoset.getId();
-						cachedPhotoSets = null;
+						flickrSet = new FlickrSet(photoset.getId(), photoset.getTitle());
+						flickrSet.save();
+						flickrSet.setSize(1);
+						if (cachedPhotoSets != null) {
+							cachedPhotoSets.put(flickrSet.getName(), flickrSet);
+						}
 					} else {
-						FlickrApi.get().getPhotosetsInterface().addPhoto(flickrSetId, media.getFlickrId());
+						FlickrApi.get().getPhotosetsInterface().addPhoto(flickrSet.getId(), media.getFlickrId());
 					}
 				} catch (FlickrException fe) {
 					if ("1".equals(fe.getErrorCode())) {
-						LOG.warn("photosetId : " + flickrSetId + " not found, photo will not be saved in a set");
+						LOG.warn("photosetId : " + flickrSet + " not found, photo will not be saved in a set");
 						cachedPhotoSets = null;
 					} else if ("3".equals(fe.getErrorCode())) {
-						LOG.info(media.getFlickrId() + " photo is already in set " + flickrSetId);
+						LOG.info(media.getFlickrId() + " photo is already in set " + flickrSet);
 					} else {
 						throw fe;
 					}
 				}
-				media.setFlickrSetId(flickrSetId);
-				media.save();
+				if (flickrSet == null) {
+					throw new UploadException("failed to add to photoset", true);
+				} else {
+					media.setFlickrSetId(flickrSet.getId());
+					media.save();
+				}
 				try {
-					Date date = new Date(media.getTimestampCreated());
-					FlickrApi.get().getPhotosInterface().setDates(media.getFlickrId(), date, date, "0");
+					if (System.currentTimeMillis() - media.getTimestampCreated() > 30 * 60 * 1000L) {
+						Date date = new Date(media.getTimestampCreated());
+						FlickrApi.get().getPhotosInterface().setDates(media.getFlickrId(), date, date, "0");
+					}
 				} catch (Throwable e) {
 					LOG.error(ToolString.stack2string(e));
 				}
@@ -337,18 +352,6 @@ public class FlickrApi {
 				throw new UploadException(e.getMessage(), e);
 			}
 		}
-	}
-
-	private static String getPhotoSetId(String photosetTitle) {
-		if (photosetTitle != null) {
-			Set<FlickrSet> photoSets = getPhotoSets(false);
-			for (FlickrSet flickrSet : photoSets) {
-				if (flickrSet.getName().equals(photosetTitle)) {
-					return flickrSet.getId();
-				}
-			}
-		}
-		return null;
 	}
 
 	static String getExtension(Media media) {
@@ -433,24 +436,39 @@ public class FlickrApi {
 		return result;
 	}
 
-	static Set<FlickrSet> cachedPhotoSets;
+	static Map<String, FlickrSet> cachedPhotoSets;
 
-	public static Set<FlickrSet> getPhotoSets(boolean refresh) {
-		Set<FlickrSet> photoSets = new HashSet<FlickrSet>();
+	public static Map<String, FlickrSet> getPhotoSets(boolean refresh) {
+		Map<String, FlickrSet> photoSets = new HashMap<String, FlickrSet>();
 		try {
 			CursorList<FlickrSet> cursorList = null;
 			if (cachedPhotoSets == null) {
-				cachedPhotoSets = new HashSet<FlickrSet>();
+				cachedPhotoSets = new HashMap<String, FlickrSet>();
 				cursorList = Query.all(FlickrSet.class).get();
 				for (FlickrSet flickrSet : cursorList) {
-					cachedPhotoSets.add(flickrSet);
+					cachedPhotoSets.put(flickrSet.getName(), flickrSet);
 				}
 			}
 			if (FlickrApi.isAuthentified() && (refresh || cachedPhotoSets.isEmpty())) {
 				Map<String, FlickrSet> freshPhotoSets = new HashMap<String, FlickrSet>();
 				// Log.i(TAG, "persisted uploadedPhotos : " + uploadedPhotos);
-				Collection<Photoset> photosets = FlickrApi.get().getPhotosetsInterface().getList(Utils.getStringProperty(STR.userId)).getPhotosets();
-				if (!photosets.isEmpty()) {
+				Collection<Photoset> photosets = null;
+				int retry = 0;
+				while (photosets == null && retry < 3) {
+					try {
+						photosets = FlickrApi.get().getPhotosetsInterface().getList(Utils.getStringProperty(STR.userId)).getPhotosets();
+					} catch (Throwable e) {
+						LOG.error(ToolString.stack2string(e));
+						try {
+							Thread.sleep((long) (Math.pow(4, retry) * 1000L));
+						} catch (InterruptedException e1) {
+						}
+					} finally {
+						retry++;
+					}
+				}
+				if (photosets != null && !photosets.isEmpty()) {
+					cachedPhotoSets.clear();
 					Transaction t = new Transaction();
 					try {
 						for (final Photoset photoset : photosets) {
@@ -458,10 +476,10 @@ public class FlickrApi {
 							flickrSet.setSize(photoset.getPhotoCount());
 							flickrSet.save(t);
 							freshPhotoSets.put(photoset.getId(), flickrSet);
+							cachedPhotoSets.put(photoset.getTitle(), flickrSet);
 						}
-						if (cursorList == null) {
-							cursorList = Query.all(FlickrSet.class).get();
-						}
+
+						cursorList = Query.all(FlickrSet.class).get();
 						for (FlickrSet flickrSetName : cursorList) {
 							if (!freshPhotoSets.containsKey(flickrSetName.getId())) {
 								flickrSetName.delete(t);
@@ -475,14 +493,43 @@ public class FlickrApi {
 						t.finish();
 					}
 				}
-				cachedPhotoSets.clear();
-				cachedPhotoSets.addAll(freshPhotoSets.values());
+
 			}
-			photoSets.addAll(cachedPhotoSets);
+			photoSets.putAll(cachedPhotoSets);
 		} catch (Throwable e) {
 			LOG.error(ToolString.stack2string(e));
 		}
 		return photoSets;
+	}
+
+	public static boolean isStillOnFlickr(Media media) {
+		if (isAuthentified()) {
+			String md5tag = media.getMd5Tag();
+			SearchParameters params = new SearchParameters();
+			params.setUserId(Utils.getStringProperty(STR.userId));
+			params.setMachineTags(new String[] { md5tag });
+			PhotoList photoList = null;
+			int retry = 0;
+			while (photoList == null && retry < 3) {
+				try {
+					photoList = FlickrApi.get().getPhotosInterface().search(params, 1, 1);
+					if (photoList != null && !photoList.isEmpty()) {
+						Photo photo = photoList.get(0);
+						LOG.warn(media + " is uploaded : " + photo.getId() + " = " + md5tag);
+						return true;
+					}
+				} catch (Throwable e) {
+					LOG.error(ToolString.stack2string(e));
+					try {
+						Thread.sleep((long) (Math.pow(4, retry) * 1000L));
+					} catch (InterruptedException e1) {
+					}
+				} finally {
+					retry++;
+				}
+			}
+		}
+		return false;
 	}
 
 }

@@ -22,5 +22,11 @@
     <PreferenceScreen
         android:key="custom_tags"
         android:title="Upload tag" />
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="autodeletemedia"
+        android:summaryOff="Device file auto-delete is deactivated"
+        android:summaryOn="Device file auto-delete is activated"
+        android:title="Delete 24h after upload" />
 
 </PreferenceScreen>
