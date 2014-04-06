@@ -79,7 +79,7 @@ public class MailHandlerServlet extends HttpServlet {
 							String recipient = message.getAllRecipients()[0].toString();
 							if (recipient.contains("coupon100@")) {
 								setPremium(email, true, false);
-								content = "Awesome! I've just upgraded your account (" + email + ") to Premium.\n";
+								content = "Awesome! I've just upgraded your account (" + email + ") to a PRO account.\n";
 							} else if (recipient.contains("coupon50@")) {
 								setDiscount(email, premiumSkuCoupon50);
 								content = "Awesome! I've just applied a 50% discount to your account (" + email + ").\n";
@@ -89,7 +89,7 @@ public class MailHandlerServlet extends HttpServlet {
 							}
 
 							if (content != null) {
-								content += "To refresh your status go to Preferences > Advanced Preferences and click on ‘Check Premium Status’.";
+								content += "To refresh your status go to Preferences > Advanced Preferences and click on ‘Check PRO Status’.";
 								content += "\n\nMaxime\n\n";
 								content += bodyPart.getContent();
 							}
