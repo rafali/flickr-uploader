@@ -174,8 +174,11 @@ public class DrawerHandleView extends LinearLayout implements UploadProgressList
 								if (media.getTimestampRetry() > 0 && media.getTimestampRetry() < Long.MAX_VALUE) {
 									pause = Math.max(0, media.getTimestampRetry() - System.currentTimeMillis());
 								}
-								String progressd = (progress / 10d) + "% - " + ToolString.formatDuration(System.currentTimeMillis() - media.getTimestampUploadStarted()) + " - " + currentPosition
-										+ " / " + total;
+								String progressd = (progress / 10d) + "%";
+								if (media.getTimestampUploadStarted() > 0 && System.currentTimeMillis() > media.getTimestampUploadStarted()) {
+									progressd += " - " + ToolString.formatDuration(System.currentTimeMillis() - media.getTimestampUploadStarted());
+								}
+								progressd += " - " + currentPosition + " / " + total;
 								if (media.getRetries() > 0) {
 									String duration;
 									if (pause > 0) {
