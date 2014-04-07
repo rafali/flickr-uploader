@@ -149,6 +149,10 @@ public class REST extends Transport {
 			LOG.debug("GET URL: {}", url.toString());
 		}
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		if (url.toString().contains("method=flickr.test.echo")) {
+			conn.setConnectTimeout(5000);
+			conn.setReadTimeout(5000);
+		}
 		conn.addRequestProperty("Cache-Control", "no-cache,max-age=0");
 		conn.addRequestProperty("Pragma", "no-cache");
 		conn.setRequestMethod("GET");
@@ -268,57 +272,79 @@ public class REST extends Transport {
 
 		void kill() {
 			killed = true;
-			new Thread(new Runnable() {
-				@Override
-				public void run() {
-					if (out != null) {
-						try {
-							out.close();
-							LOG.warn("DataOutputStream closed");
-						} catch (Throwable e) {
-							LOG.error(ToolString.stack2string(e));
-						}
-					} else {
-						LOG.warn("DataOutputStream is null");
-					}
-					if (in != null) {
-						try {
-							in.close();
-							LOG.warn("InputStream closed");
-						} catch (Throwable e) {
-							LOG.error(ToolString.stack2string(e));
-						}
-					} else {
-						LOG.warn("InputStream is null");
-					}
-					if (conn != null) {
-						try {
-							conn.setConnectTimeout(50);
-							conn.setReadTimeout(50);
-							conn.disconnect();
-						} catch (Throwable e) {
-							LOG.error(ToolString.stack2string(e));
-						}
-					} else {
-						LOG.warn("HttpURLConnection is null");
-					}
-					try {
-						UploadThread.this.interrupt();
-						LOG.warn(this + " is interrupted : " + UploadThread.this.isInterrupted());
-					} catch (Throwable e) {
-						LOG.error(ToolString.stack2string(e));
-					}
-					onFinish();
+			if (conn != null) {
+				try {
+					conn.setConnectTimeout(50);
+					conn.setReadTimeout(50);
+					conn.disconnect();
+				} catch (Throwable e) {
+					LOG.error(ToolString.stack2string(e));
 				}
-			}).start();
-			;
+			} else {
+				LOG.warn("HttpURLConnection is null");
+			}
+			if (out != null) {
+				try {
+					LOG.warn("closing DataOutputStream");
+					out.close();
+					LOG.warn("DataOutputStream closed");
+				} catch (Throwable e) {
+					LOG.error(ToolString.stack2string(e));
+				}
+			} else {
+				LOG.warn("DataOutputStream is null");
+			}
+			if (in != null) {
+				try {
+					LOG.warn("closing InputStream");
+					in.close();
+					LOG.warn("InputStream closed");
+				} catch (Throwable e) {
+					LOG.error(ToolString.stack2string(e));
+				}
+			} else {
+				LOG.warn("InputStream is null");
+			}
+
+			try {
+				UploadThread.this.interrupt();
+				LOG.warn(this + " is interrupted : " + UploadThread.this.isInterrupted());
+			} catch (Throwable e) {
+				LOG.error(ToolString.stack2string(e));
+			}
+			onFinish();
 		}
 
 		@Override
 		public void run() {
 			// String data = null;
-			int progress = 0;
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					long lastProgressChange = System.currentTimeMillis();
+					int lastProgress = 0;
+					while (UploadThread.this.isAlive() && !UploadThread.this.isInterrupted() && media.getProgress() < 999 && System.currentTimeMillis() - lastProgressChange < 2 * 60 * 1000L) {
+						if (media.getProgress() > LIMIT) {
+							reportProgress(media, Math.min(998, media.getProgress() + 1));
+						}
+						if (lastProgress != media.getProgress()) {
+							lastProgress = media.getProgress();
+							lastProgressChange = System.currentTimeMillis();
+						}
+						try {
+							Thread.sleep(Math.max(1000, (media.getProgress() - LIMIT) * 600));
+						} catch (InterruptedException ignore) {
+						}
+					}
+					if (media.getProgress() < 999 && System.currentTimeMillis() - lastProgressChange >= 2 * 60 * 1000L) {
+						LOG.warn("Upload is taking too long, started " + ToolString.formatDuration(System.currentTimeMillis() - media.getTimestampUploadStarted()) + " ago");
+						UploadThread.this.kill();
+					}
+
+				}
+			}).start();
 			reportProgress(media, 0);
+			media.setTimestampUploadStarted(System.currentTimeMillis());
 			try {
 				URL url = UrlUtilities.buildPostUrl(getHost(), getPort(), path);
 
@@ -336,7 +362,6 @@ public class REST extends Transport {
 
 				boundary = "--" + boundary;
 
-				boolean shouldStream = false;
 				int contentLength = 0;
 				contentLength += boundary.getBytes("UTF-8").length;
 				for (Parameter parameter : parameters) {
@@ -348,9 +373,6 @@ public class REST extends Transport {
 					} else if (parameter instanceof ImageParameter && parameter.getValue() instanceof File) {
 						ImageParameter imageParam = (ImageParameter) parameter;
 						File file = (File) parameter.getValue();
-						if (file.length() > 4 * 1024 * 1024L) {
-							shouldStream = true;
-						}
 						contentLength += String.format(Locale.US, "Content-Disposition: form-data; name=\"%s\"; filename=\"%s\";\r\n", parameter.getName(), imageParam.getImageName())
 								.getBytes("UTF-8").length;
 						contentLength += String.format(Locale.US, "Content-Type: image/%s\r\n\r\n", imageParam.getImageType()).getBytes("UTF-8").length;
@@ -367,21 +389,17 @@ public class REST extends Transport {
 				contentLength += 213;// dirty hack to account for missing param somewhere
 				LOG.debug("contentLength : " + contentLength);
 
-				if (shouldStream) {// may be buggy due to the aforementioned dirty hack so only on big files
-					conn.setRequestProperty("Content-Length", "" + contentLength);
-					conn.setFixedLengthStreamingMode(contentLength);
-				}
+				conn.setRequestProperty("Content-Length", "" + contentLength);
+				conn.setFixedLengthStreamingMode(contentLength);
 
 				conn.connect();
-				progress = 1;
-				reportProgress(media, progress);
+				reportProgress(media, 1);
 				out = new DataOutputStream(conn.getOutputStream());
 				out.writeBytes(boundary);
-				progress = 2;
-				reportProgress(media, progress);
+				reportProgress(media, 2);
 
 				for (Parameter parameter : parameters) {
-					progress = writeParam(progress, parameter, out, boundary, media);
+					writeParam(parameter, out, boundary, media);
 				}
 
 				out.writeBytes("--\r\n\r\n");
@@ -391,25 +409,9 @@ public class REST extends Transport {
 
 				out.close();
 
-				progress = 51;
-				reportProgress(media, progress);
+				reportProgress(media, LIMIT + 1);
 				int responseCode = -1;
-				final int[] progressArray = new int[] { progress };
 				try {
-					new Thread(new Runnable() {
-						@Override
-						public void run() {
-							int progress = progressArray[0];
-							while (UploadThread.this.isAlive() && !UploadThread.this.isInterrupted() && progressArray[0] <= 51 && progress < 98) {
-								progress = Math.min(98, progress + 1);
-								reportProgress(media, progress);
-								try {
-									Thread.sleep(Math.max(1000, (progress - 65) * 700));
-								} catch (InterruptedException ignore) {
-								}
-							}
-						}
-					}).start();
 					responseCode = conn.getResponseCode();
 				} catch (IOException e) {
 					LOG.error("Failed to get the POST response code\n" + ToolString.stack2string(e));
@@ -418,9 +420,7 @@ public class REST extends Transport {
 					}
 					responseContainer[0] = e;
 				} finally {
-					progress = 99;
-					progressArray[0] = progress;
-					reportProgress(media, progress);
+					reportProgress(media, 999);
 				}
 				if (responseCode < 0) {
 					LOG.error("some error occured : " + responseCode);
@@ -446,8 +446,7 @@ public class REST extends Transport {
 				responseContainer[0] = t;
 			} finally {
 				try {
-					progress = 100;
-					reportProgress(media, progress);
+					reportProgress(media, 1000);
 					IOUtilities.close(out);
 					if (conn != null)
 						conn.disconnect();
@@ -528,6 +527,9 @@ public class REST extends Transport {
 		for (Parameter parameter : parameters) {
 			if (parameter.getName().equalsIgnoreCase("method")) {
 				method = (String) parameter.getValue();
+				if (method.equals("flickr.test.echo")) {
+					timeout = 5000;
+				}
 			} else if (parameter.getName().equalsIgnoreCase("machine_tags") && ((String) parameter.getValue()).contains("file:md5sum")) {
 				timeout = 10000;
 			}
@@ -647,7 +649,9 @@ public class REST extends Transport {
 		return buf.toString();
 	}
 
-	private int writeParam(int progress, Parameter param, DataOutputStream out, String boundary, Media media) throws IOException {
+	static final int LIMIT = 970;
+
+	private void writeParam(Parameter param, DataOutputStream out, String boundary, Media media) throws IOException {
 		String name = param.getName();
 		out.writeBytes("\r\n");
 		if (param instanceof ImageParameter) {
@@ -662,20 +666,19 @@ public class REST extends Transport {
 					long start = System.currentTimeMillis();
 					byte[] buf = new byte[512];
 					int res = -1;
-					int currentProgress = progress;
+					int bytesRead = 0;
+					int currentProgress = 2;
 					while ((res = in.read(buf)) != -1) {
 						out.write(buf, 0, res);
-						int tmpProgress = (int) Math.min(49, progress + (48 - progress) * Double.valueOf(out.size()) / file.length());
+						bytesRead += res;
+
+						int tmpProgress = (int) Math.min(LIMIT, LIMIT * Double.valueOf(bytesRead) / file.length());
 						if (currentProgress != tmpProgress) {
 							currentProgress = tmpProgress;
-							// if (currentProgress % 5 == 0)
-							// out.flush();
-							LOG.trace("out.size() : " + out.size() + ", " + file.length());
 							reportProgress(media, currentProgress);
 						}
 					}
 					LOG.debug("output in " + (System.currentTimeMillis() - start) + " ms");
-					progress = currentProgress;
 				} finally {
 					if (in != null) {
 						in.close();
@@ -691,8 +694,5 @@ public class REST extends Transport {
 		}
 		out.writeBytes("\r\n");
 		out.writeBytes(boundary);
-		progress = Math.min(50, progress + 1);
-		reportProgress(media, progress);
-		return progress;
 	}
 }

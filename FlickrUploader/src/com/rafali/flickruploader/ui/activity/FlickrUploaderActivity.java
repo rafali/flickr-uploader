@@ -20,7 +20,6 @@ import java.util.concurrent.Executors;
 
 import org.slf4j.LoggerFactory;
 
-import se.emilsjolander.sprinkles.Transaction;
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
 import uk.co.senab.bitmapcache.CacheableImageView;
 import android.app.Activity;
@@ -121,6 +120,8 @@ public class FlickrUploaderActivity extends Activity {
 		}
 	}
 
+	boolean finishOnClose = false;
+
 	@Background
 	void handleIntent(Intent intent) {
 		if (intent != null) {
@@ -135,6 +136,7 @@ public class FlickrUploaderActivity extends Activity {
 						paths = Arrays.asList(path);
 					}
 				}
+				finishOnClose = true;
 			} else if (Intent.ACTION_SEND_MULTIPLE.equals(action) && type != null) {
 				if (type.startsWith("image/") || type.startsWith("video/")) {
 					List<Uri> imageUris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
@@ -146,6 +148,7 @@ public class FlickrUploaderActivity extends Activity {
 						}
 					}
 				}
+				finishOnClose = true;
 			}
 			if (paths != null && !paths.isEmpty()) {
 				List<Media> medias = Utils.loadMedia(true);
@@ -916,7 +919,11 @@ public class FlickrUploaderActivity extends Activity {
 		if (slidingDrawer != null && slidingDrawer.isOpened()) {
 			slidingDrawer.animateClose();
 		} else {
-			moveTaskToBack(true);
+			if (finishOnClose) {
+				finish();
+			} else {
+				moveTaskToBack(true);
+			}
 		}
 	}
 

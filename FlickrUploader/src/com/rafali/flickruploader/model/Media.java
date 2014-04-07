@@ -76,6 +76,8 @@ public class Media extends Model {
 
 	@Column("errorMessage")
 	private String errorMessage;
+	
+	private long timestampUploadStarted;
 
 	public Media() {
 	}
@@ -391,6 +393,14 @@ public class Media extends Model {
 
 	public void setProgress(int progress) {
 		this.progress = progress;
+	}
+
+	public long getTimestampUploadStarted() {
+		return timestampUploadStarted;
+	}
+
+	public void setTimestampUploadStarted(long timestampUploadStarted) {
+		this.timestampUploadStarted = timestampUploadStarted;
 	}
 
 	private int progress = 0;

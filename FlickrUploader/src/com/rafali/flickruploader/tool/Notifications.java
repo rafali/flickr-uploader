@@ -93,10 +93,8 @@ public class Notifications {
 
 			ensureBuilders();
 
-			int realProgress = (int) (100 * (currentPosition - 1 + Double.valueOf(progress) / 100) / total);
-
 			Builder builder = builderUploading;
-			builder.setProgress(100, progress, false);
+			builder.setProgress(1000, progress, false);
 			builder.setContentText(media.getName());
 			builder.setContentInfo(currentPosition + " / " + total);
 
@@ -114,8 +112,6 @@ public class Notifications {
 			} else {
 				builder.setLargeIcon(bitmapDrawable.getBitmap());
 			}
-
-			builder.setOngoing(realProgress < 95);
 
 			Notification notification = builder.build();
 			notification.icon = android.R.drawable.stat_sys_upload_done;

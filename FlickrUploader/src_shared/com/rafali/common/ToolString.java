@@ -176,8 +176,13 @@ public class ToolString {
 			return "0";
 		final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
 		int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
-		return new DecimalFormat("#,##0.#").format(size / Math.pow(1024, digitGroups)) + " " + units[digitGroups];
+		if (decimalFormat == null) {
+			decimalFormat = new DecimalFormat("#,##0.#");
+		}
+		return decimalFormat.format(size / Math.pow(1024, digitGroups)) + " " + units[digitGroups];
 	}
+
+	static DecimalFormat decimalFormat;
 
 	public static String stack2string(Throwable e) {
 		try {

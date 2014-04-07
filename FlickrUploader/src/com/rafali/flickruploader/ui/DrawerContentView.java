@@ -390,6 +390,9 @@ public class DrawerContentView extends RelativeLayout implements UploadProgressL
 				long since = System.currentTimeMillis() - media.getTimestampUploaded();
 				if (since > 0) {
 					text += "\nuploaded " + ToolString.formatDuration(since) + " ago";
+					if (media.getTimestampUploadStarted() > 0 && media.getTimestampUploaded() > media.getTimestampUploadStarted()) {
+						text += " in " + ToolString.formatDuration(media.getTimestampUploaded() - media.getTimestampUploadStarted());
+					}
 					if (media.getRetries() > 0) {
 						text += "\nafter " + media.getRetries() + " retr" + (media.getRetries() > 1 ? "ies" : "y");
 					}
