@@ -374,6 +374,7 @@ public class UploadService extends Service {
 							UploadException exc = null;
 							try {
 								LOG.debug("Starting upload : " + mediaCurrentlyUploading);
+								mediaCurrentlyUploading.setTimestampUploadStarted(start);
 								FlickrApi.upload(mediaCurrentlyUploading);
 							} catch (UploadException e) {
 								LOG.error(e.toString());
@@ -387,6 +388,7 @@ public class UploadService extends Service {
 								LOG.debug("Upload success : " + time + "ms " + mediaCurrentlyUploading);
 								mediaCurrentlyUploading.setStatus(STATUS.UPLOADED);
 							} else {
+								mediaCurrentlyUploading.setTimestampUploadStarted(0);
 								mediaCurrentlyUploading.setErrorMessage(exc.getMessage());
 								int newretries = mediaCurrentlyUploading.getRetries() + 1;
 								mediaCurrentlyUploading.setRetries(newretries);

@@ -344,7 +344,6 @@ public class REST extends Transport {
 				}
 			}).start();
 			reportProgress(media, 0);
-			media.setTimestampUploadStarted(System.currentTimeMillis());
 			try {
 				URL url = UrlUtilities.buildPostUrl(getHost(), getPort(), path);
 
