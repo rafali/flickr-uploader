@@ -195,6 +195,26 @@ public class ToolString {
 		}
 	}
 
+	public static String stack2stringApp(Throwable e) {
+		try {
+			StringWriter sw = new StringWriter();
+			PrintWriter pw = new PrintWriter(sw);
+			e.printStackTrace(pw);
+			String[] split = sw.toString().split("\n");
+			StringBuffer strb = new StringBuffer();
+			for (String line : split) {
+				if (line.contains("com.rafali")) {
+					strb.append(line + "\n");
+					break;
+				} else {
+					strb.append(line + "\n");
+				}
+			}
+			return strb.toString();
+		} catch (Exception e2) {
+			return "bad stack2string";
+		}
+	}
 	public static String getFileName(String path) {
 		if (path.endsWith("/")) {
 			return getFileName(path.substring(0, path.length() - 1));

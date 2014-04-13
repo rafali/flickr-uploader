@@ -483,16 +483,21 @@ public class UploadService extends Service {
 		}
 	}
 
-	public static void wake(boolean force) {
-		if ((instance == null || instance.destroyed) && (force || Utils.canAutoUploadBool() || checkQueue() != null)) {
-			Context context = FlickrUploader.getAppContext();
-			context.startService(new Intent(context, UploadService.class));
-			AlarmBroadcastReceiver.initAlarm();
-		}
-		checkForFilesToDelete();
-		synchronized (mPauseLock) {
-			mPauseLock.notifyAll();
-		}
+	public static void wake(final boolean force) {
+		BackgroundExecutor.execute(new Runnable() {
+			@Override
+			public void run() {
+				if ((instance == null || instance.destroyed) && (force || Utils.canAutoUploadBool() || checkQueue() != null)) {
+					Context context = FlickrUploader.getAppContext();
+					context.startService(new Intent(context, UploadService.class));
+					AlarmBroadcastReceiver.initAlarm();
+				}
+				checkForFilesToDelete();
+				synchronized (mPauseLock) {
+					mPauseLock.notifyAll();
+				}
+			}
+		});
 	}
 
 	private static final Object mPauseLock = new Object();

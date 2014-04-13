@@ -617,143 +617,165 @@ public final class Utils {
 	static List<Media> cachedMedias = new ArrayList<Media>();
 
 	public static List<Media> loadMedia(boolean sync) {
-		// LOG.info(ToolString.stack2string(new Exception("loading media")));
-		synchronized (cachedMedias) {
-			if (cachedMedias.isEmpty() || sync) {
+		boolean empty = true;
+		if (!sync) {
+			synchronized (cachedMedias) {
+				if (cachedMedias.isEmpty()) {
+					long start = System.currentTimeMillis();
+					cachedMedias.addAll(Query.all(Media.class).get().asList());
+					lastCached = System.currentTimeMillis();
+					LOG.info(cachedMedias.size() + " load from local database done in " + (System.currentTimeMillis() - start) + " ms");
+					empty = cachedMedias.isEmpty();
+				} else {
+					empty = false;
+				}
+			}
+		}
+		if (sync || empty) {
+			List<Media> syncMedia = syncMediaDatabase();
+			synchronized (cachedMedias) {
 				cachedMedias.clear();
-				long start = System.currentTimeMillis();
-				Cursor cursor = null;
-				Transaction t = new Transaction();
-				try {
+				cachedMedias.addAll(syncMedia);
+				lastCached = System.currentTimeMillis();
+			}
+			return syncMedia;
+		} else {
+			LOG.debug("returning " + (System.currentTimeMillis() - lastCached) + " ms old cachedMedias");
+		}
+		synchronized (cachedMedias) {
+			return new ArrayList<Media>(cachedMedias);
+		}
+	}
 
-					ManyQuery<Media> query = Query.many(Media.class, "select * from Media order by id asc");
-					CursorList<Media> cursorList = query.get();
-					final int totalDatabase = cursorList.size();
-					Iterator<Media> it = cursorList.iterator();
+	private static synchronized List<Media> syncMediaDatabase() {
+		// Log.i("STACK", ToolString.stack2string(new Exception()));
+		List<Media> syncedMedias = new ArrayList<Media>();
+		long start = System.currentTimeMillis();
+		Cursor cursor = null;
+		Transaction t = new Transaction();
+		try {
 
-					String selection = FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.PHOTO + " OR " + FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.VIDEO;
+			ManyQuery<Media> query = Query.many(Media.class, "select * from Media order by id asc");
+			CursorList<Media> cursorList = query.get();
+			final int totalDatabase = cursorList.size();
 
-					String orderBy = FileColumns._ID + " ASC";
-					cursor = FlickrUploader.getAppContext().getContentResolver().query(MediaStore.Files.getContentUri("external"), proj, selection, null, orderBy);
+			Iterator<Media> it = cursorList.iterator();
+			String selection = FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.PHOTO + " OR " + FileColumns.MEDIA_TYPE + "=" + MEDIA_TYPE.VIDEO;
 
-					int idColumn = cursor.getColumnIndex(FileColumns._ID);
-					int dataColumn = cursor.getColumnIndex(FileColumns.DATA);
-					int mediaTypeColumn = cursor.getColumnIndex(FileColumns.MEDIA_TYPE);
-					int dateAddedColumn = cursor.getColumnIndexOrThrow(FileColumns.DATE_ADDED);
-					int sizeColumn = cursor.getColumnIndex(FileColumns.SIZE);
-					int dateTakenColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_TAKEN);
-					cursor.moveToFirst();
-					final int totalMediaStore = cursor.getCount();
+			String orderBy = FileColumns._ID + " ASC";
+			cursor = FlickrUploader.getAppContext().getContentResolver().query(MediaStore.Files.getContentUri("external"), proj, selection, null, orderBy);
 
-					boolean shouldAutoUpload = totalDatabase > 0 && isAutoUpload() && FlickrApi.isAuthentified();
+			int idColumn = cursor.getColumnIndex(FileColumns._ID);
+			int dataColumn = cursor.getColumnIndex(FileColumns.DATA);
+			int mediaTypeColumn = cursor.getColumnIndex(FileColumns.MEDIA_TYPE);
+			int dateAddedColumn = cursor.getColumnIndexOrThrow(FileColumns.DATE_ADDED);
+			int sizeColumn = cursor.getColumnIndex(FileColumns.SIZE);
+			int dateTakenColumn = cursor.getColumnIndexOrThrow(Images.Media.DATE_TAKEN);
+			cursor.moveToFirst();
+			final int totalMediaStore = cursor.getCount();
 
-					LOG.debug("totalMediaStore = " + totalMediaStore + ", totalDatabase = " + totalDatabase);
-					int progress = -1;
-					Media currentMedia = null;
-					int max = Math.max(totalMediaStore, totalDatabase);
-					for (int i = 0; i < max; i++) {
+			boolean shouldAutoUpload = totalDatabase > 0 && isAutoUpload() && FlickrApi.isAuthentified();
 
-						int newprogress = i * 100 / max;
-						if (newprogress != progress) {
-							progress = newprogress;
-							// LOG.info("load progress : " + progress + "%");
-							FlickrUploaderActivity.onLoadProgress(progress);
-						}
+			LOG.debug("totalMediaStore = " + totalMediaStore + ", totalDatabase = " + totalDatabase);
+			int progress = -1;
+			Media currentMedia = null;
+			int max = Math.max(totalMediaStore, totalDatabase);
+			for (int i = 0; i < max; i++) {
 
-						if (currentMedia == null && it.hasNext()) {
-							currentMedia = it.next();
-						}
-						if (cursor.isAfterLast()) {
-							if (currentMedia != null) {
-								LOG.info(currentMedia + " no longer exist, we should delete it here too");
-								currentMedia.deleteAsync();
-								currentMedia = null;
-							}
+				int newprogress = i * 100 / max;
+				if (newprogress != progress) {
+					progress = newprogress;
+					// LOG.info("load progress : " + progress + "%");
+					FlickrUploaderActivity.onLoadProgress(progress);
+				}
+
+				if (currentMedia == null && it.hasNext()) {
+					currentMedia = it.next();
+				}
+				if (cursor.isAfterLast()) {
+					if (currentMedia != null) {
+						LOG.info(currentMedia + " no longer exist, we should delete it here too");
+						currentMedia.deleteAsync();
+						currentMedia = null;
+					}
+				} else {
+					try {
+						int mediaStoreId = cursor.getInt(idColumn);
+						String data = cursor.getString(dataColumn);
+
+						// LOG.info("i=" + i + ", mediaStoreId=" + mediaStoreId
+						// + ", currentMedia=" + currentMedia);
+
+						if (currentMedia != null && currentMedia.getId() < mediaStoreId) {
+							LOG.info(currentMedia + " no longer exist, we should delete it");
+							currentMedia.deleteAsync();
+							currentMedia = null;
+						} else if (currentMedia != null && currentMedia.getId() == mediaStoreId && currentMedia.getPath().equals(data)) {
+							// LOG.info("nothing to do, already in sync");
+							syncedMedias.add(currentMedia);
+							currentMedia = null;
+							cursor.moveToNext();
 						} else {
+							Media mediaToPersist;
+							if (currentMedia != null && currentMedia.getId() == mediaStoreId) {
+								mediaToPersist = currentMedia;
+								currentMedia = null;
+								mediaToPersist.setExist(true);
+							} else {
+								mediaToPersist = new Media(shouldAutoUpload ? STATUS.IMPORTED : STATUS.PAUSED);
+								mediaToPersist.setExist(false);
+							}
+							syncedMedias.add(mediaToPersist);
+
+							// LOG.info("creating new Media");
+							Long date = null;
+							String dateStr = null;
 							try {
-								int mediaStoreId = cursor.getInt(idColumn);
-								String data = cursor.getString(dataColumn);
-
-								// LOG.info("i=" + i + ", mediaStoreId=" + mediaStoreId
-								// + ", currentMedia=" + currentMedia);
-
-								if (currentMedia != null && currentMedia.getId() < mediaStoreId) {
-									LOG.info(currentMedia + " no longer exist, we should delete it");
-									currentMedia.deleteAsync();
-									currentMedia = null;
-								} else if (currentMedia != null && currentMedia.getId() == mediaStoreId && currentMedia.getPath().equals(data)) {
-									// LOG.info("nothing to do, already in sync");
-									cachedMedias.add(currentMedia);
-									currentMedia = null;
-									cursor.moveToNext();
-								} else {
-									Media mediaToPersist;
-									if (currentMedia != null && currentMedia.getId() == mediaStoreId) {
-										mediaToPersist = currentMedia;
-										currentMedia = null;
-										mediaToPersist.setExist(true);
-									} else {
-										mediaToPersist = new Media(shouldAutoUpload ? STATUS.IMPORTED : STATUS.PAUSED);
-										mediaToPersist.setExist(false);
-									}
-									cachedMedias.add(mediaToPersist);
-
-									// LOG.info("creating new Media");
-									Long date = null;
-									String dateStr = null;
-									try {
-										dateStr = cursor.getString(dateTakenColumn);
-										if (ToolString.isBlank(dateStr)) {
-											dateStr = cursor.getString(dateAddedColumn);
-											if (ToolString.isNotBlank(dateStr)) {
-												if (dateStr.trim().length() <= 10) {
-													date = Long.valueOf(dateStr) * 1000L;
-												} else {
-													date = Long.valueOf(dateStr);
-												}
-											}
+								dateStr = cursor.getString(dateTakenColumn);
+								if (ToolString.isBlank(dateStr)) {
+									dateStr = cursor.getString(dateAddedColumn);
+									if (ToolString.isNotBlank(dateStr)) {
+										if (dateStr.trim().length() <= 10) {
+											date = Long.valueOf(dateStr) * 1000L;
 										} else {
 											date = Long.valueOf(dateStr);
 										}
-									} catch (Throwable e) {
-										LOG.warn(e.getClass().getSimpleName() + " : " + dateStr);
 									}
-									if (date == null) {
-										File file = new File(data);
-										date = file.lastModified();
-									}
-
-									mediaToPersist.setId(mediaStoreId);
-									mediaToPersist.setMediaType(cursor.getInt(mediaTypeColumn));
-									mediaToPersist.setPath(data);
-									mediaToPersist.setSize(cursor.getInt(sizeColumn));
-									mediaToPersist.setTimestampCreated(date);
-									mediaToPersist.save(t);
-
-									cursor.moveToNext();
+								} else {
+									date = Long.valueOf(dateStr);
 								}
 							} catch (Throwable e) {
-								LOG.error(ToolString.stack2string(e));
+								LOG.warn(e.getClass().getSimpleName() + " : " + dateStr);
 							}
+							if (date == null) {
+								File file = new File(data);
+								date = file.lastModified();
+							}
+
+							mediaToPersist.setId(mediaStoreId);
+							mediaToPersist.setMediaType(cursor.getInt(mediaTypeColumn));
+							mediaToPersist.setPath(data);
+							mediaToPersist.setSize(cursor.getInt(sizeColumn));
+							mediaToPersist.setTimestampCreated(date);
+							mediaToPersist.save(t);
+
+							cursor.moveToNext();
 						}
+					} catch (Throwable e) {
+						LOG.error(ToolString.stack2string(e));
 					}
-					t.setSuccessful(true);
-				} catch (Throwable e) {
-					LOG.error(ToolString.stack2string(e));
-				} finally {
-					lastCached = System.currentTimeMillis();
-					t.finish();
-					if (cursor != null)
-						cursor.close();
-				}
-				LOG.info(cachedMedias.size() + " sync done in " + (System.currentTimeMillis() - start) + " ms");
-			} else {
-				if (Config.isDebug()) {
-					LOG.debug("returning " + (System.currentTimeMillis() - lastCached) + " ms old cachedMedias");
 				}
 			}
-			return new ArrayList<Media>(cachedMedias);
+			t.setSuccessful(true);
+		} catch (Throwable e) {
+			LOG.error(ToolString.stack2string(e));
+		} finally {
+			t.finish();
+			if (cursor != null)
+				cursor.close();
 		}
+		LOG.info(syncedMedias.size() + " sync done in " + (System.currentTimeMillis() - start) + " ms");
+		return syncedMedias;
 	}
 
 	public static String canAutoUpload() {
@@ -1223,18 +1245,27 @@ public final class Utils {
 			@Override
 			public void run() {
 				AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-				builder.setMessage("Thank you!\n\nThanks to users like you, I can work on improving the app. If you have any suggestion, feel free to send me an email!\n\nMaxime");
-				builder.setPositiveButton("Reply", new OnClickListener() {
+				builder.setMessage("Thank you!\n\nIf you have any suggestion to improve the app, feel free to contact me via the Feedback button in the Preferences. Also, if you have two minutes to spare, please leave a review on the Play Store to let other Flickr users know how cool my app is ;)\n\nMaxime");
+				builder.setPositiveButton("Rate the app", new OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						showEmailActivity(activity, "Greetings!", "Hey Maxime,\n", false);
+						activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.rafali.flickruploader2")));
+						Utils.setBooleanProperty(STR.hasRated, true);
 					}
 				});
-				builder.setNegativeButton("OK", null);
+				builder.setNegativeButton("Later", null);
 				// Create the AlertDialog object and return it
 				builder.create().show();
 			}
 		});
+	}
+
+	public static String getDeviceName() {
+		if (Build.MODEL != null && Build.MODEL.startsWith(Build.MANUFACTURER)) {
+			return Build.MODEL;
+		} else {
+			return Build.MANUFACTURER + " " + Build.MODEL;
+		}
 	}
 
 	static boolean showingEmailActivity = false;
@@ -1266,6 +1297,8 @@ public final class Utils {
 									bW.write("app version : " + Config.FULL_VERSION_NAME);
 									bW.newLine();
 									bW.write("device id : " + getDeviceId());
+									bW.newLine();
+									bW.write("device name : " + getDeviceName());
 									bW.newLine();
 									bW.write("date install : " + FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime);
 									bW.newLine();

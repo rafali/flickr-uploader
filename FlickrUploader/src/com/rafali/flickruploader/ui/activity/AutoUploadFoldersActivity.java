@@ -254,9 +254,7 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 	private void renderImageView(final View convertView) {
 		if (convertView.getTag() instanceof Folder) {
 			final Folder folder = (Folder) convertView.getTag();
-			final Media media = folder.getMedia();
 			final CacheableImageView imageView = (CacheableImageView) convertView.getTag(R.id.image_view);
-			imageView.setTag(media);
 			((TextView) convertView.getTag(R.id.title)).setText(folder.getName());
 			((TextView) convertView.getTag(R.id.size)).setText("(" + folder.getSize() + ")");
 			String summary;
@@ -271,43 +269,49 @@ public class AutoUploadFoldersActivity extends Activity implements OnItemClickLi
 			}
 			subTitle.setText(summary);
 
-			final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(media.getPath() + "_" + VIEW_SIZE.small);
-			if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
-				// The cache has it, so just display it
-				imageView.setImageDrawable(wrapper);
-			} else {
+			final Media media = folder.getMedia();
+			imageView.setTag(media);
+			if (media == null) {
 				imageView.setImageDrawable(null);
-			}
+			} else {
+				final CacheableBitmapDrawable wrapper = Utils.getCache().getFromMemoryCache(media.getPath() + "_" + VIEW_SIZE.small);
+				if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
+					// The cache has it, so just display it
+					imageView.setImageDrawable(wrapper);
+				} else {
+					imageView.setImageDrawable(null);
+				}
 
-			executorService.submit(new Runnable() {
-				@Override
-				public void run() {
-					if (imageView.getTag() == media) {
-						final CacheableBitmapDrawable bitmapDrawable;
-						if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
-							bitmapDrawable = wrapper;
-						} else {
-							Bitmap bitmap = Utils.getBitmap(media, VIEW_SIZE.small);
-							if (bitmap != null) {
-								bitmapDrawable = Utils.getCache().put(media.getPath() + "_" + VIEW_SIZE.small, bitmap);
+				executorService.submit(new Runnable() {
+					@Override
+					public void run() {
+						if (imageView.getTag() == media) {
+							final CacheableBitmapDrawable bitmapDrawable;
+							if (wrapper != null && !wrapper.getBitmap().isRecycled()) {
+								bitmapDrawable = wrapper;
 							} else {
-								bitmapDrawable = null;
-							}
-						}
-
-						runOnUiThread(new Runnable() {
-							@Override
-							public void run() {
-								if (imageView.getTag() == media) {
-									if (wrapper != bitmapDrawable) {
-										imageView.setImageDrawable(bitmapDrawable);
-									}
+								Bitmap bitmap = Utils.getBitmap(media, VIEW_SIZE.small);
+								if (bitmap != null) {
+									bitmapDrawable = Utils.getCache().put(media.getPath() + "_" + VIEW_SIZE.small, bitmap);
+								} else {
+									bitmapDrawable = null;
 								}
 							}
-						});
+
+							runOnUiThread(new Runnable() {
+								@Override
+								public void run() {
+									if (imageView.getTag() == media) {
+										if (wrapper != bitmapDrawable) {
+											imageView.setImageDrawable(bitmapDrawable);
+										}
+									}
+								}
+							});
+						}
 					}
-				}
-			});
+				});
+			}
 		}
 	}
 }

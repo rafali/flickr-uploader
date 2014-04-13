@@ -136,7 +136,7 @@ public class FlickrApi {
 								Transaction t = new Transaction();
 								LOG.debug(count + " photos with machine tag fetched. page:" + page + "/" + totalPage);
 								try {
-									for (Photo photo : photoList) {
+									for (final Photo photo : photoList) {
 										for (String tag : photo.getMachineTags()) {
 											if (tag.startsWith("file:sha1sig")) {
 												String flickrId = photo.getId();
@@ -174,7 +174,7 @@ public class FlickrApi {
 									Photo photo = FlickrApi.get().getPhotosInterface().getPhoto(persistedFlickrId);
 									if (photo != null) {
 										LOG.debug(persistedFlickrId + "=" + media.getSha1Tag() + " still exist");
-										media.setPrivacy(photosPrivacy.get(flickrId));
+										media.setPrivacy(photosPrivacy.get(persistedFlickrId));
 										media.save();
 									}
 								} catch (FlickrException e) {

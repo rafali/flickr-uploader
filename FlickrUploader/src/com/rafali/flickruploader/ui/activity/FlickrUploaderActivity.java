@@ -104,6 +104,7 @@ public class FlickrUploaderActivity extends Activity {
 			@Override
 			public void onResult(Boolean result) {
 				checkPremium();
+				renderMenu();
 			}
 		});
 		handleIntent(getIntent());
@@ -115,6 +116,7 @@ public class FlickrUploaderActivity extends Activity {
 			Utils.showPremiumDialog(activity, new Callback<Boolean>() {
 				@Override
 				public void onResult(Boolean result) {
+					renderMenu();
 				}
 			});
 		}
@@ -175,8 +177,7 @@ public class FlickrUploaderActivity extends Activity {
 
 	@Background
 	void load() {
-		medias = Utils.loadMedia(sync);
-		sync = false;
+		medias = Utils.loadMedia(false);
 
 		boolean showPhotos = Utils.getShowPhotos();
 		boolean showVideos = Utils.getShowVideos();
@@ -912,7 +913,6 @@ public class FlickrUploaderActivity extends Activity {
 	StickyHeaderListView listView;
 
 	private boolean paused = false;
-	private boolean sync = true;
 
 	@Override
 	public void onBackPressed() {
@@ -1090,7 +1090,6 @@ public class FlickrUploaderActivity extends Activity {
 	@Override
 	protected void onResume() {
 		if (paused) {
-			sync = true;
 			load();
 		}
 		paused = false;
