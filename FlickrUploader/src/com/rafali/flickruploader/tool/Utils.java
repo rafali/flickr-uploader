@@ -1476,7 +1476,7 @@ public final class Utils {
 		});
 	}
 
-	private static final String CONFIG_ENVIRONMENT = Config.isDebug() ? PayPalConfiguration.ENVIRONMENT_SANDBOX : PayPalConfiguration.ENVIRONMENT_PRODUCTION;
+	private static final String CONFIG_ENVIRONMENT = PayPalConfiguration.ENVIRONMENT_PRODUCTION;
 	private static final String CONFIG_CLIENT_ID = Utils.getString(R.string.paypal_client_id);
 	private static final int PAYPAL_REQUEST_CODE_PAYMENT = 111000;
 
