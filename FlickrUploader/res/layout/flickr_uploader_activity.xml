@@ -13,12 +13,18 @@
         android:text="@string/loading"
         android:textSize="18sp" />
 
-    <com.rafali.flickruploader.ui.widget.StickyHeaderListView
-        android:id="@+id/list_view"
+    <android.support.v4.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:paddingBottom="48dp" />
+        android:layout_height="match_parent" >
+
+        <com.rafali.flickruploader.ui.widget.StickyHeaderListView
+            android:id="@+id/list_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="48dp" />
+    </android.support.v4.widget.SwipeRefreshLayout>
 
     <com.rafali.flickruploader.ui.widget.SlidingDrawer
         android:id="@+id/slidingDrawer"

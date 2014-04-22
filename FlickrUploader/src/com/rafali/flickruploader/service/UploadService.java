@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.androidannotations.api.BackgroundExecutor;
 import org.slf4j.LoggerFactory;
 
 import se.emilsjolander.sprinkles.Transaction;
@@ -27,7 +28,6 @@ import android.os.IBinder;
 import android.provider.MediaStore.Images;
 import android.provider.MediaStore.Video;
 
-import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.googlecode.flickrjandroid.FlickrException;
 import com.googlecode.flickrjandroid.REST;
 import com.rafali.common.STR;
@@ -581,16 +581,16 @@ public class UploadService extends Service {
 
 	public static void checkNewFiles() {
 		try {
+			List<Media> medias = Utils.loadMedia(true);
+			
+			if (medias == null || medias.isEmpty()) {
+				LOG.info("no media found");
+				return;
+			}
+			
 			String canAutoUpload = Utils.canAutoUpload();
 			if (!"true".equals(canAutoUpload)) {
 				LOG.info("canAutoUpload : " + canAutoUpload);
-				return;
-			}
-
-			List<Media> medias = Utils.loadMedia(true);
-
-			if (medias == null || medias.isEmpty()) {
-				LOG.info("no media found");
 				return;
 			}
 

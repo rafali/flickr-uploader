@@ -25,6 +25,7 @@ import java.nio.charset.Charset;
 import org.acra.ACRA;
 import org.acra.ReportingInteractionMode;
 import org.acra.annotation.ReportsCrashes;
+import org.androidannotations.api.BackgroundExecutor;
 import org.slf4j.LoggerFactory;
 
 import se.emilsjolander.sprinkles.Migration;
@@ -43,7 +44,6 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 
-import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.api.FlickrApi;

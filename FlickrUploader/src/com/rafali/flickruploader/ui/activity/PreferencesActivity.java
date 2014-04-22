@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
 
+import org.androidannotations.api.BackgroundExecutor;
 import org.slf4j.LoggerFactory;
 
 import se.emilsjolander.sprinkles.ManyQuery;
@@ -30,7 +31,6 @@ import android.preference.PreferenceManager;
 import android.view.MenuItem;
 
 import com.google.analytics.tracking.android.EasyTracker;
-import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.Config;

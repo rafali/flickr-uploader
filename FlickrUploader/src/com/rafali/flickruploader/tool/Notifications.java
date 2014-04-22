@@ -1,5 +1,6 @@
 package com.rafali.flickruploader.tool;
 
+import org.androidannotations.api.BackgroundExecutor;
 import org.slf4j.LoggerFactory;
 
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
@@ -11,7 +12,6 @@ import android.graphics.Bitmap;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
 
-import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.FlickrUploader;

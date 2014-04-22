@@ -3,6 +3,7 @@ package com.rafali.flickruploader.ui.activity;
 import java.util.Arrays;
 import java.util.List;
 
+import org.androidannotations.api.BackgroundExecutor;
 import org.slf4j.LoggerFactory;
 
 import android.app.AlertDialog;
@@ -20,7 +21,6 @@ import android.view.MenuItem;
 import android.widget.EditText;
 
 import com.google.common.base.Joiner;
-import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.rafali.flickruploader.FlickrUploader;
 import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader2.R;

@@ -18,6 +18,12 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.androidannotations.annotations.AfterViews;
+import org.androidannotations.annotations.Background;
+import org.androidannotations.annotations.EActivity;
+import org.androidannotations.annotations.UiThread;
+import org.androidannotations.annotations.ViewById;
+import org.androidannotations.api.BackgroundExecutor;
 import org.slf4j.LoggerFactory;
 
 import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
@@ -33,6 +39,8 @@ import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v4.widget.SwipeRefreshLayout.OnRefreshListener;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -50,12 +58,6 @@ import com.google.analytics.tracking.android.EasyTracker;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import com.googlecode.androidannotations.annotations.AfterViews;
-import com.googlecode.androidannotations.annotations.Background;
-import com.googlecode.androidannotations.annotations.EActivity;
-import com.googlecode.androidannotations.annotations.UiThread;
-import com.googlecode.androidannotations.annotations.ViewById;
-import com.googlecode.androidannotations.api.BackgroundExecutor;
 import com.paypal.android.sdk.payments.PayPalService;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
@@ -81,7 +83,7 @@ import com.rafali.flickruploader.ui.widget.StickyHeaderListView.HeaderAdapter;
 import com.rafali.flickruploader2.R;
 
 @EActivity(R.layout.flickr_uploader_activity)
-public class FlickrUploaderActivity extends Activity {
+public class FlickrUploaderActivity extends Activity implements OnRefreshListener {
 
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrUploaderActivity.class);
 
@@ -175,9 +177,20 @@ public class FlickrUploaderActivity extends Activity {
 	List<Object> thumbItems;
 	List<Media> medias;
 
-	@Background
 	void load() {
-		medias = Utils.loadMedia(false);
+		load(false);
+	}
+
+	@Background(serial = "load")
+	void load(boolean refresh) {
+		runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				swipeContainer.setRefreshing(true);
+			}
+		});
+
+		medias = Utils.loadMedia(refresh);
 
 		boolean showPhotos = Utils.getShowPhotos();
 		boolean showVideos = Utils.getShowVideos();
@@ -340,6 +353,7 @@ public class FlickrUploaderActivity extends Activity {
 	@UiThread
 	void renderListView() {
 		if (listView != null) {
+			swipeContainer.setRefreshing(false);
 			if (listView.getAdapter() == null) {
 				listView.setDividerHeight(0);
 				listView.setAdapter(photoAdapter);
@@ -369,6 +383,9 @@ public class FlickrUploaderActivity extends Activity {
 	@ViewById(R.id.slidingDrawer)
 	SlidingDrawer slidingDrawer;
 
+	@ViewById(R.id.swipe_container)
+	SwipeRefreshLayout swipeContainer;
+
 	@AfterViews
 	void afterViews() {
 		UploadService.register(drawerHandleView);
@@ -385,6 +402,8 @@ public class FlickrUploaderActivity extends Activity {
 				drawerContentView.updateLists();
 			}
 		});
+		swipeContainer.setOnRefreshListener(this);
+		swipeContainer.setColorScheme(android.R.color.white, android.R.color.white, android.R.color.black, android.R.color.darker_gray);
 	}
 
 	UploadProgressListener uploadProgressListener = new BasicUploadProgressListener() {
@@ -1181,5 +1200,10 @@ public class FlickrUploaderActivity extends Activity {
 
 	public SlidingDrawer getSlidingDrawer() {
 		return slidingDrawer;
+	}
+
+	@Override
+	public void onRefresh() {
+		load(true);
 	}
 }
