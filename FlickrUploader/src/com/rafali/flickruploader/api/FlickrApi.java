@@ -284,6 +284,7 @@ public class FlickrApi {
 					String flickrPhotoId = FlickrApi.get().getUploader().upload(media.getName(), file, metaData, media);
 					LOG.debug("photo uploaded in " + (System.currentTimeMillis() - start) + "ms : " + flickrPhotoId);
 					media.setFlickrId(flickrPhotoId);
+					media.setPrivacy(privacy);
 					media.save();
 
 				}

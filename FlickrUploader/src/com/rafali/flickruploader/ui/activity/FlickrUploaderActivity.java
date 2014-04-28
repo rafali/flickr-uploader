@@ -37,6 +37,8 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Point;
+import android.media.MediaScannerConnection;
+import android.media.MediaScannerConnection.OnScanCompletedListener;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -1204,7 +1206,33 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 
 	@Override
 	public void onRefresh() {
-		load(true);
+		if (medias != null) {
+			String root = null;
+			for (Media media : medias) {
+				if (root == null) {
+					root = media.getFolderPath();
+				} else if (!media.getFolderPath().startsWith(root)) {
+					while (root.length() > 1 && !media.getFolderPath().startsWith(root)) {
+						root = ToolString.getParentPath(root);
+					}
+					if (root.length() <= 1) {
+						break;
+					}
+				}
+			}
+			if (root != null) {
+				LOG.debug("rescanning " + root);
+				MediaScannerConnection.scanFile(getApplicationContext(), new String[] { root }, null, new OnScanCompletedListener() {
+					@Override
+					public void onScanCompleted(String path, Uri uri) {
+						LOG.debug("file " + path + " was scanned seccessfully: " + uri);
+						load(true);
+					}
+				});
+			} else {
+				load(true);
+			}
+		}
 	}
 
 	public static void onNewFiles() {
