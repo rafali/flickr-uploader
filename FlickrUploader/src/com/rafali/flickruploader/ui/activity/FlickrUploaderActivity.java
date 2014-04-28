@@ -1206,4 +1206,10 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 	public void onRefresh() {
 		load(true);
 	}
+
+	public static void onNewFiles() {
+		if (instance != null && !instance.isPaused() && instance.swipeContainer != null && !instance.swipeContainer.isRefreshing()) {
+			instance.load();
+		}
+	}
 }

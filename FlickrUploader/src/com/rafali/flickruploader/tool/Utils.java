@@ -653,6 +653,7 @@ public final class Utils {
 		long start = System.currentTimeMillis();
 		Cursor cursor = null;
 		Transaction t = new Transaction();
+		int nbNewFiles = 0;
 		try {
 
 			ManyQuery<Media> query = Query.many(Media.class, "select * from Media order by id asc");
@@ -674,7 +675,7 @@ public final class Utils {
 			cursor.moveToFirst();
 			final int totalMediaStore = cursor.getCount();
 
-			boolean shouldAutoUpload = totalDatabase > 0 && isAutoUpload() && FlickrApi.isAuthentified();
+			final boolean shouldAutoUpload = totalDatabase > 0 && isAutoUpload() && FlickrApi.isAuthentified();
 
 			LOG.debug("totalMediaStore = " + totalMediaStore + ", totalDatabase = " + totalDatabase);
 			int progress = -1;
@@ -759,6 +760,10 @@ public final class Utils {
 							mediaToPersist.setTimestampCreated(date);
 							mediaToPersist.save(t);
 
+							if (totalDatabase > 0) {
+								nbNewFiles++;
+							}
+
 							cursor.moveToNext();
 						}
 					} catch (Throwable e) {
@@ -773,6 +778,9 @@ public final class Utils {
 			t.finish();
 			if (cursor != null)
 				cursor.close();
+		}
+		if (nbNewFiles > 0) {
+			FlickrUploaderActivity.onNewFiles();
 		}
 		LOG.info(syncedMedias.size() + " sync done in " + (System.currentTimeMillis() - start) + " ms");
 		return syncedMedias;
