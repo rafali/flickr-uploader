@@ -168,7 +168,7 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 				if (selectedMedia.isEmpty()) {
 					Utils.toast("No media found");
 				} else {
-					confirmUpload();
+					confirmUpload(selectedMedia);
 				}
 			}
 		}
@@ -452,7 +452,7 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 	int computed_nb_column = 2;
 
 	@UiThread
-	void confirmUpload() {
+	void confirmUpload(final Collection<Media> mediasToUpload) {
 		if (FlickrApi.isAuthentified()) {
 			new AlertDialog.Builder(activity).setTitle("Upload to").setPositiveButton(null, null).setNegativeButton(null, null).setCancelable(true)
 					.setItems(new String[] { "Default set (" + STR.instantUpload + ")", "One set per folder", "New set…", "Existing set…" }, new DialogInterface.OnClickListener() {
@@ -460,12 +460,12 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 						public void onClick(DialogInterface dialog, int which) {
 							switch (which) {
 							case 0:
-								enqueue(Lists.newArrayList(selectedMedia), STR.instantUpload);
+								enqueue(Lists.newArrayList(mediasToUpload), STR.instantUpload);
 								clearSelection();
 								break;
 							case 1:
 								Multimap<String, Media> multimap = HashMultimap.create();
-								for (Media media : selectedMedia) {
+								for (Media media : mediasToUpload) {
 									multimap.put(media.getFolderName(), media);
 								}
 								for (String folderName : multimap.keySet()) {
@@ -611,6 +611,10 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 
 	class PhotoAdapter extends BaseAdapter implements HeaderAdapter {
 
+		private static final String UPLOAD = "Upload";
+		private static final String CANCEL_UPLOAD = "Cancel upload";
+		private static final String OPEN_IN_FLICKR = "Open in Flickr";
+
 		public PhotoAdapter() {
 		}
 
@@ -712,6 +716,45 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 								if (v.getTag() instanceof Media) {
 									thumbViews.put((Media) v.getTag(), v);
 								}
+							}
+						});
+
+						thumbView.setOnLongClickListener(new View.OnLongClickListener() {
+							@Override
+							public boolean onLongClick(View v) {
+								if (v.getTag() instanceof Media) {
+									final Media media = (Media) v.getTag();
+
+									final CharSequence[] items = new CharSequence[1];
+									if (media.isUploaded()) {
+										items[0] = OPEN_IN_FLICKR;
+									} else if (media.isQueued()) {
+										items[0] = CANCEL_UPLOAD;
+									} else {
+										items[0] = UPLOAD;
+									}
+
+									AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+
+									builder.setItems(items, new DialogInterface.OnClickListener() {
+										public void onClick(DialogInterface dialog, int item) {
+											if (OPEN_IN_FLICKR.equals(items[item])) {
+												Intent i = new Intent(Intent.ACTION_VIEW);
+												i.setData(Uri.parse("http://www.flickr.com/photos/" + Utils.getStringProperty(STR.userId) + "/" + media.getFlickrId()));
+												startActivity(i);
+											} else if (CANCEL_UPLOAD.equals(items[item])) {
+												UploadService.dequeue(Lists.newArrayList(media));
+											} else if (UPLOAD.equals(items[item])) {
+												confirmUpload(Lists.newArrayList(media));
+											}
+										}
+									});
+
+									AlertDialog alert = builder.create();
+
+									alert.show();
+								}
+								return true;
 							}
 						});
 					}
@@ -1089,7 +1132,7 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 				if (selectedMedia.isEmpty()) {
 					Utils.toast("Select at least one file");
 				} else {
-					confirmUpload();
+					confirmUpload(selectedMedia);
 				}
 			} else {
 				checkPremium();

@@ -61,7 +61,11 @@ public class FlickrWebAuthActivity extends Activity {
 	@AfterViews
 	protected void onAfterViews() {
 		setLoading("Opening browser…");
-		loadAuthorizationUrl();
+		if (System.currentTimeMillis() - Utils.getLongProperty(STR.lastBrowserOpenForAuth) < 10 * 60 * 1000L) {
+			doDataCallback();
+		} else {
+			loadAuthorizationUrl();
+		}
 	}
 
 	@Background
@@ -73,6 +77,7 @@ public class FlickrWebAuthActivity extends Activity {
 			i.setData(Uri.parse(url));
 			startActivity(i);
 			setLoading("Waiting for browser info…");
+			Utils.setLongProperty(STR.lastBrowserOpenForAuth, System.currentTimeMillis());
 		} catch (Throwable e) {
 			setError(e);
 		}
@@ -124,6 +129,7 @@ public class FlickrWebAuthActivity extends Activity {
 
 	@Background
 	void doDataCallback() {
+		Utils.clearProperty(STR.lastBrowserOpenForAuth);
 		setLoading("Almost done…");
 		try {
 			AppInstall appInstall = RPC.getRpcService().ensureInstall(Utils.createAndroidDevice());
@@ -151,6 +157,5 @@ public class FlickrWebAuthActivity extends Activity {
 		}
 		return super.onOptionsItemSelected(item);
 	}
-
 
 }
