@@ -44,6 +44,7 @@ import com.rafali.flickruploader.model.FlickrSet;
 import com.rafali.flickruploader.model.Media;
 import com.rafali.flickruploader.service.UploadService.UploadException;
 import com.rafali.flickruploader.tool.Utils;
+import com.rafali.flickruploader.ui.activity.FlickrUploaderActivity;
 import com.rafali.flickruploader2.R;
 
 public class FlickrApi {
@@ -98,6 +99,30 @@ public class FlickrApi {
 	}
 
 	private static long lastSyncMedia = 0;
+
+	public static void syncMedia(final String flickrPhotoId) {
+		executorService.execute(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					List<Media> medias = Utils.loadMedia(false);
+					for (Media media : medias) {
+						if (flickrPhotoId.equals(media.getFlickrId())) {
+							Photo photo = FlickrApi.get().getPhotosInterface().getPhoto(flickrPhotoId);
+							PRIVACY privacy = getPrivacy(photo);
+							media.setPrivacy(privacy);
+							media.save();
+							LOG.debug("updated : " + media + ", privacy = " + privacy);
+							FlickrUploaderActivity.updateStatic(media);
+							break;
+						}
+					}
+				} catch (Throwable e) {
+					LOG.error(ToolString.stack2string(e));
+				}
+			}
+		});
+	}
 
 	public static void syncMedia() {
 		if (System.currentTimeMillis() - lastSyncMedia > 10 * 60 * 1000L) {

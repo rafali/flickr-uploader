@@ -123,12 +123,7 @@ public class UploadService extends Service {
 		}
 		IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
 		registerReceiver(batteryReceiver, filter);
-		BackgroundExecutor.execute(new Runnable() {
-			@Override
-			public void run() {
-				checkNewFiles();
-			}
-		});
+		checkNewFiles();
 		Notifications.init();
 	}
 
@@ -579,72 +574,90 @@ public class UploadService extends Service {
 		}
 	}
 
+	static long lastLoad = 0;
+
 	public static void checkNewFiles() {
-		try {
-			List<Media> medias = Utils.loadMedia(true);
-			
-			if (medias == null || medias.isEmpty()) {
-				LOG.info("no media found");
-				return;
-			}
-			
-			String canAutoUpload = Utils.canAutoUpload();
-			if (!"true".equals(canAutoUpload)) {
-				LOG.info("canAutoUpload : " + canAutoUpload);
-				return;
-			}
+		BackgroundExecutor.execute(new Runnable() {
+			@Override
+			public void run() {
+				try {
 
-			Map<String, Folder> pathFolders = Utils.getFolders(false);
-
-			if (pathFolders.isEmpty()) {
-				LOG.info("no folder monitored");
-				return;
-			}
-
-			final long uploadDelayMs = Utils.getUploadDelayMs();
-			long newestFileAge = 0;
-			for (Media media : medias) {
-				if (media.isImported()) {
-					if (media.getMediaType() == MEDIA_TYPE.PHOTO && !Utils.isAutoUpload(MEDIA_TYPE.PHOTO)) {
-						LOG.debug("not uploading " + media + " because photo upload disabled");
-						continue;
-					} else if (media.getMediaType() == MEDIA_TYPE.VIDEO && !Utils.isAutoUpload(MEDIA_TYPE.VIDEO)) {
-						LOG.debug("not uploading " + media + " because video upload disabled");
-						continue;
+					final List<Media> medias;
+					if (System.currentTimeMillis() - lastLoad > 5000) {
+						medias = Utils.loadMedia(true);
+						lastLoad = System.currentTimeMillis();
 					} else {
-						File file = new File(media.getPath());
-						if (file.exists()) {
-							boolean uploaded = media.isUploaded();
-							LOG.debug("uploaded : " + uploaded + ", " + media);
-							if (!uploaded) {
-								Folder folder = pathFolders.get(media.getFolderPath());
-								if (folder == null || !folder.isAutoUploaded()) {
-									LOG.debug(media.getFolderPath() + " not monitored : " + file);
+						medias = Utils.loadMedia(false);
+					}
+
+					if (medias == null || medias.isEmpty()) {
+						LOG.info("no media found");
+						return;
+					}
+
+					Map<String, Folder> pathFolders = Utils.getFolders(false);
+					if (pathFolders.isEmpty()) {
+						LOG.info("no folder monitored");
+						return;
+					}
+
+					String canAutoUpload = Utils.canAutoUpload();
+					boolean autoUpload = "true".equals(canAutoUpload);
+
+					final long uploadDelayMs = Utils.getUploadDelayMs();
+					long newestFileAge = 0;
+					for (Media media : medias) {
+						if (media.isImported()) {
+							if (!autoUpload) {
+								LOG.debug("not uploading " + media + " because " + canAutoUpload);
+								media.setStatus(STATUS.PAUSED);
+								continue;
+							} else if (media.getMediaType() == MEDIA_TYPE.PHOTO && !Utils.isAutoUpload(MEDIA_TYPE.PHOTO)) {
+								LOG.debug("not uploading " + media + " because photo upload disabled");
+								media.setStatus(STATUS.PAUSED);
+								continue;
+							} else if (media.getMediaType() == MEDIA_TYPE.VIDEO && !Utils.isAutoUpload(MEDIA_TYPE.VIDEO)) {
+								LOG.debug("not uploading " + media + " because video upload disabled");
+								media.setStatus(STATUS.PAUSED);
+								continue;
+							} else {
+								File file = new File(media.getPath());
+								if (file.exists()) {
+									boolean uploaded = media.isUploaded();
+									LOG.debug("uploaded : " + uploaded + ", " + media);
+									if (!uploaded) {
+										Folder folder = pathFolders.get(media.getFolderPath());
+										if (folder == null || !folder.isAutoUploaded()) {
+											media.setStatus(STATUS.PAUSED);
+											LOG.debug("not uploading " + media + " because " + media.getFolderPath() + " is not monitored");
+										} else {
+											int sleep = 0;
+											while (file.length() < 100 && sleep < 5) {
+												LOG.debug("sleeping a bit");
+												sleep++;
+												Thread.sleep(1000);
+											}
+											long fileAge = System.currentTimeMillis() - file.lastModified();
+											LOG.debug("uploadDelayMs:" + uploadDelayMs + ", fileAge:" + fileAge + ", newestFileAge:" + newestFileAge);
+											if (uploadDelayMs > 0) {
+												media.setTimestampRetry(System.currentTimeMillis() + uploadDelayMs);
+											}
+											enqueue(true, Arrays.asList(media), folder.getFlickrSetTitle());
+										}
+									}
 								} else {
-									int sleep = 0;
-									while (file.length() < 100 && sleep < 5) {
-										LOG.debug("sleeping a bit");
-										sleep++;
-										Thread.sleep(1000);
-									}
-									long fileAge = System.currentTimeMillis() - file.lastModified();
-									LOG.debug("uploadDelayMs:" + uploadDelayMs + ", fileAge:" + fileAge + ", newestFileAge:" + newestFileAge);
-									if (uploadDelayMs > 0) {
-										media.setTimestampRetry(System.currentTimeMillis() + uploadDelayMs);
-									}
-									enqueue(true, Arrays.asList(media), folder.getFlickrSetTitle());
+									LOG.debug("Deleted : " + file);
+									media.deleteAsync();
 								}
 							}
-						} else {
-							LOG.debug("Deleted : " + file);
-							media.deleteAsync();
 						}
 					}
+				} catch (Throwable e) {
+					LOG.error(ToolString.stack2string(e));
 				}
 			}
-		} catch (Throwable e) {
-			LOG.error(ToolString.stack2string(e));
-		}
+		}, "checkNewFiles", "checkNewFiles");
+
 	}
 
 	public static Set<Media> getCurrentlyQueued() {

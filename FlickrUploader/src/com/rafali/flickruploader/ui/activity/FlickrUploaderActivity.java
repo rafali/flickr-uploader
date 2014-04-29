@@ -252,7 +252,7 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 		Media[] mediaRow = null;
 		int currentIndex = 0;
 
-		for (Media media : medias) {
+		for (Media media : medias) {// FIXME concurrent modification
 			Header header;
 			if (Utils.getViewGroupType() == VIEW_GROUP_TYPE.date) {
 				String id = format.format(new Date(media.getTimestampCreated()));
@@ -739,6 +739,7 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 									builder.setItems(items, new DialogInterface.OnClickListener() {
 										public void onClick(DialogInterface dialog, int item) {
 											if (OPEN_IN_FLICKR.equals(items[item])) {
+												Utils.setStringProperty(STR.mediaToSync, media.getFlickrId());
 												Intent i = new Intent(Intent.ACTION_VIEW);
 												i.setData(Uri.parse("http://www.flickr.com/photos/" + Utils.getStringProperty(STR.userId) + "/" + media.getFlickrId()));
 												startActivity(i);
@@ -1006,8 +1007,9 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 		return super.onPrepareOptionsMenu(menu);
 	}
 
-	private void renderMenu() {
-		if (menu != null) {
+	@UiThread
+	void renderMenu() {
+		if (menu != null && menu.findItem(R.id.trial_info) != null) {
 			menu.findItem(R.id.trial_info).setVisible(!Utils.isPremium());
 			switch (Utils.getViewSize()) {
 			case small:
@@ -1161,6 +1163,11 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 		UploadService.wake();
 		drawerHandleView.onActivityResume();
 		renderLoop();
+		String mediaToSync = Utils.getStringProperty(STR.mediaToSync);
+		if (ToolString.isNotBlank(mediaToSync)) {
+			Utils.clearProperty(STR.mediaToSync);
+			FlickrApi.syncMedia(mediaToSync);
+		}
 	}
 
 	@UiThread(delay = 1000)

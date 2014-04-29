@@ -14,12 +14,20 @@
         <item>delay30s</item>
         <item>delay60s</item>
         <item>delay300s</item>
-    </array>
+        <item>delay1800s</item>
+        <item>delay7200s</item>
+        <item>delay21600s</item>
+        <item>delay86400s</item>
+        </array>
     <array name="autoupload_delay_entries">
         <item>No delay</item>
         <item>30 seconds</item>
         <item>1 minute</item>
         <item>5 minutes</item>
+        <item>30 minutes</item>
+        <item>2 hours</item>
+        <item>6 hours</item>
+        <item>24 hours</item>
     </array>
 
 </resources>

@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.DialogInterface.OnClickListener;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
@@ -134,7 +133,7 @@ public class PreferencesAdvancedActivity extends PreferenceActivity implements O
 				alert.setNegativeButton("Cancel", null);
 			} else {
 				alert.setMessage("A PRO account is needed to customize this branding feature");
-				alert.setPositiveButton("Buy PRO Now", new OnClickListener() {
+				alert.setPositiveButton("Buy PRO Now", new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
 						Utils.startGooglePayment(PreferencesAdvancedActivity.this, new Utils.Callback<Boolean>() {
@@ -165,7 +164,12 @@ public class PreferencesAdvancedActivity extends PreferenceActivity implements O
 					@Override
 					public void run() {
 						findPreference("clear_logs").setSummary("Files size: " + Utils.formatFileSize(size));
-						findPreference("autoupload_delay").setSummary(autoupload_delay_entries[autoupload_delay_values.indexOf(autoupload_delay_value)]);
+						String autoupload_delay = autoupload_delay_entries[autoupload_delay_values.indexOf(autoupload_delay_value)];
+						if (autoupload_delay.equalsIgnoreCase("custom")) {
+							findPreference("autoupload_delay").setSummary(autoupload_delay);
+						} else {
+							findPreference("autoupload_delay").setSummary(autoupload_delay);
+						}
 						findPreference("upload_description").setSummary(Html.fromHtml(Utils.getUploadDescription()));
 						findPreference("custom_tags").setSummary(Utils.getStringProperty("custom_tags"));
 					}
@@ -176,6 +180,9 @@ public class PreferencesAdvancedActivity extends PreferenceActivity implements O
 
 	@Override
 	public void onSharedPreferenceChanged(SharedPreferences sp, String key) {
+		if ("autoupload_delay".equals(key) && sp.getString(key, "").equalsIgnoreCase("custom")) {
+			LOG.debug("custom");
+		}
 		render();
 	}
 

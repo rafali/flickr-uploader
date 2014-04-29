@@ -81,11 +81,19 @@ public class Notifications {
 		}
 	}
 
+	static long lastUpdate = 0;
+
 	public static void notifyProgress(final Media media) {
 		try {
 			if (!Utils.getBooleanProperty("notification_progress", true)) {
 				return;
 			}
+
+			if (System.currentTimeMillis() - lastUpdate < 1000) {
+				return;
+			}
+
+			lastUpdate = System.currentTimeMillis();
 
 			int currentPosition = UploadService.getRecentlyUploaded().size();
 			int total = UploadService.getNbTotal();

@@ -195,9 +195,19 @@ public final class PhotoUtils {
 		photo.setDescription(JSONUtils.getChildValue(photoElement, "description"));
 
 		// here the flags are set, if the photo is read by getInfo().
-		photo.setPublicFlag("1".equals(photoElement.optString("ispublic")));
-		photo.setFriendFlag("1".equals(photoElement.optString("isfriend")));
-		photo.setFamilyFlag("1".equals(photoElement.optString("isfamily")));
+		
+		JSONObject visibilityElement;
+		if (photoElement.has("visibility")) {
+			visibilityElement = photoElement.getJSONObject("visibility");
+		} else {
+			visibilityElement = photoElement;
+		}
+		
+		photo.setPublicFlag("1".equals(visibilityElement.optString("ispublic")));
+		photo.setFriendFlag("1".equals(visibilityElement.optString("isfriend")));
+		photo.setFamilyFlag("1".equals(visibilityElement.optString("isfamily")));
+		
+		
 
 		// Parse either photo by getInfo, or from list
 		/*
