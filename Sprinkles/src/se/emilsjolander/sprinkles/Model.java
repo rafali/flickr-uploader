@@ -7,20 +7,6 @@ import android.os.AsyncTask;
 public abstract class Model {
 
 	/**
-	 * Notifies you when a model has been saved
-	 */
-	public interface OnSavedCallback {
-		void onSaved();
-	}
-
-	/**
-	 * Notifies you when a model has been deleted
-	 */
-	public interface OnDeletedCallback {
-		void onDeleted();
-	}
-
-	/**
 	 * Check if this model is valid. Returning false will not allow this model to be saved.
 	 * 
 	 * @return whether or not this model is valid.

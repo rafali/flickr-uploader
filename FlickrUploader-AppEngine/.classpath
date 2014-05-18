@@ -5,6 +5,7 @@
 	<classpathentry kind="lib" path="war/WEB-INF/lib/gcm-server.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/LIB-slf4j-api-1.6.0.jar"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/flickrj-android-2.0.6.jar"/>
+	<classpathentry kind="lib" path="war/WEB-INF/lib/java-json.jar"/>
 	<classpathentry kind="var" path="REMOTE_API_JAR"/>
 	<classpathentry kind="lib" path="war/WEB-INF/lib/LIB-google-collect-1.0.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7">
@@ -13,5 +14,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="con" path="com.google.appengine.eclipse.core.GAE_CONTAINER"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Sprinkles"/>
 	<classpathentry kind="output" path="war/WEB-INF/classes"/>
 </classpath>

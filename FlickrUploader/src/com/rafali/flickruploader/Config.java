@@ -43,4 +43,8 @@ public class Config {
 		}
 		return "0";
 	}
+
+	public static boolean isGae() {
+		return false;
+	}
 }
