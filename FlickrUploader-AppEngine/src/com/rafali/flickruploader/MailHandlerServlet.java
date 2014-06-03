@@ -175,6 +175,9 @@ public class MailHandlerServlet extends HttpServlet {
 			} else {
 				for (Coupon coupon : results) {
 					coupon.setSku(sku);
+					coupon.setPremium(false);
+					coupon.setPurchased(false);
+					coupon.setDateUpdated(new Date());
 					logger.debug("updated : " + coupon);
 				}
 			}

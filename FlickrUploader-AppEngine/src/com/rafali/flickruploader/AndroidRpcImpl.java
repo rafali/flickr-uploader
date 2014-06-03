@@ -60,22 +60,27 @@ public class AndroidRpcImpl implements AndroidRpcInterface {
 			Query query = pm.newQuery(Coupon.class);
 			query.setFilter(":param.contains(email)");
 			List<Coupon> result = (List<Coupon>) query.execute(androidDevice.getEmails());
+			logger.debug(androidDevice.getEmails() + " : " + result.size() + " coupons");
 			for (Coupon coupon : result) {
+				logger.debug("coupon : " + coupon);
 				if (coupon.getPurchased() || coupon.getDateUpdated().after(releaseDate)) {
 					premium = coupon.isPremium();
 					sku = coupon.getSku();
 					purchased = coupon.getPurchased();
 				} else {
-					logger.info("cannot use old coupon here");
+					if (ToolString.isNotBlank(coupon.getSku())) {
+						sku = coupon.getSku();
+					} else {
+						logger.warn("cannot use old coupon here");
+					}
 				}
 			}
-			logger.debug(androidDevice.getEmails() + " : " + result);
 		} catch (Exception e) {
 			logger.error(ToolString.stack2string(e));
 		} finally {
 			pm.close();
 		}
-		logger.debug("premium:" + premium + ", sku:" + sku);
+		logger.debug("premium:" + premium + ", sku:" + sku + ", purchased:" + purchased);
 		return new Object[] { premium, sku, purchased };
 	}
 

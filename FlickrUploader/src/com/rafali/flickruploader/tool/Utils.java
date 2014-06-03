@@ -1299,8 +1299,9 @@ public final class Utils {
 								File publicDownloadDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
 								File publicLog = new File(publicDownloadDirectory, "flickruploader_log.txt");
 								Utils.copyFile(log, publicLog);
+								BufferedWriter bW = null;
 								try {
-									BufferedWriter bW = new BufferedWriter(new FileWriter(publicLog, true));
+									bW = new BufferedWriter(new FileWriter(publicLog, true));
 									bW.newLine();
 									bW.write("app version : " + Config.FULL_VERSION_NAME);
 									bW.newLine();
@@ -1308,14 +1309,27 @@ public final class Utils {
 									bW.newLine();
 									bW.write("device name : " + getDeviceName());
 									bW.newLine();
-									bW.write("date install : " + FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime);
+									bW.write("device accounts : " + getAccountEmails());
+									bW.newLine();
+									bW.write("date install : "
+											+ new Date(FlickrUploader.getAppContext().getPackageManager().getPackageInfo(FlickrUploader.getAppContext().getPackageName(), 0).firstInstallTime));
 									bW.newLine();
 									bW.write("premium : " + isPremium());
 									bW.newLine();
-									bW.flush();
-									bW.close();
 								} catch (Throwable e) {
-									LOG.error(ToolString.stack2string(e));
+									String stack2string = ToolString.stack2string(e);
+									LOG.error(stack2string);
+									bW.write(stack2string);
+									bW.newLine();
+								} finally {
+									if (bW != null) {
+										try {
+											bW.flush();
+											bW.close();
+										} catch (Throwable e) {
+											LOG.error(ToolString.stack2string(e));
+										}
+									}
 								}
 								Uri uri = Uri.fromFile(publicLog);
 								intent.putExtra(Intent.EXTRA_STREAM, uri);
