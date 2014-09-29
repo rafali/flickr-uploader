@@ -653,7 +653,7 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 		public View getView(int position, View convertView, ViewGroup parent) {
 			Object item = getItem(position);
 			if (item instanceof Header) {
-				return getHeaderView(position, convertView, parent);
+				return getHeaderView(position, convertView);
 			} else {
 				final Media[] mediaRow = (Media[]) item;
 				LinearLayout linearLayout;
@@ -783,7 +783,7 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 			}
 		}
 
-		public View getHeaderView(int position, View convertView, ViewGroup arg2) {
+		public View getHeaderView(int position, View convertView) {
 			final TextView title;
 			final TextView count;
 			if (convertView == null) {
