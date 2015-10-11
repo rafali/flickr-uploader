@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <array name="network_values">
+        <item>wifior3G</item>
+        <item>wifionly</item>
+    </array>
+    <array name="network_entries">
+        <item>any network</item>
+        <item>any network except 2G/3G/4G</item>
+    </array>
+    <array name="autoupload_delay_values">
+        <item>delay0s</item>
+        <item>delay30s</item>
+        <item>delay60s</item>
+        <item>delay300s</item>
+        <item>delay1800s</item>
+        <item>delay7200s</item>
+        <item>delay21600s</item>
+        <item>delay86400s</item>
+        </array>
+    <array name="autoupload_delay_entries">
+        <item>No delay</item>
+        <item>30 seconds</item>
+        <item>1 minute</item>
+        <item>5 minutes</item>
+        <item>30 minutes</item>
+        <item>2 hours</item>
+        <item>6 hours</item>
+        <item>24 hours</item>
+    </array>
+
+</resources>

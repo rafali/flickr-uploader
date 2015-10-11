@@ -1,0 +1,1 @@
+../../../../../../../../FlickrUploaderAndroid/flickrUploader/src/main/java/com/rafali/flickruploader/AndroidDevice.java

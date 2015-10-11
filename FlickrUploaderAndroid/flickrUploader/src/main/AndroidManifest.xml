@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.rafali.flickruploader2"
+    android:installLocation="internalOnly"
+    android:versionCode="46"
+    android:versionName="2.3.2" >
+
+    <uses-sdk
+        android:minSdkVersion="14"
+        android:targetSdkVersion="19" />
+
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <!-- Required permission to use Google Play Store in app purchase -->
+    <uses-permission android:name="com.android.vending.BILLING" />
+
+    <permission
+        android:name="com.rafali.flickruploader.permission.C2D_MESSAGE"
+        android:protectionLevel="signature" />
+
+    <uses-permission android:name="com.rafali.flickruploader.permission.C2D_MESSAGE" />
+    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.USE_CREDENTIALS" />
+    <!-- Required permission to use Paypal -->
+    <!-- for card.io card scanning -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
+
+    <application
+        android:name="com.rafali.flickruploader.FlickrUploader"
+        android:allowBackup="false"
+        android:icon="@drawable/ic_launcher"
+        android:label="Flickr Uploader"
+        android:theme="@style/CustomTheme" >
+        <service android:name="com.rafali.flickruploader.service.UploadService" />
+        <service
+            android:name="com.paypal.android.sdk.payments.PayPalService"
+            android:exported="false" />
+
+        <receiver android:name="com.rafali.flickruploader.broadcast.MyBroadcastReceiver" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="com.rafali.intent.SHARE_PHOTO" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name="com.rafali.flickruploader.broadcast.AlarmBroadcastReceiver"
+            android:process=":remote" >
+        </receiver>
+
+        <activity
+            android:name="com.rafali.flickruploader.ui.activity.FlickrUploaderActivity_"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="Flickr Uploader"
+            android:logo="@drawable/upload" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.rafali.flickruploader.ui.activity.PreferencesActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="Preferences"
+            android:logo="@drawable/preferences" >
+            <intent-filter>
+                <action android:name="android.intent.action.MANAGE_NETWORK_USAGE" >
+                </action>
+
+                <category android:name="android.intent.category.DEFAULT" >
+                </category>
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.rafali.flickruploader.ui.activity.PreferencesNotificationActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="Notifications"
+            android:logo="@drawable/preferences" />
+        <activity
+            android:name="com.rafali.flickruploader.ui.activity.PreferencesAdvancedActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="Advanced Preferences"
+            android:logo="@drawable/preferences" />
+        <activity
+            android:name="com.rafali.flickruploader.ui.activity.FlickrWebAuthActivity_"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="Flickr Authentication"
+            android:logo="@drawable/upload"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name="com.rafali.flickruploader.ui.activity.AutoUploadFoldersActivity_"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="Auto Upload Folders"
+            android:logo="@drawable/preferences"
+            android:windowSoftInputMode="adjustResize" />
+        <activity android:name="com.paypal.android.sdk.payments.PaymentActivity" />
+        <activity android:name="com.paypal.android.sdk.payments.LoginActivity" />
+        <activity android:name="com.paypal.android.sdk.payments.PaymentMethodActivity" />
+        <activity android:name="com.paypal.android.sdk.payments.PaymentConfirmActivity" />
+        <activity android:name="com.paypal.android.sdk.payments.PayPalFuturePaymentActivity" />
+        <activity android:name="com.paypal.android.sdk.payments.FuturePaymentConsentActivity" />
+        <activity android:name="com.paypal.android.sdk.payments.FuturePaymentInfoActivity" />
+        <activity
+            android:name="io.card.payment.CardIOActivity"
+            android:configChanges="keyboardHidden|orientation" />
+        <activity android:name="io.card.payment.DataEntryActivity" />
+    </application>
+
+</manifest>
