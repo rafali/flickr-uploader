@@ -24,7 +24,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
-import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -35,6 +34,8 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
+
+import com.rafali.flickruploader2.R;
 
 import java.util.ArrayList;
 
@@ -76,7 +77,7 @@ public class TitlePageIndicator extends View implements PageIndicator {
 
 		public final int value;
 
-		private IndicatorStyle(int value) {
+		IndicatorStyle(int value) {
 			this.value = value;
 		}
 
@@ -95,7 +96,7 @@ public class TitlePageIndicator extends View implements PageIndicator {
 
 		public final int value;
 
-		private LinePosition(int value) {
+		LinePosition(int value) {
 			this.value = value;
 		}
 
@@ -157,7 +158,7 @@ public class TitlePageIndicator extends View implements PageIndicator {
 
 		// Load defaults from resources
 		final Resources res = getResources();
-		final int defaultFooterColor = res.getColor(R.color.default_title_indicator_footer_color);
+		final int defaultFooterColor = res.getColor(R.color.accent);
 		final float defaultFooterLineHeight = res.getDimension(R.dimen.default_title_indicator_footer_line_height);
 		final int defaultFooterIndicatorStyle = res.getInteger(R.integer.default_title_indicator_footer_indicator_style);
 		final float defaultFooterIndicatorHeight = res.getDimension(R.dimen.default_title_indicator_footer_indicator_height);
@@ -210,80 +211,6 @@ public class TitlePageIndicator extends View implements PageIndicator {
 		mTouchSlop = ViewConfigurationCompat.getScaledPagingTouchSlop(configuration);
 	}
 
-	public int getFooterColor() {
-		return mPaintFooterLine.getColor();
-	}
-
-	public void setFooterColor(int footerColor) {
-		mPaintFooterLine.setColor(footerColor);
-		mPaintFooterIndicator.setColor(footerColor);
-		invalidate();
-	}
-
-	public float getFooterLineHeight() {
-		return mFooterLineHeight;
-	}
-
-	public void setFooterLineHeight(float footerLineHeight) {
-		mFooterLineHeight = footerLineHeight;
-		mPaintFooterLine.setStrokeWidth(mFooterLineHeight);
-		invalidate();
-	}
-
-	public float getFooterIndicatorHeight() {
-		return mFooterIndicatorHeight;
-	}
-
-	public void setFooterIndicatorHeight(float footerTriangleHeight) {
-		mFooterIndicatorHeight = footerTriangleHeight;
-		invalidate();
-	}
-
-	public float getFooterIndicatorPadding() {
-		return mFooterPadding;
-	}
-
-	public void setFooterIndicatorPadding(float footerIndicatorPadding) {
-		mFooterPadding = footerIndicatorPadding;
-		invalidate();
-	}
-
-	public IndicatorStyle getFooterIndicatorStyle() {
-		return mFooterIndicatorStyle;
-	}
-
-	public void setFooterIndicatorStyle(IndicatorStyle indicatorStyle) {
-		mFooterIndicatorStyle = indicatorStyle;
-		invalidate();
-	}
-
-	public LinePosition getLinePosition() {
-		return mLinePosition;
-	}
-
-	public void setLinePosition(LinePosition linePosition) {
-		mLinePosition = linePosition;
-		invalidate();
-	}
-
-	public int getSelectedColor() {
-		return mColorSelected;
-	}
-
-	public void setSelectedColor(int selectedColor) {
-		mColorSelected = selectedColor;
-		invalidate();
-	}
-
-	public boolean isSelectedBold() {
-		return mBoldText;
-	}
-
-	public void setSelectedBold(boolean selectedBold) {
-		mBoldText = selectedBold;
-		invalidate();
-	}
-
 	public int getTextColor() {
 		return mColorText;
 	}
@@ -301,42 +228,6 @@ public class TitlePageIndicator extends View implements PageIndicator {
 	public void setTextSize(float textSize) {
 		mPaintText.setTextSize(textSize);
 		invalidate();
-	}
-
-	public float getTitlePadding() {
-		return this.mTitlePadding;
-	}
-
-	public void setTitlePadding(float titlePadding) {
-		mTitlePadding = titlePadding;
-		invalidate();
-	}
-
-	public float getTopPadding() {
-		return this.mTopPadding;
-	}
-
-	public void setTopPadding(float topPadding) {
-		mTopPadding = topPadding;
-		invalidate();
-	}
-
-	public float getClipPadding() {
-		return this.mClipPadding;
-	}
-
-	public void setClipPadding(float clipPadding) {
-		mClipPadding = clipPadding;
-		invalidate();
-	}
-
-	public void setTypeface(Typeface typeface) {
-		mPaintText.setTypeface(typeface);
-		invalidate();
-	}
-
-	public Typeface getTypeface() {
-		return mPaintText.getTypeface();
 	}
 
 	/*
@@ -537,7 +428,7 @@ public class TitlePageIndicator extends View implements PageIndicator {
 		}
 	}
 
-	public boolean onTouchEvent(android.view.MotionEvent ev) {
+	public boolean onTouchEvent(MotionEvent ev) {
 		try {
 			if (super.onTouchEvent(ev)) {
 				return true;
@@ -638,7 +529,7 @@ public class TitlePageIndicator extends View implements PageIndicator {
 
 	/**
 	 * Set bounds for the right textView including clip padding.
-	 * 
+	 *
 	 * @param curViewBound
 	 *            current bounds.
 	 * @param curViewWidth
@@ -651,7 +542,7 @@ public class TitlePageIndicator extends View implements PageIndicator {
 
 	/**
 	 * Set bounds for the left textView including clip padding.
-	 * 
+	 *
 	 * @param curViewBound
 	 *            current bounds.
 	 * @param curViewWidth
@@ -664,7 +555,7 @@ public class TitlePageIndicator extends View implements PageIndicator {
 
 	/**
 	 * Calculate views bounds and scroll them according to the current index
-	 * 
+	 *
 	 * @param paint
 	 * @return
 	 */
@@ -690,7 +581,7 @@ public class TitlePageIndicator extends View implements PageIndicator {
 
 	/**
 	 * Calculate the bounds for a view's title
-	 * 
+	 *
 	 * @param index
 	 * @param paint
 	 * @return
@@ -733,7 +624,7 @@ public class TitlePageIndicator extends View implements PageIndicator {
 
 	/**
 	 * Set a callback listener for the center item click.
-	 * 
+	 *
 	 * @param listener
 	 *            Callback instance.
 	 */
@@ -847,7 +738,7 @@ public class TitlePageIndicator extends View implements PageIndicator {
 			dest.writeInt(currentPage);
 		}
 
-		public static final Parcelable.Creator<SavedState> CREATOR = new Parcelable.Creator<SavedState>() {
+		public static final Creator<SavedState> CREATOR = new Creator<SavedState>() {
 			@Override
 			public SavedState createFromParcel(Parcel in) {
 				return new SavedState(in);

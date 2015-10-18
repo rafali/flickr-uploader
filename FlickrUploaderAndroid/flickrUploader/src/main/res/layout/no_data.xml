@@ -4,6 +4,6 @@
     android:layout_height="match_parent"
     android:layout_margin="10dp"
     android:gravity="center"
-    android:textColor="@color/holoblue"
+    android:textColor="@color/accent"
     android:text="@string/ellipsis"
     android:textSize="18sp" />

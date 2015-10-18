@@ -1,3 +1,2 @@
 include ':sprinkles'
-include ':viewPagerIndicator'
 include ':flickrUploader'
