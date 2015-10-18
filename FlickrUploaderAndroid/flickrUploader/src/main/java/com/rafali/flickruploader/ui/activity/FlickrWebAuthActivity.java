@@ -1,13 +1,5 @@
 package com.rafali.flickruploader.ui.activity;
 
-import org.androidannotations.annotations.AfterViews;
-import org.androidannotations.annotations.Background;
-import org.androidannotations.annotations.Click;
-import org.androidannotations.annotations.EActivity;
-import org.androidannotations.annotations.UiThread;
-import org.androidannotations.annotations.ViewById;
-import org.slf4j.LoggerFactory;
-
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
@@ -18,7 +10,7 @@ import android.view.View;
 import android.view.Window;
 import android.widget.TextView;
 
-import com.google.analytics.tracking.android.EasyTracker;
+import com.google.android.gms.analytics.GoogleAnalytics;
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
 import com.rafali.flickruploader.AppInstall;
@@ -26,6 +18,14 @@ import com.rafali.flickruploader.api.FlickrApi;
 import com.rafali.flickruploader.tool.RPC;
 import com.rafali.flickruploader.tool.Utils;
 import com.rafali.flickruploader2.R;
+
+import org.androidannotations.annotations.AfterViews;
+import org.androidannotations.annotations.Background;
+import org.androidannotations.annotations.Click;
+import org.androidannotations.annotations.EActivity;
+import org.androidannotations.annotations.UiThread;
+import org.androidannotations.annotations.ViewById;
+import org.slf4j.LoggerFactory;
 
 @EActivity(R.layout.flickr_web_auth_activity)
 public class FlickrWebAuthActivity extends Activity {
@@ -86,7 +86,7 @@ public class FlickrWebAuthActivity extends Activity {
 	@Override
 	protected void onStart() {
 		super.onStart();
-		EasyTracker.getInstance(this).activityStart(this);
+        GoogleAnalytics.getInstance(this).reportActivityStart(this);
 	}
 
 	boolean paused = false;
@@ -94,7 +94,7 @@ public class FlickrWebAuthActivity extends Activity {
 	@Override
 	protected void onStop() {
 		super.onStop();
-		EasyTracker.getInstance(this).activityStop(this);
+        GoogleAnalytics.getInstance(this).reportActivityStop(this);
 	}
 
 	@Override

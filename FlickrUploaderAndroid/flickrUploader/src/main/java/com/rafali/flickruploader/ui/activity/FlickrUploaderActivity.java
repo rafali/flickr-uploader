@@ -1,33 +1,5 @@
 package com.rafali.flickruploader.ui.activity;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import org.androidannotations.annotations.AfterViews;
-import org.androidannotations.annotations.Background;
-import org.androidannotations.annotations.EActivity;
-import org.androidannotations.annotations.UiThread;
-import org.androidannotations.annotations.ViewById;
-import org.androidannotations.api.BackgroundExecutor;
-import org.slf4j.LoggerFactory;
-
-import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
-import uk.co.senab.bitmapcache.CacheableImageView;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -42,7 +14,6 @@ import android.media.MediaScannerConnection.OnScanCompletedListener;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v4.widget.SwipeRefreshLayout.OnRefreshListener;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -56,7 +27,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.google.analytics.tracking.android.EasyTracker;
+import com.google.android.gms.analytics.GoogleAnalytics;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -84,8 +55,37 @@ import com.rafali.flickruploader.ui.widget.StickyHeaderListView.Header;
 import com.rafali.flickruploader.ui.widget.StickyHeaderListView.HeaderAdapter;
 import com.rafali.flickruploader2.R;
 
+import org.androidannotations.annotations.AfterViews;
+import org.androidannotations.annotations.Background;
+import org.androidannotations.annotations.EActivity;
+import org.androidannotations.annotations.UiThread;
+import org.androidannotations.annotations.ViewById;
+import org.androidannotations.api.BackgroundExecutor;
+import org.slf4j.LoggerFactory;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import uk.co.senab.bitmapcache.CacheableBitmapDrawable;
+import uk.co.senab.bitmapcache.CacheableImageView;
+
 @EActivity(R.layout.flickr_uploader_activity)
-public class FlickrUploaderActivity extends Activity implements OnRefreshListener {
+public class FlickrUploaderActivity extends Activity implements SwipeRefreshLayout.OnRefreshListener {
 
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrUploaderActivity.class);
 
@@ -105,12 +105,12 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 			instance.finish();
 		instance = activity;
 		Utils.checkPremium(false, new Utils.Callback<Boolean>() {
-			@Override
-			public void onResult(Boolean result) {
-				checkPremium();
-				renderMenu();
-			}
-		});
+            @Override
+            public void onResult(Boolean result) {
+                checkPremium();
+                renderMenu();
+            }
+        });
 		handleIntent(getIntent());
 	}
 
@@ -305,13 +305,13 @@ public class FlickrUploaderActivity extends Activity implements OnRefreshListene
 	@Override
 	protected void onStart() {
 		super.onStart();
-		EasyTracker.getInstance(activity).activityStart(activity);
+        GoogleAnalytics.getInstance(activity).reportActivityStart(activity);
 	}
 
 	@Override
 	protected void onStop() {
 		super.onStop();
-		EasyTracker.getInstance(activity).activityStop(activity);
+        GoogleAnalytics.getInstance(activity).reportActivityStop(activity);
 	}
 
 	@Override

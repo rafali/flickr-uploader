@@ -1,14 +1,15 @@
 package se.emilsjolander.sprinkles;
 
+import android.content.AsyncTaskLoader;
 import android.content.Context;
+import android.content.Loader;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.support.v4.content.AsyncTaskLoader;
 
 
 class SupportCursorLoader extends AsyncTaskLoader<Cursor> {
 
-	private final ForceLoadContentObserver mObserver;
+	private final Loader.ForceLoadContentObserver mObserver;
 
 	private String mSql;
 	private Class<? extends Model>[] mDependencies;

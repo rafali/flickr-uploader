@@ -5,10 +5,6 @@
     android:versionCode="46"
     android:versionName="2.3.2" >
 
-    <uses-sdk
-        android:minSdkVersion="14"
-        android:targetSdkVersion="19" />
-
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -138,6 +134,9 @@
             android:name="io.card.payment.CardIOActivity"
             android:configChanges="keyboardHidden|orientation" />
         <activity android:name="io.card.payment.DataEntryActivity" />
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="fa066bcfcc25c9c78e2157b1bb0718380ac84329" />
     </application>
 
 </manifest>

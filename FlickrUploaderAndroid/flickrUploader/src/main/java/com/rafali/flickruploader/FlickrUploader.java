@@ -1,39 +1,25 @@
 package com.rafali.flickruploader;
 
-import static org.acra.ReportField.ANDROID_VERSION;
-import static org.acra.ReportField.APP_VERSION_CODE;
-import static org.acra.ReportField.APP_VERSION_NAME;
-import static org.acra.ReportField.AVAILABLE_MEM_SIZE;
-import static org.acra.ReportField.BRAND;
-import static org.acra.ReportField.BUILD;
-import static org.acra.ReportField.DEVICE_FEATURES;
-import static org.acra.ReportField.ENVIRONMENT;
-import static org.acra.ReportField.PHONE_MODEL;
-import static org.acra.ReportField.PRODUCT;
-import static org.acra.ReportField.REPORT_ID;
-import static org.acra.ReportField.SETTINGS_SECURE;
-import static org.acra.ReportField.SETTINGS_SYSTEM;
-import static org.acra.ReportField.STACK_TRACE;
-import static org.acra.ReportField.THREAD_DETAILS;
-import static org.acra.ReportField.TOTAL_MEM_SIZE;
-import static org.acra.ReportField.USER_APP_START_DATE;
-import static org.acra.ReportField.USER_CRASH_DATE;
-
-import java.io.File;
-import java.nio.charset.Charset;
-
-import org.acra.ACRA;
-import org.acra.ReportingInteractionMode;
-import org.acra.annotation.ReportsCrashes;
-import org.androidannotations.api.BackgroundExecutor;
-import org.slf4j.LoggerFactory;
-
-import se.emilsjolander.sprinkles.Migration;
-import se.emilsjolander.sprinkles.Sprinkles;
 import android.app.Application;
 import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
+
+import com.crashlytics.android.Crashlytics;
+import com.rafali.common.STR;
+import com.rafali.common.ToolString;
+import com.rafali.flickruploader.api.FlickrApi;
+import com.rafali.flickruploader.model.FlickrSet;
+import com.rafali.flickruploader.model.Folder;
+import com.rafali.flickruploader.model.Media;
+import com.rafali.flickruploader.tool.Utils;
+
+import org.androidannotations.api.BackgroundExecutor;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.nio.charset.Charset;
+
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.android.LogcatAppender;
@@ -43,19 +29,10 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
+import io.fabric.sdk.android.Fabric;
+import se.emilsjolander.sprinkles.Migration;
+import se.emilsjolander.sprinkles.Sprinkles;
 
-import com.rafali.common.STR;
-import com.rafali.common.ToolString;
-import com.rafali.flickruploader.api.FlickrApi;
-import com.rafali.flickruploader.model.FlickrSet;
-import com.rafali.flickruploader.model.Folder;
-import com.rafali.flickruploader.model.Media;
-import com.rafali.flickruploader.tool.Utils;
-import com.rafali.flickruploader2.R;
-
-@ReportsCrashes(formUri = "http://ra-fa-li.appspot.com/androidCrashReport", formKey = "", mode = ReportingInteractionMode.TOAST, forceCloseDialogAfterToast = false, resToastText = R.string.crash_toast_text, customReportContent = {
-		REPORT_ID, APP_VERSION_CODE, APP_VERSION_NAME, PHONE_MODEL, ANDROID_VERSION, BUILD, BRAND, PRODUCT, TOTAL_MEM_SIZE, AVAILABLE_MEM_SIZE, STACK_TRACE, USER_APP_START_DATE, USER_CRASH_DATE,
-		DEVICE_FEATURES, ENVIRONMENT, SETTINGS_SYSTEM, SETTINGS_SECURE, THREAD_DETAILS })
 public class FlickrUploader extends Application {
 
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(FlickrUploader.class);
@@ -76,7 +53,8 @@ public class FlickrUploader extends Application {
 			initialMigration.createTable(Folder.class);
 			sprinkles.addMigration(initialMigration);
 			Sprinkles.getDatabase();
-		} catch (Throwable e) {
+            Fabric.with(this, new Crashlytics());
+        } catch (Throwable e) {
 			Log.e("Flickr Uploader", e.getMessage(), e);
 		}
 
@@ -85,7 +63,6 @@ public class FlickrUploader extends Application {
 			public void run() {
 				try {
 					initLogs();
-					ACRA.init(FlickrUploader.this);
 					final long previousVersionCode = Utils.getLongProperty(STR.versionCode);
 					if (Config.VERSION != previousVersionCode) {
 						Utils.saveAndroidDevice();

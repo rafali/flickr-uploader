@@ -9,8 +9,6 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.app.NotificationCompat.Builder;
 
 import com.rafali.common.STR;
 import com.rafali.common.ToolString;
@@ -31,8 +29,8 @@ public class Notifications {
 	static final android.app.NotificationManager manager = (android.app.NotificationManager) FlickrUploader.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
 	private static PendingIntent resultPendingIntent;
 
-	private static Builder builderUploading;
-	private static Builder builderUploaded;
+	private static Notification.Builder builderUploading;
+	private static Notification.Builder builderUploaded;
 
 	static long lastNotified = 0;
 
@@ -63,15 +61,15 @@ public class Notifications {
 		}
 
 		if (builderUploading == null) {
-			builderUploading = new NotificationCompat.Builder(FlickrUploader.getAppContext());
+			builderUploading = new Notification.Builder(FlickrUploader.getAppContext());
 			builderUploading.setContentIntent(resultPendingIntent);
 			builderUploading.setContentTitle("Uploading to Flickr");
-			builderUploading.setPriority(NotificationCompat.PRIORITY_MIN);
+			builderUploading.setPriority(Notification.PRIORITY_MIN);
 			builderUploading.setSmallIcon(R.drawable.ic_launcher);
 
-			builderUploaded = new NotificationCompat.Builder(FlickrUploader.getAppContext());
+			builderUploaded = new Notification.Builder(FlickrUploader.getAppContext());
 			builderUploaded.setSmallIcon(R.drawable.ic_launcher);
-			builderUploaded.setPriority(NotificationCompat.PRIORITY_MIN);
+			builderUploaded.setPriority(Notification.PRIORITY_MIN);
 			builderUploaded.setContentIntent(resultPendingIntent);
 			// builderUploaded.setProgress(1000, 1000, false);
 			builderUploaded.setTicker("Upload finished");
@@ -101,7 +99,7 @@ public class Notifications {
 
 			ensureBuilders();
 
-			Builder builder = builderUploading;
+			Notification.Builder builder = builderUploading;
 			builder.setProgress(1000, progress, false);
 			builder.setContentText(media.getName());
 			builder.setContentInfo(currentPosition + " / " + total);
@@ -142,7 +140,7 @@ public class Notifications {
 
 				ensureBuilders();
 
-				Builder builder = builderUploaded;
+				Notification.Builder builder = builderUploaded;
 				String text = nbUploaded + " media recently uploaded to Flickr";
 				if (nbError > 0) {
 					text += ", " + nbError + " error" + (nbError > 1 ? "s" : "");
@@ -168,7 +166,7 @@ public class Notifications {
 				if (System.currentTimeMillis() - lastTrialEndedNotifications > 3 * 24 * 3600 * 1000L) {
 					ensureBuilders();
 
-					Builder builder = new NotificationCompat.Builder(FlickrUploader.getAppContext());
+					Notification.Builder builder = new Notification.Builder(FlickrUploader.getAppContext());
 					builder.setSmallIcon(R.drawable.ic_launcher);
 					builder.setContentIntent(resultPendingIntent);
 					builder.setTicker("Flickr Uploader trial ended");
