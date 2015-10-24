@@ -1,0 +1,5 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 64 64" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:1.41421;">
+    <path id="grid-small-view-icon" d="M37.658,37.717L26.225,37.717L26.225,26.283L37.658,26.283L37.658,37.717ZM26.225,8L26.225,19.426L37.658,19.426L37.658,8L26.225,8ZM37.658,56L37.658,44.574L26.225,44.574L26.225,56L37.658,56Z" style="fill:rgb(221,221,221);fill-rule:nonzero;"/>
+</svg>

@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <style name="CustomTheme" parent="android:Theme.Material">
-        <item name="android:actionModeCloseDrawable">@drawable/navigation_cancel</item>
+    <style name="CustomTheme" parent="Theme.AppCompat">
         <!-- Main theme colors -->
         <!--   your app branding color for the app bar -->
         <item name="android:colorPrimary">@color/black</item>

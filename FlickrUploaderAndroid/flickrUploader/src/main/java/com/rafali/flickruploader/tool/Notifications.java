@@ -65,10 +65,10 @@ public class Notifications {
 			builderUploading.setContentIntent(resultPendingIntent);
 			builderUploading.setContentTitle("Uploading to Flickr");
 			builderUploading.setPriority(Notification.PRIORITY_MIN);
-			builderUploading.setSmallIcon(R.drawable.ic_launcher);
+			builderUploading.setSmallIcon(R.drawable.upload);
 
 			builderUploaded = new Notification.Builder(FlickrUploader.getAppContext());
-			builderUploaded.setSmallIcon(R.drawable.ic_launcher);
+			builderUploaded.setSmallIcon(R.drawable.upload);
 			builderUploaded.setPriority(Notification.PRIORITY_MIN);
 			builderUploaded.setContentIntent(resultPendingIntent);
 			// builderUploaded.setProgress(1000, 1000, false);
@@ -167,7 +167,7 @@ public class Notifications {
 					ensureBuilders();
 
 					Notification.Builder builder = new Notification.Builder(FlickrUploader.getAppContext());
-					builder.setSmallIcon(R.drawable.ic_launcher);
+					builder.setSmallIcon(R.drawable.upload);
 					builder.setContentIntent(resultPendingIntent);
 					builder.setTicker("Flickr Uploader trial ended");
 					builder.setContentTitle("Flickr Uploader trial ended");

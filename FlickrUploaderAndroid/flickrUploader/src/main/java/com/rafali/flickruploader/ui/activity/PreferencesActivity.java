@@ -15,8 +15,8 @@ import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.Preference.OnPreferenceClickListener;
-import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import android.support.v7.app.ActionBar;
 import android.view.MenuItem;
 
 import com.google.android.gms.analytics.GoogleAnalytics;
@@ -43,7 +43,7 @@ import se.emilsjolander.sprinkles.ManyQuery;
 import se.emilsjolander.sprinkles.ModelList;
 import se.emilsjolander.sprinkles.Query;
 
-public class PreferencesActivity extends PreferenceActivity implements OnSharedPreferenceChangeListener {
+public class PreferencesActivity extends AbstractPreferenceActivity implements OnSharedPreferenceChangeListener {
 
 	static final org.slf4j.Logger LOG = LoggerFactory.getLogger(PreferencesActivity.class);
 	public static final String UPLOAD_NETWORK = "upload_network";
@@ -54,13 +54,16 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 
 	PreferencesActivity activity = this;
 
-	@SuppressWarnings("deprecation")
+    @SuppressWarnings("deprecation")
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		handler = new Handler();
 		super.onCreate(savedInstanceState);
-		getActionBar().setDisplayHomeAsUpEnabled(true);
-		getActionBar().setIcon(R.drawable.preferences);
+        ActionBar actionBar = getSupportActionBar();
+        if (actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+            actionBar.setIcon(R.drawable.preferences);
+        }
 		sp = PreferenceManager.getDefaultSharedPreferences(this);
 		// add preferences from xml
 		addPreferencesFromResource(R.xml.preferences);

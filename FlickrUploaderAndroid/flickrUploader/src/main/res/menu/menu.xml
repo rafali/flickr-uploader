@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+<menu xmlns:android="http://schemas.android.com/apk/res/android" xmlns:rafali="http://schemas.android.com/apk/res-auto">
 
     <item
         android:id="@+id/upload"
         android:icon="@drawable/upload"
-        android:showAsAction="always"
+        rafali:showAsAction="always"
         android:title="Upload">
         <menu>
             <item
@@ -20,7 +20,7 @@
     <item
         android:id="@+id/select"
         android:icon="@drawable/select_all"
-        android:showAsAction="always"
+        rafali:showAsAction="always"
         android:title="Select">
         <menu>
             <item
@@ -44,7 +44,7 @@
     <item
         android:id="@+id/filter"
         android:icon="@drawable/filter"
-        android:showAsAction="always"
+        rafali:showAsAction="always"
         android:title="Filter">
         <menu>
             <group android:checkableBehavior="all" >
@@ -70,7 +70,7 @@
     <item
         android:id="@+id/pick_view"
         android:icon="@drawable/grid_small"
-        android:showAsAction="always"
+        rafali:showAsAction="always"
         android:title="View">
         <menu>
             <item
@@ -115,23 +115,23 @@
     <item
         android:id="@+id/menu_more"
         android:icon="@drawable/menu_more"
-        android:showAsAction="always"
+        rafali:showAsAction="always"
         android:title="Menu">
         <menu>
             <item
                 android:id="@+id/trial_info"
                 android:icon="@drawable/payment"
-                android:showAsAction="never"
+                rafali:showAsAction="never"
                 android:title="Buy PRO License"/>
             <item
                 android:id="@+id/faq"
                 android:icon="@drawable/help"
-                android:showAsAction="never"
+                rafali:showAsAction="never"
                 android:title="Help"/>
             <item
                 android:id="@+id/preferences"
                 android:icon="@drawable/preferences"
-                android:showAsAction="never"
+                rafali:showAsAction="never"
                 android:title="Preferences"/>
         </menu>
     </item>

@@ -37,7 +37,7 @@
     <application
         android:name="com.rafali.flickruploader.FlickrUploader"
         android:allowBackup="false"
-        android:icon="@drawable/ic_launcher"
+        android:icon="@mipmap/ic_launcher"
         android:label="Flickr Uploader"
         android:theme="@style/CustomTheme" >
         <service android:name="com.rafali.flickruploader.service.UploadService" />
